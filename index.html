@@ -36,7 +36,6 @@
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-    <!-- FIREBASE SDK (V8 para compatibilidade nativa com CDN unico) -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
@@ -93,20 +92,19 @@
         const generateId = () => Math.random().toString(36).substr(2, 9);
 
         // ==========================================
-        // CONFIGURAÇÃO DO FIREBASE (COLE AS SUAS AQUI)
+        // CONFIGURAÇÃO DO FIREBASE 
+        // ATENÇÃO: COLE AS SUAS CHAVES APENAS ENTRE AS ASPAS ABAIXO. NÃO ADICIONE initializeApp AQUI!
         // ==========================================
-const firebaseConfig = {
-            apiKey: "AIzaSySuaChaveGiganteAqui...",
-            authDomain: "seu-projeto.firebaseapp.com",
-            projectId: "seu-projeto",
-            storageBucket: "seu-projeto.appspot.com",
-            messagingSenderId: "123456789",
-            appId: "1:123456:web:abcd"
+        const firebaseConfig = {
+            apiKey: "COLE_SUA_API_KEY_AQUI",
+            authDomain: "COLE_SEU_AUTH_DOMAIN_AQUI",
+            projectId: "COLE_SEU_PROJECT_ID_AQUI",
+            storageBucket: "COLE_SEU_STORAGE_BUCKET_AQUI",
+            messagingSenderId: "COLE_SEU_MESSAGING_SENDER_ID_AQUI",
+            appId: "COLE_SEU_APP_ID_AQUI"
         };
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
 
-        const isFirebaseConfigured = firebaseConfig.apiKey !== "";
+        const isFirebaseConfigured = firebaseConfig.apiKey !== "" && firebaseConfig.apiKey !== "COLE_SUA_API_KEY_AQUI";
         
         let db, auth;
         if (isFirebaseConfigured) {
@@ -141,12 +139,11 @@ const app = initializeApp(firebaseConfig);
                 return allData;
             },
             login: async (email, password) => {
-                if(!isFirebaseConfigured) return { success: false, message: 'Firebase não configurado.' };
+                if(!isFirebaseConfigured) return { success: false, message: 'Firebase não configurado. Adicione suas chaves no código.' };
                 try {
                     await auth.signInWithEmailAndPassword(email, password);
-                    // Busca dados do usuário na coleção para saber o Nível de Acesso
                     const userDoc = await db.collection('USUARIOS').where('E-mail', '==', email).get();
-                    let userData = { 'E-mail': email, 'Nome Completo': email.split('@')[0], 'Nível de Acesso': 'Admin' }; // Fallback de segurança se logou mas n tem doc
+                    let userData = { 'E-mail': email, 'Nome Completo': email.split('@')[0], 'Nível de Acesso': 'Admin' };
                     if (!userDoc.empty) {
                         userData = { ID: userDoc.docs[0].id, ...userDoc.docs[0].data() };
                         if (userData.Status && String(userData.Status).toLowerCase() !== 'ativo') {
@@ -156,7 +153,7 @@ const app = initializeApp(firebaseConfig);
                     }
                     return { success: true, user: userData };
                 } catch (error) {
-                    return { success: false, message: 'E-mail ou senha incorretos. Verifique também se a sua conta já foi criada no painel Authentication do Firebase.' };
+                    return { success: false, message: 'E-mail ou senha incorretos.' };
                 }
             },
             saveRecord: async (collectionName, data, isEdit) => {
@@ -164,9 +161,8 @@ const app = initializeApp(firebaseConfig);
                 try {
                     let docData = { ...data };
                     let id = docData.ID;
-                    delete docData.ID; // O Firebase cuida do ID
+                    delete docData.ID;
                     
-                    // Limpa undefined
                     Object.keys(docData).forEach(key => docData[key] === undefined && delete docData[key]);
 
                     if (isEdit && id) {
@@ -341,7 +337,6 @@ const app = initializeApp(firebaseConfig);
             // Garantir as chaves do Firebase
             let allKeys = schema && schema.length > 0 ? schema : ['ID', 'Procedimento'];
             if (safeData.length > 0 && typeof safeData[0] === 'object' && safeData[0] !== null) {
-                // Junta as chaves do schema com as chaves dos dados existentes para evitar perder colunas
                 const dataKeys = Object.keys(safeData[0]);
                 allKeys = [...new Set([...allKeys, ...dataKeys])];
             }
@@ -494,35 +489,203 @@ const app = initializeApp(firebaseConfig);
             );
         };
 
-        // --- RELÓGIO COM AVISOS ---
-        const ClockWidget = ({ lembretesData }) => {
-            const [time, setTime] = useState(new Date());
-            useEffect(() => { const timer = setInterval(() => setTime(new Date()), 1000); return () => clearInterval(timer); }, []);
+        const ContatosCards = ({ data, canEdit, openModal, handleDelete }) => {
+            const safeData = Array.isArray(data) ? data : [];
+            const [search, setSearch] = useState('');
+            const [selectedSetor, setSelectedSetor] = useState(null);
             
-            const hour = time.getHours();
-            let periodStr = 'Bom dia'; let icon = 'ph-sun'; let bgClass = 'bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-200';
-            
-            if (hour >= 12 && hour < 18) { periodStr = 'Boa tarde'; icon = 'ph-cloud-sun'; bgClass = 'bg-orange-50 border-orange-200 text-orange-800 dark:bg-orange-900/30 dark:border-orange-800 dark:text-orange-200'; }
-            else if (hour >= 18 || hour < 6) { periodStr = 'Boa noite'; icon = 'ph-moon-stars'; bgClass = 'bg-indigo-900 border-indigo-700 text-indigo-100 dark:bg-slate-800 dark:border-slate-700 dark:text-indigo-200'; }
+            const grupos = useMemo(() => {
+                const map = {};
+                safeData.forEach(c => {
+                    if(!c || typeof c !== 'object') return;
+                    const setor = safeString(c['Local/Setor']) || 'Outros';
+                    if(!map[setor]) map[setor] = [];
+                    if(JSON.stringify(c).toLowerCase().includes(search.toLowerCase())) map[setor].push(c);
+                });
+                return map;
+            }, [safeData, search]);
 
-            const lembretes = Array.isArray(lembretesData) ? lembretesData : [];
-            const lembreteAtual = lembretes.find(l => l && typeof l === 'object' && parseInt(safeString(l.Hora) || -1) === hour);
-            const msg = lembreteAtual ? safeString(lembreteAtual.Mensagem) : 'Tenha um excelente turno de trabalho!';
-
-            return (
-                <div className={`p-6 rounded-custom border-2 shadow-sm flex items-center justify-between transition-colors duration-1000 ${bgClass}`}>
-                    <div className="flex items-center gap-5">
-                        <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center shadow-inner">
-                            <i className={`ph-fill ${icon} text-4xl animate-spin-slow`}></i>
-                        </div>
-                        <div>
-                            <h2 className="text-4xl font-black tracking-tighter">{time.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit', second:'2-digit'})}</h2>
-                            <p className="text-sm font-bold uppercase tracking-widest opacity-80 mt-1">{periodStr}</p>
+            if (selectedSetor) {
+                const contatos = grupos[selectedSetor] || [];
+                return (
+                    <div className="space-y-6 animate-fade-in">
+                        <button onClick={()=>setSelectedSetor(null)} className="font-black text-gray-500 hover:text-primary flex items-center gap-2 bg-white dark:bg-slate-800 px-6 py-3 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 w-max transition hover:-translate-x-1"><i className="ph-bold ph-arrow-left"></i> Voltar para Pastas</button>
+                        <div className="bg-white dark:bg-slate-800 rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-slate-700 p-8 md:p-10">
+                            <div className="flex justify-between items-center mb-8 border-b dark:border-slate-700 pb-6">
+                                <h2 className="text-4xl font-black text-gray-900 dark:text-white flex items-center gap-4"><i className="ph-fill ph-folder-open text-primary opacity-50"></i> {selectedSetor}</h2>
+                                {canEdit && <button onClick={()=>openModal({'Local/Setor': selectedSetor})} className="bg-primary/10 text-primary font-black px-6 py-3 rounded-2xl hover:bg-primary hover:text-white transition">Adicionar Contato</button>}
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                                {contatos.map((contato, i) => (
+                                    <div key={i} className="group relative p-6 bg-white dark:bg-slate-900 border-2 border-gray-100 dark:border-slate-700 rounded-3xl card-hover" style={{borderTopColor: contato && contato.Cor_Fundo ? contato.Cor_Fundo : '#e5e7eb', borderTopWidth: '4px'}}>
+                                        <div className="flex justify-between items-start mb-4">
+                                            <h4 className="font-black text-2xl tracking-tight text-gray-900 dark:text-white">{safeString(contato.Ramal) || '-'}</h4>
+                                            {canEdit && (
+                                                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <button onClick={()=>openModal(contato)} className="p-2 text-blue-600 bg-blue-50 dark:bg-blue-900/30 rounded-xl transition"><i className="ph-bold ph-pencil-simple"></i></button>
+                                                    <button onClick={()=>{if(confirm('Excluir?')) handleDelete(contato.ID)}} className="p-2 text-red-600 bg-red-50 dark:bg-red-900/30 rounded-xl transition"><i className="ph-bold ph-trash"></i></button>
+                                                </div>
+                                            )}
+                                        </div>
+                                        <p className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-1">Responsável / Setor</p>
+                                        <p className="text-lg font-black leading-tight mb-4 text-gray-800 dark:text-slate-200">{safeString(contato['Contatos Gerais']) || 'Sem Nome'}</p>
+                                        {contato['E-mails'] && <p className="text-sm font-bold text-blue-600 flex items-center gap-2 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-xl"><i className="ph-fill ph-envelope-simple text-xl"></i> {safeString(contato['E-mails'])}</p>}
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     </div>
-                    <div className="hidden md:flex flex-col items-end max-w-xs text-right border-l-2 border-white/20 pl-6">
-                        <span className="text-[10px] font-black uppercase tracking-widest opacity-60 mb-1 flex items-center gap-1"><i className="ph-fill ph-bell-ringing animate-pulse"></i> Lembrete da Hora</span>
-                        <p className="text-base font-bold leading-tight">{msg}</p>
+                );
+            }
+
+            return (
+                <div className="space-y-8 animate-fade-in">
+                    <div className="flex justify-between items-center bg-white dark:bg-slate-800 p-5 rounded-[2rem] shadow-sm border border-gray-100 dark:border-slate-700">
+                        <div className="relative w-full sm:w-96"><i className="ph-bold ph-magnifying-glass absolute left-5 top-4 text-gray-400 text-xl"></i><input type="text" placeholder="Buscar contatos..." value={search} onChange={e=>setSearch(e.target.value)} className="w-full pl-14 pr-6 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-full outline-none focus:ring-2 focus:ring-primary font-bold transition text-gray-800 dark:text-white" /></div>
+                        {canEdit && <button onClick={()=>openModal()} className="bg-primary text-white px-8 py-4 rounded-full font-black shadow-lg hover:-translate-y-1 transition flex items-center gap-2"><i className="ph-bold ph-plus text-xl"></i> Novo Contato</button>}
+                    </div>
+
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                        {Object.keys(grupos).map(setor => (
+                            <div key={setor} onClick={()=>setSelectedSetor(setor)} className="bg-white dark:bg-slate-800 p-8 rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-slate-700 card-hover cursor-pointer flex flex-col items-center justify-center text-center h-56 gap-4 relative overflow-hidden group">
+                                <div className="absolute inset-0 bg-gradient-to-br from-transparent to-gray-50 dark:to-slate-700/50 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                <div className="w-20 h-20 rounded-[1.5rem] bg-blue-50 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center text-4xl shadow-inner relative z-10"><i className="ph-fill ph-folder-open"></i></div>
+                                <div className="relative z-10">
+                                    <h3 className="font-black text-xl leading-tight mb-1 text-gray-800 dark:text-white">{setor}</h3>
+                                    <span className="text-xs font-bold text-gray-500">{grupos[setor].length} ramais</span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        };
+
+        const ConsultasView = ({ data, canEdit, openModal, handleDelete }) => {
+            const safeData = Array.isArray(data) ? data : [];
+            const [search, setSearch] = useState('');
+            const [selected, setSelected] = useState(null);
+            
+            const filtered = safeData.filter(d => d && typeof d === 'object' && ((safeString(d['Consulta/Procedimento'])).toLowerCase().includes(search.toLowerCase()) || (safeString(d['Código'])).toLowerCase().includes(search.toLowerCase())));
+            useEffect(() => { if(filtered.length > 0 && !selected) setSelected(filtered[0]); }, [filtered]);
+
+            return (
+                <div className="space-y-6 animate-fade-in">
+                    <div className="flex justify-between items-center bg-white dark:bg-slate-800 p-4 rounded-[2rem] shadow-sm border border-gray-100 dark:border-slate-700">
+                        <div className="relative w-full sm:w-96"><i className="ph-bold ph-magnifying-glass absolute left-5 top-4 text-gray-400 text-lg"></i><input type="text" placeholder="Buscar procedimento..." value={search} onChange={e=>setSearch(e.target.value)} className="w-full pl-14 pr-6 py-3.5 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-full outline-none focus:ring-2 focus:ring-primary font-bold transition text-gray-800 dark:text-white" /></div>
+                        {canEdit && <button onClick={()=>openModal()} className="bg-primary text-white px-6 py-3.5 rounded-full font-black shadow-lg hover:-translate-y-1 transition flex items-center gap-2"><i className="ph-bold ph-plus text-lg"></i> Novo Procedimento</button>}
+                    </div>
+
+                    <div className="flex flex-col lg:flex-row gap-8 items-start">
+                        <div className="w-full lg:w-1/2 xl:w-7/12 space-y-4 h-[70vh] overflow-y-auto custom-scrollbar pr-2 pb-10">
+                            {filtered.map((item, i) => (
+                                <div key={i} onClick={() => setSelected(item)} className={`p-6 rounded-3xl border-2 cursor-pointer transition-all ${selected && selected.ID === item.ID ? 'bg-blue-50 dark:bg-slate-800 border-primary shadow-lg transform scale-[1.02]' : 'bg-white dark:bg-slate-900 border-gray-100 dark:border-slate-700 hover:border-blue-200'}`}>
+                                    <div className="flex justify-between items-center gap-4">
+                                        <div className="flex-1">
+                                            <span className="text-[10px] font-black text-gray-400 bg-gray-100 dark:bg-slate-800 px-3 py-1 rounded-full mb-3 inline-block uppercase tracking-widest">Código: {safeString(item.Código) || '-'}</span>
+                                            <h3 className="font-black text-xl leading-tight text-gray-900 dark:text-white">{safeString(item['Consulta/Procedimento']) || 'Sem Nome'}</h3>
+                                        </div>
+                                        <div className="text-right shrink-0">
+                                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Particular</span>
+                                            <span className="font-black text-2xl text-primary bg-white dark:bg-slate-800 px-4 py-2 rounded-2xl shadow-sm border border-gray-50 dark:border-slate-700">R$ {safeString(item['Valor Particular']) || '0,00'}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                            {filtered.length === 0 && <div className="p-10 text-center text-gray-400 font-black text-xl border-2 border-dashed border-gray-200 dark:border-slate-700 rounded-[2rem]">Nenhum procedimento encontrado.</div>}
+                        </div>
+                        
+                        <div className="w-full lg:w-1/2 xl:w-5/12 sticky top-6">
+                            {selected ? (
+                                <div className="bg-white dark:bg-slate-800 rounded-[2.5rem] shadow-2xl border border-gray-100 dark:border-slate-700 p-8 animate-pop-in">
+                                    {selected.Imagem_URL && <img src={formatImageUrl(selected.Imagem_URL)} className="w-full h-48 object-cover rounded-2xl mb-6 shadow-sm" />}
+                                    <span className="text-[10px] font-black text-primary bg-primary/10 px-3 py-1 rounded-full mb-3 inline-block uppercase tracking-widest">Detalhes do Procedimento</span>
+                                    <h2 className="text-3xl font-black mb-8 leading-tight text-gray-900 dark:text-white">{safeString(selected['Consulta/Procedimento'])}</h2>
+                                    
+                                    <div className="space-y-6">
+                                        <div>
+                                            <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2"><i className="ph-fill ph-text-align-left text-primary text-lg"></i> Descrição / Obs</h4>
+                                            <p className="font-medium bg-gray-50 dark:bg-slate-900 p-5 rounded-2xl leading-relaxed text-gray-700 dark:text-slate-300">{safeString(selected.Descrição) || 'Nenhuma descrição fornecida.'}</p>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-100 dark:border-orange-900/50 p-5 rounded-2xl">
+                                                <h4 className="text-xs font-black text-orange-400 uppercase tracking-widest mb-2 flex items-center gap-2"><i className="ph-fill ph-warning-circle text-lg"></i> Preparo</h4>
+                                                <p className="font-bold text-orange-900 dark:text-orange-200 text-sm leading-tight">{safeString(selected.Preparo) || 'Nenhum preparo especial.'}</p>
+                                            </div>
+                                            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/50 p-5 rounded-2xl">
+                                                <h4 className="text-xs font-black text-blue-400 uppercase tracking-widest mb-2 flex items-center gap-2"><i className="ph-fill ph-first-aid-kit text-lg"></i> Material</h4>
+                                                <p className="font-bold text-blue-900 dark:text-blue-200 text-sm leading-tight">{safeString(selected['Material Utilizado']) || '-'}</p>
+                                            </div>
+                                        </div>
+                                        {canEdit && (
+                                            <div className="flex gap-4 pt-8 border-t border-gray-100 dark:border-slate-700">
+                                                <button onClick={()=>openModal(selected)} className="flex-1 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 font-black py-4 rounded-2xl transition flex items-center justify-center gap-2 text-gray-800 dark:text-white"><i className="ph-bold ph-pencil-simple text-xl"></i> Editar</button>
+                                                <button onClick={()=>{if(confirm('Tem certeza?')) { handleDelete(selected.ID); setSelected(null); }}} className="flex-1 bg-red-50 dark:bg-red-900/30 text-red-600 font-black py-4 rounded-2xl transition flex items-center justify-center gap-2"><i className="ph-bold ph-trash text-xl"></i> Excluir</button>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="bg-gray-50 dark:bg-slate-800 rounded-[2.5rem] border-2 border-dashed border-gray-200 dark:border-slate-700 h-96 flex flex-col items-center justify-center text-gray-400 font-bold p-10 text-center gap-4">
+                                    <i className="ph-fill ph-mouse-left text-6xl opacity-30"></i><p>Selecione um procedimento para visualizar os detalhes.</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )
+        };
+
+        const SenhasView = ({ data, canEdit, openModal, handleDelete, showToast }) => {
+            const safeData = Array.isArray(data) ? data : [];
+            const [search, setSearch] = useState('');
+            const [showPass, setShowPass] = useState({});
+
+            const copyText = (text) => {
+                if (!text) return;
+                const el = document.createElement('textarea'); el.value = text; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el);
+                showToast('Copiado para a área de transferência!');
+            };
+
+            const filtered = safeData.filter(d => d && typeof d === 'object' && (safeString(d['Nome do Sistema'])).toLowerCase().includes(search.toLowerCase()));
+
+            return (
+                <div className="space-y-8 animate-fade-in">
+                    <div className="flex justify-between items-center bg-white dark:bg-slate-800 p-5 rounded-custom shadow-sm border border-gray-100 dark:border-slate-700">
+                        <div className="relative w-full sm:w-96"><i className="ph-bold ph-magnifying-glass absolute left-5 top-4 text-gray-400 text-xl"></i><input type="text" placeholder="Buscar sistema..." value={search} onChange={e=>setSearch(e.target.value)} className="w-full pl-14 pr-6 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-full outline-none focus:ring-2 focus:ring-primary font-bold text-gray-700 dark:text-white transition" /></div>
+                        {canEdit && <button onClick={()=>openModal()} className="bg-gray-900 dark:bg-white dark:text-gray-900 text-white px-8 py-4 rounded-custom font-black shadow-lg hover:-translate-y-1 transition flex items-center gap-2"><i className="ph-bold ph-plus text-xl"></i> Novo Acesso</button>}
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {filtered.map((item, i) => (
+                            <div key={i} className="bg-white dark:bg-slate-800 rounded-custom p-6 shadow-sm border border-gray-200 dark:border-slate-700 card-hover group relative">
+                                <div className="flex justify-between items-start mb-6">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-gray-800 to-black text-white flex items-center justify-center text-2xl shadow-lg"><i className="ph-fill ph-lock-key"></i></div>
+                                        <div><h3 className="font-black text-xl leading-tight text-gray-900 dark:text-white">{safeString(item['Nome do Sistema'])}</h3>{item['Link do Sistema'] && <a href={safeString(item['Link do Sistema'])} target="_blank" className="text-xs font-bold text-blue-500 hover:underline">Acessar Site</a>}</div>
+                                    </div>
+                                    {canEdit && (
+                                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <button onClick={()=>openModal(item)} className="p-2 text-blue-600 bg-blue-50 dark:bg-blue-900/30 rounded-lg hover:bg-blue-600 hover:text-white"><i className="ph-bold ph-pencil-simple"></i></button>
+                                            <button onClick={()=>{if(confirm('Excluir?')) handleDelete(item.ID)}} className="p-2 text-red-600 bg-red-50 dark:bg-red-900/30 rounded-lg hover:bg-red-600 hover:text-white"><i className="ph-bold ph-trash"></i></button>
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="space-y-3">
+                                    <div className="bg-gray-50 dark:bg-slate-900 p-4 rounded-2xl border border-gray-100 dark:border-slate-700 flex justify-between items-center group/field">
+                                        <div className="overflow-hidden pr-4"><span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Login / E-mail</span><span className="font-bold text-lg truncate block text-gray-800 dark:text-slate-200">{safeString(item.Login) || '-'}</span></div>
+                                        <button onClick={() => copyText(item.Login)} className="text-gray-400 hover:text-primary transition p-3 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 opacity-0 group-hover/field:opacity-100"><i className="ph-bold ph-copy text-lg"></i></button>
+                                    </div>
+                                    <div className="bg-gray-50 dark:bg-slate-900 p-4 rounded-2xl border border-gray-100 dark:border-slate-700 flex justify-between items-center group/field">
+                                        <div className="overflow-hidden pr-4"><span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Senha Segura</span><span className="font-black text-xl font-mono tracking-[0.3em] block text-gray-800 dark:text-slate-200">{showPass[item.ID] ? safeString(item.Senha) : '••••••••'}</span></div>
+                                        <div className="flex gap-2 opacity-0 group-hover/field:opacity-100 transition">
+                                            <button onClick={() => setShowPass({...showPass, [item.ID]: !showPass[item.ID]})} className="text-gray-400 hover:text-primary transition p-3 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700"><i className={`ph-bold ${showPass[item.ID] ? 'ph-eye-slash' : 'ph-eye'} text-lg`}></i></button>
+                                            <button onClick={() => copyText(item.Senha)} className="text-gray-400 hover:text-primary transition p-3 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700"><i className="ph-bold ph-copy text-lg"></i></button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 </div>
             )
@@ -598,7 +761,6 @@ const app = initializeApp(firebaseConfig);
             const corpoClinico = Array.isArray(sheetData['CORPO CLINICO']) ? sheetData['CORPO CLINICO'] : [];
             const usuarios = Array.isArray(sheetData['USUARIOS']) ? sheetData['USUARIOS'] : [];
             
-            // Filtro flexível para encontrar "Médico" ou "Medico" e também os colaboradores
             const filteredEscalas = escalas.filter(esc => {
                 if(!esc || typeof esc !== 'object') return false;
                 const tipo = safeString(esc.Tipo_Profissional).toLowerCase();
@@ -661,7 +823,6 @@ const app = initializeApp(firebaseConfig);
                                 {Array(firstDayOfMonth).fill(null).map((_, i) => <div key={`e-${i}`} className="aspect-square opacity-20 bg-gray-50 dark:bg-slate-900 rounded-3xl" />)}
                                 {Array(daysInMonth).fill(null).map((_, i) => {
                                     const day = i + 1;
-                                    // Compara datas de forma flexivel (aceita ano com 4 digitos ou 2 digitos da planilha)
                                     const dateStrCompleto = `${String(day).padStart(2, '0')}/${String(currentMonth.getMonth() + 1).padStart(2, '0')}/${currentMonth.getFullYear()}`;
                                     const dateStrCurto = `${String(day).padStart(2, '0')}/${String(currentMonth.getMonth() + 1).padStart(2, '0')}/${String(currentMonth.getFullYear()).slice(2)}`;
                                     
@@ -1279,8 +1440,4 @@ const app = initializeApp(firebaseConfig);
         root.render(<ErrorBoundary><App /></ErrorBoundary>);
     </script>
 </body>
-
 </html>
-
-
-
