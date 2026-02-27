@@ -36,6 +36,7 @@
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
+    <!-- FIREBASE SDK (V8 para compatibilidade) -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
@@ -69,7 +70,7 @@
         .balloon { position: absolute; bottom: -50px; animation: rise 10s infinite ease-in; opacity: 0.8; z-index: 0; pointer-events: none; }
         @keyframes rise { 0% { bottom: -50px; transform: translateX(0); opacity: 0; } 10% { opacity: 0.8; } 50% { transform: translateX(20px); } 100% { bottom: 100%; transform: translateX(-20px); opacity: 0; } }
 
-        /* Tabela de Matriz Premium (Design Inspirado nas Fotos enviadas) */
+        /* Tabela de Matriz Premium */
         .matrix-table { width: 100%; border-collapse: separate; border-spacing: 0 12px; }
         .matrix-table th { padding: 1.5rem 1rem; color: white; font-weight: 800; text-transform: uppercase; font-size: 0.85rem; text-align: center; border: none; }
         .matrix-table th:first-child { border-radius: 1rem 0 0 1rem; background-color: #1e293b; text-align: left; position: sticky; left: 0; z-index: 30; }
@@ -92,19 +93,22 @@
         const generateId = () => Math.random().toString(36).substr(2, 9);
 
         // ==========================================
-        // CONFIGURAÇÃO DO FIREBASE 
-        // ATENÇÃO: COLE AS SUAS CHAVES APENAS ENTRE AS ASPAS ABAIXO. NÃO ADICIONE initializeApp AQUI!
+        // 🛑 PARE AQUI! MUITA ATENÇÃO! 🛑
+        // SUBSTITUA "COLE_AQUI" PELAS SUAS CHAVES VERDADEIRAS DO FIREBASE.
+        // NÃO ADICIONE NEM APAGUE VÍRGULAS, ASPAS OU CHAVETAS!
         // ==========================================
         const firebaseConfig = {
-            apiKey: "COLE_SUA_API_KEY_AQUI",
-            authDomain: "COLE_SEU_AUTH_DOMAIN_AQUI",
-            projectId: "COLE_SEU_PROJECT_ID_AQUI",
-            storageBucket: "COLE_SEU_STORAGE_BUCKET_AQUI",
-            messagingSenderId: "COLE_SEU_MESSAGING_SENDER_ID_AQUI",
-            appId: "COLE_SEU_APP_ID_AQUI"
+            apiKey: "COLE_AQUI",
+            authDomain: "COLE_AQUI",
+            projectId: "COLE_AQUI",
+            storageBucket: "COLE_AQUI",
+            messagingSenderId: "COLE_AQUI",
+            appId: "COLE_AQUI"
         };
+        // ==========================================
 
-        const isFirebaseConfigured = firebaseConfig.apiKey !== "" && firebaseConfig.apiKey !== "COLE_SUA_API_KEY_AQUI";
+        // Lógica de Inicialização segura (NÃO ADICIONE app = initializeApp AQUI)
+        const isFirebaseConfigured = firebaseConfig.apiKey !== "" && firebaseConfig.apiKey !== "COLE_AQUI";
         
         let db, auth;
         if (isFirebaseConfigured) {
@@ -116,7 +120,7 @@
         }
 
         // ==========================================
-        // NOVA API BASEADA NO FIREBASE (Substitui o Google Script)
+        // API BASEADA NO FIREBASE
         // ==========================================
         const api = {
             fetch: async (collectionName) => {
@@ -134,7 +138,7 @@
                     try {
                         const snap = await db.collection(c).get();
                         allData[c] = snap.docs.map(doc => ({ ID: doc.id, ...doc.data() }));
-                    } catch(e) {} // Ignora coleções que ainda não existem
+                    } catch(e) {} // Ignora coleções vazias
                 }
                 return allData;
             },
@@ -197,8 +201,8 @@
                             <div className="bg-white dark:bg-slate-800 p-10 rounded-[2rem] shadow-2xl text-center max-w-xl border-4 border-red-100 dark:border-red-900 w-full">
                                 <div className="w-24 h-24 bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-400 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner"><i className="ph-fill ph-warning-circle text-6xl"></i></div>
                                 <h2 className="text-3xl font-black text-gray-900 dark:text-white mb-4">Módulo Isolado</h2>
-                                <p className="text-gray-600 dark:text-gray-300 font-medium mb-8">Houve uma falha temporária. A sua conta não foi desconectada. Clique abaixo para limpar a cache visual.</p>
-                                <button onClick={() => { this.setState({ hasError: false }); }} className="w-full bg-red-600 hover:bg-red-700 text-white px-8 py-4 rounded-xl font-black shadow-lg transition flex items-center justify-center gap-3">
+                                <p className="text-gray-600 dark:text-gray-300 font-medium mb-8">Houve uma falha temporária ou um erro de digitação no código. Clique abaixo para limpar a cache visual.</p>
+                                <button onClick={() => { this.setState({ hasError: false }); window.location.reload(); }} className="w-full bg-red-600 hover:bg-red-700 text-white px-8 py-4 rounded-xl font-black shadow-lg transition flex items-center justify-center gap-3">
                                     <i className="ph-bold ph-arrows-clockwise text-xl"></i> Tentar Novamente
                                 </button>
                             </div>
@@ -226,7 +230,27 @@
             return strUrl;
         };
 
-        // --- COMPONENTE DE FORMULÁRIO MODAL GENÉRICO ---
+        // SCHEMAS DAS ABAS
+        const tabSchemas = {
+            'CORPO CLINICO': ['ID', 'Médico', 'Especialidade', 'Segmento', 'Código UNIMED', 'CRM', 'Cor_Selo', 'Foto_URL'],
+            'EXAMES DE IMAGEM': ['ID', 'Categoria', 'Código', 'Nome do Exame', 'Profissionais', 'Idade Permitida', 'Observações', 'Imagem_URL'],
+            'EXAMES DE IMAGEM E OUTROS': ['ID', 'Código', 'Descrição', 'Valor', 'Prazo de Laudo', 'Onde Encontrar', 'Imagem_URL'],
+            'CONSULTA E PROCEDIMENTOS': ['ID', 'Código', 'Consulta/Procedimento', 'Descrição', 'Preparo', 'Material Utilizado', 'Valor Particular', 'Imagem_URL'],
+            'EXAMES LABORATORIAIS': ['ID', 'Código', 'Procedimento', 'Valor', 'Prazo de Liberação', 'Preparo', 'Imagem_URL'],
+            'CONTATOS': ['ID', 'Local/Setor', 'Cor_Fundo', 'Ramal', 'Contatos Gerais', 'E-mails', 'Outros'],
+            'SENHAS E LOGINS GERAIS': ['ID', 'Nome do Sistema', 'Link do Sistema', 'Login', 'Senha', 'Observações'],
+            'REMOÇÕES': ['ID', 'Nome do Hospital/Clínica', 'Contato', 'Local', 'Informações Importantes', 'Convênios Atendidos', 'Imagem_URL'],
+            'INSTITUTOS': ['ID', 'Profissional', 'Especialidade', 'CRM/URA', 'Valores'],
+            'NOVIDADES_E_EVENTOS': ['ID', 'Tipo', 'Título', 'Mensagem', 'Data de Publicação', 'Imagem_URL'],
+            'CONTROLE_ATENDIMENTOS': ['ID', 'Profissional', 'Convênio', 'Qtd_Atual', 'Limite_Max'],
+            'USUARIOS': ['ID', 'Nome Completo', 'E-mail', 'Senha', 'Nível de Acesso', 'Data de Nascimento', 'Foto_Perfil_URL', 'Status'],
+            'ESCALAS': ['ID', 'Tipo_Profissional', 'Nome_Profissional', 'Data', 'Turno', 'Horario', 'Unidade', 'Setor_Consultorio', 'Status', 'Tipo_Atendimento'],
+            'CHAT_MENSAGENS': ['ID', 'Data_Hora', 'Nome', 'Mensagem', 'Destinatario'],
+            'LEMBRETES_HORA': ['ID', 'Hora', 'Mensagem'],
+            'CONFIGURACOES': ['ID', 'Chave', 'Valor'],
+            'MURAL_AVISOS': ['ID', 'Título', 'Subtítulo', 'Imagem_URL', 'Link', 'Ativo']
+        };
+
         const ModalForm = ({ title, schema, formData, setFormData, onSave, onClose, loading }) => {
             return (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 glass-modal animate-fade-in" onMouseDown={onClose}>
@@ -281,7 +305,6 @@
             )
         };
 
-        // --- ABA: MURAL E AVISOS GRANDES (PATROCINADORES) ---
         const MuralAvisosView = ({ data, canEdit, openModal, handleDelete }) => {
             const safeData = Array.isArray(data) ? data : [];
             const ativos = safeData.filter(item => item && typeof item === 'object' && safeString(item.Ativo).toLowerCase() !== 'não' && safeString(item.Ativo).toLowerCase() !== 'nao');
@@ -329,19 +352,16 @@
             );
         };
 
-        // --- TABELA DE MATRIZ DE CONVÊNIOS PERFEITA E BLINDADA ---
         const ConveniosMatrixView = ({ data, canEdit, openModal, handleDelete, schema }) => {
             const safeData = Array.isArray(data) ? data : [];
             const [search, setSearch] = useState('');
             
-            // Garantir as chaves do Firebase
             let allKeys = schema && schema.length > 0 ? schema : ['ID', 'Procedimento'];
             if (safeData.length > 0 && typeof safeData[0] === 'object' && safeData[0] !== null) {
                 const dataKeys = Object.keys(safeData[0]);
                 allKeys = [...new Set([...allKeys, ...dataKeys])];
             }
 
-            // Descobre a coluna do Procedimento de forma inquebrável
             let procColName = 'Procedimento';
             const specificCol = allKeys.find(k => k !== 'ID' && (safeString(k).toLowerCase().includes('procedimento') || safeString(k).toLowerCase().includes('convênio') || safeString(k).toLowerCase().includes('serviço')));
             if (specificCol) {
@@ -686,6 +706,39 @@
                                 </div>
                             </div>
                         ))}
+                    </div>
+                </div>
+            )
+        };
+
+        const ClockWidget = ({ lembretesData }) => {
+            const [time, setTime] = useState(new Date());
+            useEffect(() => { const timer = setInterval(() => setTime(new Date()), 1000); return () => clearInterval(timer); }, []);
+            
+            const hour = time.getHours();
+            let periodStr = 'Bom dia'; let icon = 'ph-sun'; let bgClass = 'bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-200';
+            
+            if (hour >= 12 && hour < 18) { periodStr = 'Boa tarde'; icon = 'ph-cloud-sun'; bgClass = 'bg-orange-50 border-orange-200 text-orange-800 dark:bg-orange-900/30 dark:border-orange-800 dark:text-orange-200'; }
+            else if (hour >= 18 || hour < 6) { periodStr = 'Boa noite'; icon = 'ph-moon-stars'; bgClass = 'bg-indigo-900 border-indigo-700 text-indigo-100 dark:bg-slate-800 dark:border-slate-700 dark:text-indigo-200'; }
+
+            const lembretes = Array.isArray(lembretesData) ? lembretesData : [];
+            const lembreteAtual = lembretes.find(l => l && typeof l === 'object' && parseInt(safeString(l.Hora) || -1) === hour);
+            const msg = lembreteAtual ? safeString(lembreteAtual.Mensagem) : 'Tenha um excelente turno de trabalho!';
+
+            return (
+                <div className={`p-6 rounded-custom border-2 shadow-sm flex items-center justify-between transition-colors duration-1000 ${bgClass}`}>
+                    <div className="flex items-center gap-5">
+                        <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center shadow-inner">
+                            <i className={`ph-fill ${icon} text-4xl animate-spin-slow`}></i>
+                        </div>
+                        <div>
+                            <h2 className="text-4xl font-black tracking-tighter">{time.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit', second:'2-digit'})}</h2>
+                            <p className="text-sm font-bold uppercase tracking-widest opacity-80 mt-1">{periodStr}</p>
+                        </div>
+                    </div>
+                    <div className="hidden md:flex flex-col items-end max-w-xs text-right border-l-2 border-white/20 pl-6">
+                        <span className="text-[10px] font-black uppercase tracking-widest opacity-60 mb-1 flex items-center gap-1"><i className="ph-fill ph-bell-ringing animate-pulse"></i> Lembrete da Hora</span>
+                        <p className="text-base font-bold leading-tight">{msg}</p>
                     </div>
                 </div>
             )
@@ -1055,7 +1108,6 @@
             const [search, setSearch] = useState('');
             const [currentSchema, setCurrentSchema] = useState([]);
             
-            // Para as abas dinâmicas como CONVÊNIOS
             let dynamicKeys = ['ID'];
             if (safeData.length > 0 && typeof safeData[0] === 'object' && safeData[0] !== null) {
                 dynamicKeys = Object.keys(safeData[0]);
@@ -1066,7 +1118,6 @@
             const nivelKey = user && typeof user === 'object' ? Object.keys(user).find(k => safeString(k).toLowerCase().includes('acesso')) : null;
             const canEdit = nivelKey && ['admin', 'supervisor', 'supervisão'].some(role => safeString(user[nivelKey]).toLowerCase().includes(role));
 
-            // Pesquisa inteligente
             const filteredData = safeData.filter(row => row && typeof row === 'object' && Object.values(row).some(val => safeString(val).toLowerCase().includes(search.toLowerCase())));
 
             const openModal = (row = null, customSchema = null) => {
@@ -1092,7 +1143,6 @@
                 }
             };
 
-            // Roteamento de Views Especiais
             if(tabName === 'CONVÊNIOS') return <><ConveniosMatrixView data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} schema={schema} /> {isModalOpen && <ModalForm title="Regra de Convênio" schema={currentSchema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
             if(tabName === 'CORPO CLINICO') return <><CorpoClinicoCards data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} /> {isModalOpen && <ModalForm title="Médico" schema={schema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
             if(tabName === 'CONTATOS') return <><ContatosCards data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} /> {isModalOpen && <ModalForm title="Contato" schema={schema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
@@ -1100,7 +1150,6 @@
             if(tabName === 'CONSULTA E PROCEDIMENTOS') return <><ConsultasView data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} /> {isModalOpen && <ModalForm title="Procedimento" schema={schema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
             if(tabName === 'MURAL_AVISOS') return <><MuralAvisosView data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} /> {isModalOpen && <ModalForm title="Anúncio / Aviso" schema={schema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
 
-            // Fallback para Tabela Genérica (Exames, Institutos, Remoções)
             return (
                 <>
                     <DefaultTableView title={title} schema={schema} filteredData={filteredData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} search={search} setSearch={setSearch} />
@@ -1244,7 +1293,6 @@
             const letreiros = Array.isArray(sheetData['NOVIDADES_E_EVENTOS']) ? sheetData['NOVIDADES_E_EVENTOS'].filter(n => n && (safeString(n.Tipo) === 'Urgente' || safeString(n.Tipo) === 'Letreiro')) : [];
             const banners = Array.isArray(sheetData['NOVIDADES_E_EVENTOS']) ? sheetData['NOVIDADES_E_EVENTOS'].filter(n => n && safeString(n.Tipo) !== 'Urgente' && safeString(n.Tipo) !== 'Letreiro' && (n.Título || n.Mensagem)) : [];
 
-            // Define o Titulo correto para a tabela que está aberta
             const foundMenu = menus.concat(adminMenus).find(m => m.id === activeTab);
             const titleTab = foundMenu ? foundMenu.label : activeTab;
 
