@@ -10,7 +10,7 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <script>
-        const VERSAO_ATUAL = "3.0.0";
+        const VERSAO_ATUAL = "3.0.1"; // Versão atualizada para forçar novo cache
         if (window.location.search.indexOf('v=' + VERSAO_ATUAL) === -1) {
             localStorage.clear();
             sessionStorage.clear();
@@ -94,15 +94,13 @@
 <body class="text-gray-800 dark:text-slate-100">
     <div id="root"></div>
 
-    <script type="text/babel" data-presets="react">
-        const { useState, useEffect, useMemo, useRef, Component } = React;
-        const generateId = () => Math.random().toString(36).substr(2, 9);
-
-        // ==========================================
-        // CONFIGURAÇÃO DO FIREBASE (AS SUAS CHAVES EXATAS!)
-        // ==========================================
+    <!-- ========================================== -->
+    <!-- BLOCO 1: CONFIGURAÇÃO BLINDADA DO FIREBASE -->
+    <!-- Este bloco está fora do React para evitar que o navegador o esconda -->
+    <!-- ========================================== -->
+    <script>
         const firebaseConfig = {
-            apiKey: "AIzaSyArUJk5o9OYfmMqRZl2kBaFfvRXFZcW3cE",
+            apiKey: "AIzaSyArUJk5o90YfmMqRZl2kBaFfvRXFZcW3cE",
             authDomain: "portal-sao-vicente.firebaseapp.com",
             projectId: "portal-sao-vicente",
             storageBucket: "portal-sao-vicente.firebasestorage.app",
@@ -110,18 +108,31 @@
             appId: "1:52988900084:web:9f5f2d494c22b10eb2a4a1"
         };
 
-        let db = null;
-        let auth = null;
+        // Salva as conexões globalmente na janela (window)
+        window.isFirebaseConfigured = firebaseConfig.apiKey && firebaseConfig.apiKey !== "COLE_AQUI";
+        window.db = null;
+        window.auth = null;
 
-        try {
-            if (!firebase.apps.length) {
-                firebase.initializeApp(firebaseConfig);
+        if (window.isFirebaseConfigured) {
+            try {
+                if (!firebase.apps.length) {
+                    firebase.initializeApp(firebaseConfig);
+                }
+                window.db = firebase.firestore();
+                window.auth = firebase.auth();
+                console.log("Firebase conectado globalmente com sucesso!");
+            } catch (error) {
+                console.error("Erro crítico ao inicializar Firebase:", error);
             }
-            db = firebase.firestore();
-            auth = firebase.auth();
-        } catch (error) {
-            console.error("Erro crítico ao inicializar Firebase:", error);
         }
+    </script>
+
+    <!-- ========================================== -->
+    <!-- BLOCO 2: APLICAÇÃO DO PORTAL (REACT)       -->
+    <!-- ========================================== -->
+    <script type="text/babel" data-presets="react">
+        const { useState, useEffect, useMemo, useRef, Component } = React;
+        const generateId = () => Math.random().toString(36).substr(2, 9);
 
         class ErrorBoundary extends Component {
             constructor(props) { super(props); this.state = { hasError: false, errorInfo: null }; }
@@ -134,7 +145,7 @@
                             <div className="bg-white dark:bg-slate-800 p-10 rounded-[2rem] shadow-2xl text-center max-w-xl border border-red-200">
                                 <div className="w-24 h-24 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-6"><i className="ph-fill ph-warning-circle text-6xl"></i></div>
                                 <h2 className="text-2xl font-black mb-4">Módulo Indisponível</h2>
-                                <p className="text-gray-500 mb-8">Ocorreu um erro ao renderizar este bloco.</p>
+                                <p className="text-gray-500 mb-8">Ocorreu um erro ao renderizar este bloco. Tente limpar o cache do navegador (Ctrl+F5).</p>
                                 <button onClick={() => { this.setState({ hasError: false }); window.location.reload(); }} className="w-full bg-red-600 text-white py-4 rounded-xl font-black shadow-lg">Tentar Novamente</button>
                             </div>
                         </div>
@@ -178,48 +189,54 @@
 
         const api = {
             fetch: async (colName) => {
-                if(!db) return [];
+                if(!window.isFirebaseConfigured || !window.db) return [];
                 try {
-                    const snap = await db.collection(colName).get();
+                    const snap = await window.db.collection(colName).get();
                     return snap.docs.map(doc => ({ ID: doc.id, ...doc.data() }));
                 } catch (e) { return []; }
             },
             fetchAll: async () => {
-                if(!db) return {};
+                if(!window.isFirebaseConfigured || !window.db) return {};
                 let allData = {};
                 for (let c of Object.keys(tabSchemas)) {
                     try {
-                        const snap = await db.collection(c).get();
+                        const snap = await window.db.collection(c).get();
                         allData[c] = snap.docs.map(doc => ({ ID: doc.id, ...doc.data() }));
                     } catch(e) {}
                 }
                 return allData;
             },
-            login: async (email, password) => {
-                if(!auth) return { success: false, message: 'O Firebase não iniciou corretamente.' };
+            login: async (rawEmail, password) => {
+                if(!window.isFirebaseConfigured || !window.auth) return { success: false, message: 'As chaves do Firebase não estão configuradas corretamente na Linha 80.' };
                 try {
-                    await auth.signInWithEmailAndPassword(email, password);
-                    const userDoc = await db.collection('USUARIOS').where('E-mail', '==', email).get();
+                    // LIMPEZA DE ESPAÇOS NO E-MAIL (MUITO IMPORTANTE PARA EVITAR ERROS)
+                    const email = rawEmail.trim(); 
+                    
+                    await window.auth.signInWithEmailAndPassword(email, password);
+                    const userDoc = await window.db.collection('USUARIOS').where('E-mail', '==', email).get();
                     let userData = { 'E-mail': email, 'Nome Completo': email.split('@')[0], 'Nível de Acesso': 'Admin' };
                     if (!userDoc.empty) {
                         userData = { ID: userDoc.docs[0].id, ...userDoc.docs[0].data() };
                         if (userData.Status && String(userData.Status).toLowerCase() !== 'ativo') {
-                            await auth.signOut(); return { success: false, message: 'Sua conta está inativa.' };
+                            await window.auth.signOut(); return { success: false, message: 'Sua conta está inativa.' };
                         }
                     }
                     return { success: true, user: userData };
                 } catch (error) { 
                     console.error("Erro de Autenticação:", error);
                     let msg = "E-mail ou senha incorretos.";
-                    if (error.code === 'auth/user-not-found') msg = "Usuário não existe no painel Authentication.";
-                    if (error.code === 'auth/wrong-password') msg = "Senha inválida.";
-                    if (error.code === 'auth/invalid-email') msg = "Formato de e-mail inválido.";
-                    if (error.code === 'auth/operation-not-allowed') msg = "Você não ativou a opção de Login por E-mail no Firebase!";
+                    
+                    if (error.code === 'auth/user-not-found') msg = "Usuário não existe no painel Authentication do Firebase.";
+                    if (error.code === 'auth/wrong-password') msg = "A senha digitada está incorreta.";
+                    if (error.code === 'auth/invalid-email') msg = "O formato do e-mail é inválido. Verifique se há erros de digitação.";
+                    if (error.code === 'auth/invalid-credential') msg = "Credenciais inválidas. O e-mail ou a senha estão incorretos.";
+                    if (error.code === 'auth/operation-not-allowed') msg = "Você não ativou a opção de Login por E-mail no Firebase (Aba Sign-in method)!";
+                    
                     return { success: false, message: msg }; 
                 }
             },
             saveRecord: async (colName, data, isEdit) => {
-                if(!db) return { success: false };
+                if(!window.isFirebaseConfigured || !window.db) return { success: false };
                 try {
                     let docData = { ...data };
                     // Limpa espaços vazios apenas nas extremidades (trim), permitindo espaços no meio
@@ -227,14 +244,14 @@
                     let id = docData.ID; delete docData.ID;
                     Object.keys(docData).forEach(key => docData[key] === undefined && delete docData[key]);
 
-                    if (isEdit && id) await db.collection(colName).doc(id).update(docData);
-                    else await db.collection(colName).add(docData);
+                    if (isEdit && id) await window.db.collection(colName).doc(id).update(docData);
+                    else await window.db.collection(colName).add(docData);
                     return { success: true };
                 } catch (e) { return { success: false }; }
             },
             deleteRecord: async (colName, id) => {
-                if(!db) return { success: false };
-                try { await db.collection(colName).doc(id).delete(); return { success: true }; } 
+                if(!window.isFirebaseConfigured || !window.db) return { success: false };
+                try { await window.db.collection(colName).doc(id).delete(); return { success: true }; } 
                 catch (e) { return { success: false }; }
             }
         };
@@ -983,7 +1000,7 @@
                                 <h1 className="text-4xl font-black">São Vicente</h1>
                             </div>
                             <form onSubmit={handleLogin} className="p-10 space-y-6">
-                                <div><label className="block text-xs font-black text-gray-400 mb-2 uppercase">E-mail</label><input name="email" type="text" className="w-full p-4 bg-gray-50 border rounded-custom outline-none font-bold text-gray-900" required /></div>
+                                <div><label className="block text-xs font-black text-gray-400 mb-2 uppercase">E-mail</label><input name="email" type="email" className="w-full p-4 bg-gray-50 border rounded-custom outline-none font-bold text-gray-900" required /></div>
                                 <div><label className="block text-xs font-black text-gray-400 mb-2 uppercase">Senha</label><input name="password" type="password" className="w-full p-4 bg-gray-50 border rounded-custom outline-none font-bold text-gray-900" required /></div>
                                 <button type="submit" className="w-full bg-secondary text-white font-black py-5 rounded-custom shadow-xl">{loading ? 'A carregar...' : 'Acessar'}</button>
                             </form>
