@@ -18,12 +18,14 @@
                         'pulse-fast': 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite', 
                         'fade-in': 'fadeIn 0.4s ease-out', 
                         'pop-in': 'popIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                        'slide-up': 'slideUp 0.4s ease-out forwards',
                         'ticker': 'ticker 25s linear infinite',
                         'spin-slow': 'spin 8s linear infinite'
                     },
                     keyframes: { 
                         fadeIn: { '0%': { opacity: '0', transform: 'translateY(10px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
                         popIn: { '0%': { opacity: '0', transform: 'scale(0.95)' }, '100%': { opacity: '1', transform: 'scale(1)' } },
+                        slideUp: { '0%': { opacity: '0', transform: 'translateY(100%)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
                         ticker: { '0%': { transform: 'translateX(100%)' }, '100%': { transform: 'translateX(-100%)' } }
                     }
                 }
@@ -90,7 +92,7 @@
         };
         // ==========================================
 
-        const isFirebaseConfigured = firebaseConfig.apiKey !== "" && firebaseConfig.apiKey !== "COLE_AQUI" && !firebaseConfig.apiKey.includes("AIzaSy");
+        const isFirebaseConfigured = firebaseConfig.apiKey && firebaseConfig.apiKey !== "COLE_AQUI" && firebaseConfig.apiKey !== "";
         
         let db, auth;
         if (isFirebaseConfigured) {
@@ -185,7 +187,15 @@
                     }
                     return { success: true, user: userData };
                 } catch (error) { 
-                    return { success: false, message: `Erro: E-mail ou senha incorretos.` }; 
+                    console.error("Erro detalhado do Firebase Auth:", error);
+                    let msg = "E-mail ou senha incorretos.";
+                    
+                    if (error.code === 'auth/user-not-found') msg = "Este e-mail não existe na aba Authentication do Firebase.";
+                    if (error.code === 'auth/wrong-password') msg = "Senha incorreta.";
+                    if (error.code === 'auth/invalid-email') msg = "O formato do e-mail é inválido.";
+                    if (error.code === 'auth/operation-not-allowed') msg = "Erro Crítico: Você esqueceu de ativar o login por E-mail/Senha lá no Firebase!";
+                    
+                    return { success: false, message: `Erro Firebase: ${msg} (${error.code})` }; 
                 }
             },
             saveRecord: async (colName, data, isEdit) => {
@@ -195,6 +205,7 @@
                     Object.keys(docData).forEach(k => { if(typeof docData[k] === 'string') docData[k] = docData[k].trim(); });
                     let id = docData.ID; delete docData.ID;
                     Object.keys(docData).forEach(key => docData[key] === undefined && delete docData[key]);
+
                     if (isEdit && id) await db.collection(colName).doc(id).update(docData);
                     else await db.collection(colName).add(docData);
                     return { success: true };
@@ -366,6 +377,7 @@
 
             const insurances = allKeys.filter(k => k !== 'ID' && k !== procColName);
             const filteredData = safeData.filter(row => row && typeof row === 'object' && safeString(row[procColName]).toLowerCase().includes(search.toLowerCase()));
+
             const headerColors = ['#2563eb', '#0ea5e9', '#0d9488', '#10b981', '#8b5cf6', '#d946ef', '#f43f5e', '#f97316'];
 
             return (
@@ -876,6 +888,7 @@
             if (safeData.length > 0 && typeof safeData[0] === 'object' && safeData[0] !== null) {
                 dynamicKeys = Object.keys(safeData[0]);
             }
+            
             const schema = tabSchemas[tabName] || dynamicKeys || ['ID'];
             
             const nivelKey = user && typeof user === 'object' ? Object.keys(user).find(k => safeString(k).toLowerCase().includes('acesso')) : null;
@@ -1036,7 +1049,7 @@
 
             return (
                 <div className="min-h-screen flex flex-col md:flex-row overflow-hidden relative selection:bg-primary selection:text-white">
-                    {toast.show && <div className="fixed bottom-8 right-8 z-[9999] px-8 py-5 rounded-custom shadow-2xl text-white font-black text-lg animate-slide-up bg-green-500"><i className="ph-bold ph-check-circle text-2xl"></i> {toast.message}</div>}
+                    {toast.show && <div className={`fixed bottom-8 right-8 z-[9999] px-8 py-5 rounded-custom shadow-2xl text-white font-black text-lg animate-slide-up bg-green-500`}><i className="ph-bold ph-check-circle text-2xl"></i> {toast.message}</div>}
 
                     {activeTab === 'Home' && Array.isArray(sheetData['ANIVERSARIOS']) && sheetData['ANIVERSARIOS'].filter(u=>u && safeString(u['Data de Nascimento']).substring(0,5) === new Date().toLocaleDateString('pt-BR').substring(0,5)).map((a,i) => (
                         <div key={i} className={`balloon flex flex-col items-center ${i%2===0?'left-[10%] animate-[rise_10s_infinite]':'right-[15%] animate-[rise_13s_infinite_2s]'}`}><span className="text-7xl drop-shadow-xl filter">🎈</span><span className="bg-white/90 dark:bg-slate-800/90 backdrop-blur border dark:border-slate-700 px-4 py-1.5 rounded-full text-xs font-black text-purple-600 dark:text-purple-400 shadow-xl mt-2 uppercase tracking-widest">Parabéns {safeString(a['Nome Completo']).split(' ')[0]}!</span></div>
@@ -1117,7 +1130,7 @@
                             {activeTab === 'DESIGN_INTERFACE' && !loading && <DesignInterfacePanel sheetData={sheetData} onRefresh={()=>loadData('CONFIGURACOES')} showToast={showToast} />}
 
                             {activeTab !== 'Home' && activeTab !== 'CHAT_MENSAGENS' && activeTab !== 'ESCALAS' && activeTab !== 'DESIGN_INTERFACE' && !loading && (
-                                <DataTableGeneric title={menus.concat(adminMenus).find(m=>m.id===activeTab)?.label} tabName={activeTab} data={sheetData[activeTab] || []} user={user} onRefresh={()=>loadData(activeTab)} showToast={showToast} />
+                                <DataTableGeneric title={titleTab} tabName={activeTab} data={sheetData[activeTab] || []} user={user} onRefresh={()=>loadData(activeTab)} showToast={showToast} />
                             )}
                         </ErrorBoundary>
                     </main>
