@@ -141,7 +141,7 @@
 
         const safeString = (val) => {
             if (val === null || val === undefined) return '';
-            return String(val); // Removido o .trim() para permitir espaços ao digitar!
+            return String(val); 
         };
 
         const formatImageUrl = (url) => {
@@ -154,14 +154,13 @@
             return strUrl;
         };
 
-        // SCHEMAS DEFINITIVOS E ROBUSTOS
         const tabSchemas = {
             'CORPO CLINICO': ['ID', 'Médico', 'Especialidade', 'Segmento', 'Código UNIMED', 'CRM', 'Cor_Selo', 'Foto_URL'],
             'EXAMES DE IMAGEM': ['ID', 'Categoria', 'Código', 'Nome do Exame', 'Profissionais', 'Idade Permitida', 'Observações', 'Imagem_URL'],
             'EXAMES DE IMAGEM E OUTROS': ['ID', 'Código', 'Descrição', 'Valor', 'Prazo de Laudo', 'Onde Encontrar', 'Imagem_URL'],
             'CONSULTA E PROCEDIMENTOS': ['ID', 'Código', 'Consulta/Procedimento', 'Descrição', 'Preparo', 'Material Utilizado', 'Valor Particular', 'Imagem_URL'],
             'EXAMES LABORATORIAIS': ['ID', 'Código', 'Procedimento', 'Valor', 'Prazo de Liberação', 'Preparo', 'Motivo_Indicacao'],
-            'CONTATOS': ['ID', 'Tipo', 'Local_Setor', 'Nome_Contato', 'Valor_Contato', 'Anotacoes'], // Atualizado para nova aba de contatos
+            'CONTATOS': ['ID', 'Tipo', 'Local_Setor', 'Nome_Contato', 'Valor_Contato', 'Anotacoes'], 
             'SENHAS E LOGINS GERAIS': ['ID', 'Nome do Sistema', 'Link do Sistema', 'Login', 'Senha', 'Observações'],
             'REMOÇÕES': ['ID', 'Nome do Hospital/Clínica', 'Contato', 'Local', 'Informações Importantes', 'Convênios Atendidos', 'Imagem_URL'],
             'INSTITUTOS': ['ID', 'Tabela_Instituto', 'Profissional', 'Especialidade', 'CRM_URA', 'Valores'],
@@ -203,17 +202,27 @@
                     if (!userDoc.empty) {
                         userData = { ID: userDoc.docs[0].id, ...userDoc.docs[0].data() };
                         if (userData.Status && String(userData.Status).toLowerCase() !== 'ativo') {
-                            await auth.signOut(); return { success: false, message: 'Usuário inativo.' };
+                            await auth.signOut(); return { success: false, message: 'Seu usuário está inativo no sistema.' };
                         }
                     }
                     return { success: true, user: userData };
-                } catch (error) { return { success: false, message: 'E-mail ou senha incorretos.' }; }
+                } catch (error) { 
+                    console.error("Erro detalhado do Firebase Auth:", error);
+                    let msg = "E-mail ou senha incorretos.";
+                    
+                    // Identificando o erro exato para ajudar o usuário!
+                    if (error.code === 'auth/user-not-found') msg = "Este e-mail não existe na aba Authentication do Firebase.";
+                    if (error.code === 'auth/wrong-password') msg = "Senha incorreta.";
+                    if (error.code === 'auth/invalid-email') msg = "O formato do e-mail é inválido.";
+                    if (error.code === 'auth/operation-not-allowed') msg = "Erro Crítico: Você esqueceu de ativar o login por E-mail/Senha lá no Firebase!";
+                    
+                    return { success: false, message: `Erro Firebase: ${msg} (${error.code})` }; 
+                }
             },
             saveRecord: async (colName, data, isEdit) => {
                 if(!isFirebaseConfigured) return { success: false };
                 try {
                     let docData = { ...data };
-                    // Limpar espaços vazios NAS PONTAS apenas ao salvar
                     Object.keys(docData).forEach(k => { if(typeof docData[k] === 'string') docData[k] = docData[k].trim(); });
                     
                     let id = docData.ID; delete docData.ID;
@@ -231,7 +240,6 @@
             }
         };
 
-        // --- MODAL FORMULARIO BLINDADO ---
         const ModalForm = ({ title, schema, formData, setFormData, onSave, onClose, loading }) => {
             return (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 glass-modal animate-fade-in" onMouseDown={onClose}>
@@ -292,8 +300,6 @@
                 </div>
             )
         };
-
-        // --- VIEWS TOTALMENTE REFORMULADAS ---
 
         const SplitView = ({ data, canEdit, openModal, handleDelete, schema, titleLabel, fieldsLeft, fieldsRight, imageField, descField }) => {
             const safeData = Array.isArray(data) ? data : [];
@@ -471,21 +477,13 @@
             const myName = safeString(user['Nome Completo']);
             const myId = user.ID;
 
-            // Busca supervisores se o usuário for colaborador
-            // Busca colaboradores que mandaram msg se o usuário for supervisor
             const chatLog = Array.isArray(chatData) ? chatData : [];
             
-            // Fórum Geral
             const isGeral = activeRoom === 'Geral';
             const mensagensRoom = chatLog.filter(m => {
                 if(isGeral) return m.Destinatario === 'Geral';
-                // Chat Direto: Eu sou o rementente para Room, ou Room é remetente para mim
                 return (m.Nome === myName && m.Destinatario === activeRoom) || (m.Nome === activeRoom && m.Destinatario === myName);
-            }).sort((a,b) => new Date(a.Data_Hora) - new Date(b.Data_Hora)); // Sort simplificado
-
-            // Obter Lista de Contatos para Chat Privado
-            // Simplificado para esta view: Qualquer pessoa pode falar com a "Supervisão" como entidade
-            const canais = ['Geral', isAdmin ? 'Caixa de Entrada' : 'Supervisão'];
+            }).sort((a,b) => new Date(a.Data_Hora) - new Date(b.Data_Hora));
 
             const handleSend = async (e) => {
                 e.preventDefault(); if(!msg)return;
@@ -508,8 +506,6 @@
                             </div>
                             <div onClick={()=>setActiveRoom(isAdmin?'Caixa de Entrada':'Supervisão')} className={`p-4 rounded-2xl cursor-pointer font-bold flex items-center justify-between transition ${activeRoom!=='Geral'?'bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-md':'hover:bg-gray-100 dark:hover:bg-slate-800'}`}>
                                 <div className="flex items-center gap-3"><div className="w-10 h-10 rounded-full bg-white/20 dark:bg-black/10 flex items-center justify-center"><i className="ph-fill ph-shield-star text-xl"></i></div> {isAdmin?'Caixa de Entrada':'Falar c/ Supervisão'}</div>
-                                {/* Badge de Notificação Exemplo */}
-                                <div className="bg-red-500 text-white text-[10px] w-6 h-6 flex items-center justify-center rounded-full font-black shadow-lg animate-bounce">1</div>
                             </div>
                         </div>
                     </div>
@@ -595,7 +591,6 @@
             const safeData = Array.isArray(data) ? data : [];
             const [search, setSearch] = useState('');
             
-            // Garantir as chaves de forma inquebrável
             let allKeys = schema && schema.length > 0 ? schema : ['ID', 'Procedimento'];
             if (safeData.length > 0 && typeof safeData[0] === 'object' && safeData[0] !== null) {
                 const dataKeys = Object.keys(safeData[0]);
@@ -740,11 +735,14 @@
             const [formData, setFormData] = useState({});
             const [loading, setLoading] = useState(false);
             const [search, setSearch] = useState('');
+            const [currentSchema, setCurrentSchema] = useState([]);
             
-            let schema = tabSchemas[tabName] || ['ID'];
-            if (schema.length === 1 && safeData.length > 0 && typeof safeData[0] === 'object') {
-                schema = [...new Set([...schema, ...Object.keys(safeData[0])])];
+            let dynamicKeys = ['ID'];
+            if (safeData.length > 0 && typeof safeData[0] === 'object' && safeData[0] !== null) {
+                dynamicKeys = Object.keys(safeData[0]);
             }
+            
+            const schema = tabSchemas[tabName] || dynamicKeys || ['ID'];
             
             const nivelKey = user && typeof user === 'object' ? Object.keys(user).find(k => safeString(k).toLowerCase().includes('acesso')) : null;
             const canEdit = nivelKey && ['admin', 'supervisor', 'supervisão'].some(role => safeString(user[nivelKey]).toLowerCase().includes(role));
@@ -755,7 +753,9 @@
                 let initial = {};
                 const s = customSchema || schema;
                 s.forEach(col => initial[col] = row ? safeString(row[col]) : '');
-                setFormData(initial); setIsModalOpen(true);
+                setFormData(initial);
+                setCurrentSchema(s);
+                setIsModalOpen(true);
             };
 
             const handleSave = async (e) => {
@@ -766,51 +766,28 @@
             };
 
             const handleDelete = async (id) => {
-                if(confirm('Tem certeza?')) {
+                if(confirm('Tem certeza que deseja excluir?')) {
                     const res = await api.deleteRecord(tabName, id);
-                    if (res && res.success) { onRefresh(tabName); showToast('Excluído!'); }
+                    if (res && res.success) { onRefresh(tabName); showToast('Excluído com sucesso!'); }
                 }
             };
 
-            // Roteamento Automático Inteligente
-            if(tabName === 'CONVÊNIOS') return <><ConveniosMatrixView data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} schema={schema} /> {isModalOpen && <ModalForm title="Regra" schema={schema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
+            if(tabName === 'CONVÊNIOS') return <><ConveniosMatrixView data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} schema={schema} /> {isModalOpen && <ModalForm title="Regra de Convênio" schema={currentSchema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
             if(tabName === 'CORPO CLINICO') return <><CorpoClinicoCards data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} /> {isModalOpen && <ModalForm title="Médico" schema={schema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
             if(tabName === 'CONTATOS') return <><ContatosViewTabs data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} schema={schema} /> {isModalOpen && <ModalForm title="Contato" schema={schema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
-            if(tabName === 'MURAL_AVISOS') return <><MuralAvisosView data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} /> {isModalOpen && <ModalForm title="Aviso" schema={schema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
             if(tabName === 'SENHAS E LOGINS GERAIS') return <><SenhasView data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} showToast={showToast} /> {isModalOpen && <ModalForm title="Acesso" schema={schema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
-            
-            // Views Split Redesenhadas (List+Detail)
             if(tabName === 'CONSULTA E PROCEDIMENTOS') return <><SplitView data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} schema={schema} titleLabel="Consulta/Procedimento" fieldsLeft={['Código', 'Valor Particular']} fieldsRight={['Valor Particular', 'Preparo', 'Material Utilizado']} descField="Descrição" imageField="Imagem_URL" /> {isModalOpen && <ModalForm title="Proc." schema={schema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
             if(tabName === 'EXAMES LABORATORIAIS') return <><SplitView data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} schema={schema} titleLabel="Procedimento" fieldsLeft={['Código', 'Valor']} fieldsRight={['Valor', 'Prazo de Liberação', 'Preparo']} descField="Motivo_Indicacao" imageField="Imagem_URL" /> {isModalOpen && <ModalForm title="Lab." schema={schema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
             if(tabName === 'EXAMES DE IMAGEM E OUTROS') return <><SplitView data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} schema={schema} titleLabel="Descrição" fieldsLeft={['Código', 'Valor']} fieldsRight={['Valor', 'Prazo de Laudo', 'Onde Encontrar']} imageField="Imagem_URL" /> {isModalOpen && <ModalForm title="Exame/Laudo" schema={schema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
-            
-            // Views Folder Categories Redesenhadas
             if(tabName === 'EXAMES DE IMAGEM') return <><CategoryCardsView data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} schema={schema} categoryField="Categoria" titleField="Nome do Exame" imageField="Imagem_URL" /> {isModalOpen && <ModalForm title="Exame de Imagem" schema={schema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
             if(tabName === 'INSTITUTOS') return <><CategoryCardsView data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} schema={schema} categoryField="Tabela_Instituto" titleField="Profissional" /> {isModalOpen && <ModalForm title="Instituto/Tabela" schema={schema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
+            if(tabName === 'MURAL_AVISOS') return <><MuralAvisosView data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} /> {isModalOpen && <ModalForm title="Anúncio / Aviso" schema={schema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
 
-            // Fallback Genérico para o Resto
             return (
-                <div className="bg-white dark:bg-slate-800 rounded-custom shadow-sm border border-gray-100 dark:border-slate-700 overflow-hidden animate-fade-in">
-                    <div className="p-8 border-b border-gray-50 dark:border-slate-700 flex justify-between items-center bg-gray-50/50 dark:bg-slate-900/50">
-                        <h2 className="text-3xl font-black text-gray-900 dark:text-white">{title}</h2>
-                        <div className="flex gap-4"><input type="text" placeholder="Buscar..." value={search} onChange={e=>setSearch(e.target.value)} className="px-6 py-3 bg-white dark:bg-slate-900 rounded-full font-bold outline-none" />
-                        {canEdit && <button onClick={() => openModal(null, schema)} className="bg-primary text-white font-black px-8 py-3 rounded-full shadow-lg">Novo</button>}</div>
-                    </div>
-                    <div className="overflow-x-auto p-4">
-                        <table className="w-full text-left min-w-[800px]">
-                            <thead><tr className="text-gray-400 text-[10px] uppercase tracking-widest border-b dark:border-slate-700">{schema.filter(c=>safeString(c)!=='ID').map(c => <th key={c} className="p-4">{c}</th>)}<th></th></tr></thead>
-                            <tbody className="text-sm font-bold">
-                                {filteredData.map((row, i) => (
-                                    <tr key={i} className="border-b dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700/30">
-                                        {schema.filter(c=>safeString(c)!=='ID').map(c => <td key={c} className="p-4">{row[c]?.includes('http')?<img src={formatImageUrl(row[c])} className="h-10 rounded-lg"/>:safeString(row[c])}</td>)}
-                                        {canEdit && <td className="p-4 text-right"><button onClick={()=>openModal(row, schema)} className="text-blue-500 p-2"><i className="ph-bold ph-pencil-simple"></i></button><button onClick={()=>handleDelete(row.ID)} className="text-red-500 p-2"><i className="ph-bold ph-trash"></i></button></td>}
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                    {isModalOpen && <ModalForm title={title} schema={schema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}
-                </div>
+                <>
+                    <DefaultTableView title={title} schema={schema} filteredData={filteredData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} search={search} setSearch={setSearch} />
+                    {isModalOpen && <ModalForm title={title} schema={currentSchema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}
+                </>
             );
         };
 
@@ -819,9 +796,23 @@
             const [activeTab, setActiveTab] = useState('Home');
             const [loading, setLoading] = useState(false);
             const [sheetData, setSheetData] = useState({});
-            const [darkMode, setDarkMode] = useState(false);
+            const [chatMessage, setChatMessage] = useState('');
+            const [chatFilter, setChatFilter] = useState('Geral'); 
+            const [searchGlobal, setSearchGlobal] = useState('');
+            
+            const [darkMode, setDarkMode] = useState(() => {
+                const saved = localStorage.getItem('theme');
+                if(saved) return saved === 'dark';
+                return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            });
+            
             const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
             const showToast = (msg, type = 'success') => { setToast({ show: true, message: msg, type }); setTimeout(() => setToast(p => ({ ...p, show: false })), 3500); };
+
+            useEffect(() => {
+                if (darkMode) { document.documentElement.classList.add('dark'); localStorage.setItem('theme', 'dark'); } 
+                else { document.documentElement.classList.remove('dark'); localStorage.setItem('theme', 'light'); }
+            }, [darkMode]);
 
             useEffect(() => {
                 const init = async () => {
@@ -926,7 +917,6 @@
                                 <div className="space-y-12 animate-fade-in max-w-[1400px] mx-auto">
                                     <ClockWidget lembretesData={sheetData['LEMBRETES_HORA']} />
                                     
-                                    {/* Alertas Unimed */}
                                     {Array.isArray(sheetData['CONTROLE_ATENDIMENTOS']) && sheetData['CONTROLE_ATENDIMENTOS'].filter(a => Number(a.Limite_Max||0) > 0 && (Number(a.Qtd_Atual||0)/Number(a.Limite_Max||1)) >= 0.9).length > 0 && (
                                         <div>
                                             <h3 className="text-2xl font-black text-red-600 flex items-center gap-3 mb-6"><i className="ph-fill ph-warning-circle animate-pulse"></i> Alertas Unimed</h3>
