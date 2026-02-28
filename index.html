@@ -92,11 +92,10 @@
         };
         // ==========================================
 
-        var isFirebaseConfigured = firebaseConfig.apiKey !== "" && firebaseConfig.apiKey !== "COLE_AQUI";
+        const isFirebaseConfigured = firebaseConfig.apiKey !== "" && firebaseConfig.apiKey !== "COLE_AQUI" && !firebaseConfig.apiKey.includes("AIzaSySuaChaveGiganteAqui");
         
-        var db = null;
-        var auth = null;
-        var firebaseInitError = null;
+        let db = null;
+        let auth = null;
 
         if (isFirebaseConfigured) {
             try {
@@ -107,7 +106,6 @@
                 auth = firebase.auth();
             } catch (error) {
                 console.error("Erro ao inicializar Firebase:", error);
-                firebaseInitError = error.message;
             }
         }
 
@@ -122,7 +120,7 @@
                             <div className="bg-white dark:bg-slate-800 p-10 rounded-[2rem] shadow-2xl text-center max-w-xl border border-red-200">
                                 <div className="w-24 h-24 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-6"><i className="ph-fill ph-warning-circle text-6xl"></i></div>
                                 <h2 className="text-2xl font-black mb-4">Módulo Indisponível</h2>
-                                <p className="text-gray-500 mb-8">Pode ter faltado algum dado no banco. Clique abaixo para limpar a cache.</p>
+                                <p className="text-gray-500 mb-8">Ocorreu um erro ao carregar esta tela. Clique abaixo para limpar a cache.</p>
                                 <button onClick={() => { this.setState({ hasError: false }); window.location.reload(); }} className="w-full bg-red-600 text-white py-4 rounded-xl font-black">Tentar Novamente</button>
                             </div>
                         </div>
@@ -166,14 +164,14 @@
 
         const api = {
             fetch: async (colName) => {
-                if(!db) return [];
+                if(!isFirebaseConfigured || !db) return [];
                 try {
                     const snap = await db.collection(colName).get();
                     return snap.docs.map(doc => ({ ID: doc.id, ...doc.data() }));
                 } catch (e) { return []; }
             },
             fetchAll: async () => {
-                if(!db) return {};
+                if(!isFirebaseConfigured || !db) return {};
                 let allData = {};
                 for (let c of Object.keys(tabSchemas)) {
                     try {
@@ -184,7 +182,7 @@
                 return allData;
             },
             login: async (email, password) => {
-                if(!isFirebaseConfigured || firebaseInitError || !auth) return { success: false, message: 'Adicione suas chaves do Firebase na Linha 98.' };
+                if(!isFirebaseConfigured || !auth) return { success: false, message: 'Adicione as chaves corretas do Firebase na Linha 98.' };
                 try {
                     await auth.signInWithEmailAndPassword(email, password);
                     const userDoc = await db.collection('USUARIOS').where('E-mail', '==', email).get();
@@ -192,7 +190,7 @@
                     if (!userDoc.empty) {
                         userData = { ID: userDoc.docs[0].id, ...userDoc.docs[0].data() };
                         if (userData.Status && String(userData.Status).toLowerCase() !== 'ativo') {
-                            await auth.signOut(); return { success: false, message: 'Usuário inativo.' };
+                            await auth.signOut(); return { success: false, message: 'Seu usuário está inativo no sistema.' };
                         }
                     }
                     return { success: true, user: userData };
@@ -207,7 +205,7 @@
                 }
             },
             saveRecord: async (colName, data, isEdit) => {
-                if(!db) return { success: false };
+                if(!isFirebaseConfigured || !db) return { success: false };
                 try {
                     let docData = { ...data };
                     Object.keys(docData).forEach(k => { if(typeof docData[k] === 'string') docData[k] = docData[k].trim(); });
@@ -220,7 +218,7 @@
                 } catch (e) { return { success: false }; }
             },
             deleteRecord: async (colName, id) => {
-                if(!db) return { success: false };
+                if(!isFirebaseConfigured || !db) return { success: false };
                 try { await db.collection(colName).doc(id).delete(); return { success: true }; } 
                 catch (e) { return { success: false }; }
             }
@@ -277,6 +275,7 @@
                                     return (
                                         <div key={idx} className={isLong ? 'md:col-span-2' : ''}>
                                             <label className="block text-xs font-black text-gray-400 dark:text-slate-400 mb-2 uppercase tracking-widest">{colName}</label>
+                                            
                                             {colName === 'Layout' && title.includes('Aviso') ? (
                                                 <select className="w-full px-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-custom outline-none focus:ring-2 focus:ring-primary font-bold text-gray-800 dark:text-white" value={safeString(formData[colName])} onChange={(e) => setFormData({...formData, [colName]: e.target.value})}>
                                                     <option value="Padrão">Padrão</option><option value="Imagem Grande">Imagem Grande (Banner)</option><option value="Só Texto">Só Texto</option>
@@ -836,68 +835,6 @@
                         </table>
                     </div>
                 </div>
-            );
-        };
-
-        const DataTableGeneric = ({ title, tabName, data, user, onRefresh, showToast }) => {
-            const safeData = Array.isArray(data) ? data : [];
-            const [isModalOpen, setIsModalOpen] = useState(false);
-            const [formData, setFormData] = useState({});
-            const [loading, setLoading] = useState(false);
-            const [search, setSearch] = useState('');
-            const [currentSchema, setCurrentSchema] = useState([]);
-            
-            let dynamicKeys = ['ID'];
-            if (safeData.length > 0 && typeof safeData[0] === 'object' && safeData[0] !== null) {
-                dynamicKeys = Object.keys(safeData[0]);
-            }
-            
-            const schema = tabSchemas[tabName] || dynamicKeys || ['ID'];
-            
-            const nivelKey = user && typeof user === 'object' ? Object.keys(user).find(k => safeString(k).toLowerCase().includes('acesso')) : null;
-            const canEdit = nivelKey && ['admin', 'supervisor', 'supervisão'].some(role => safeString(user[nivelKey]).toLowerCase().includes(role));
-
-            const filteredData = safeData.filter(row => row && typeof row === 'object' && Object.values(row).some(val => safeString(val).toLowerCase().includes(search.toLowerCase())));
-
-            const openModal = (row = null, customSchema = null) => {
-                let initial = {};
-                const s = customSchema || schema;
-                s.forEach(col => initial[col] = row ? safeString(row[col]) : '');
-                setFormData(initial);
-                setCurrentSchema(s);
-                setIsModalOpen(true);
-            };
-
-            const handleSave = async (e) => {
-                e.preventDefault(); setLoading(true);
-                const res = await api.saveRecord(tabName, formData, !!formData.ID);
-                setLoading(false);
-                if (res && res.success) { setIsModalOpen(false); onRefresh(tabName); showToast('Salvo com sucesso!'); } else { showToast('Erro ao salvar.', 'error') }
-            };
-
-            const handleDelete = async (id) => {
-                if(confirm('Tem certeza que deseja excluir?')) {
-                    const res = await api.deleteRecord(tabName, id);
-                    if (res && res.success) { onRefresh(tabName); showToast('Excluído com sucesso!'); }
-                }
-            };
-
-            if(tabName === 'CONVÊNIOS') return <><ConveniosMatrixView data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} schema={schema} /> {isModalOpen && <ModalForm title="Regra de Convênio" schema={currentSchema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
-            if(tabName === 'CORPO CLINICO') return <><CorpoClinicoCards data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} /> {isModalOpen && <ModalForm title="Médico" schema={schema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
-            if(tabName === 'CONTATOS') return <><ContatosViewTabs data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} schema={schema} /> {isModalOpen && <ModalForm title="Contato" schema={schema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
-            if(tabName === 'SENHAS E LOGINS GERAIS') return <><SenhasView data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} showToast={showToast} /> {isModalOpen && <ModalForm title="Acesso" schema={schema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
-            if(tabName === 'CONSULTA E PROCEDIMENTOS') return <><SplitView data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} schema={schema} titleLabel="Consulta/Procedimento" fieldsLeft={['Código', 'Valor Particular']} fieldsRight={['Valor Particular', 'Preparo', 'Material Utilizado']} descField="Descrição" imageField="Imagem_URL" /> {isModalOpen && <ModalForm title="Proc." schema={schema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
-            if(tabName === 'EXAMES LABORATORIAIS') return <><SplitView data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} schema={schema} titleLabel="Procedimento" fieldsLeft={['Código', 'Valor']} fieldsRight={['Valor', 'Prazo de Liberação', 'Preparo']} descField="Motivo_Indicacao" imageField="Imagem_URL" /> {isModalOpen && <ModalForm title="Lab." schema={schema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
-            if(tabName === 'EXAMES DE IMAGEM E OUTROS') return <><SplitView data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} schema={schema} titleLabel="Descrição" fieldsLeft={['Código', 'Valor']} fieldsRight={['Valor', 'Prazo de Laudo', 'Onde Encontrar']} imageField="Imagem_URL" /> {isModalOpen && <ModalForm title="Exame/Laudo" schema={schema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
-            if(tabName === 'EXAMES DE IMAGEM') return <><CategoryCardsView data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} schema={schema} categoryField="Categoria" titleField="Nome do Exame" imageField="Imagem_URL" /> {isModalOpen && <ModalForm title="Exame de Imagem" schema={schema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
-            if(tabName === 'INSTITUTOS') return <><CategoryCardsView data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} schema={schema} categoryField="Tabela_Instituto" titleField="Profissional" /> {isModalOpen && <ModalForm title="Instituto/Tabela" schema={schema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
-            if(tabName === 'MURAL_AVISOS') return <><MuralAvisosView data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} /> {isModalOpen && <ModalForm title="Anúncio / Aviso" schema={schema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
-
-            return (
-                <>
-                    <DefaultTableView title={title} schema={schema} filteredData={filteredData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} search={search} setSearch={setSearch} />
-                    {isModalOpen && <ModalForm title={title} schema={currentSchema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}
-                </>
             );
         };
 
