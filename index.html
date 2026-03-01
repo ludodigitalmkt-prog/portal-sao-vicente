@@ -152,15 +152,15 @@
         const safeString = (val) => (val === null || val === undefined) ? '' : String(val);
 
         const formatImageUrl = (url) => {
-            const strUrl = safeString(url).trim();
-            if (!strUrl) return '';
-            if (strUrl.includes('drive.google.com')) {
-                const match = strUrl.match(/\/d\/([a-zA-Z0-9_-]+)/) || strUrl.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-                if (match && match[1]) return `https://lh3.googleusercontent.com/d/${match[1]}`;
-            }
-            return strUrl;
-        };
-
+    const strUrl = safeString(url).trim();
+    if (!strUrl) return '';
+    // Se for link do Google Drive, converte para um formato que o navegador entenda como imagem
+    if (strUrl.includes('drive.google.com')) {
+        const match = strUrl.match(/\/d\/([a-zA-Z0-9_-]+)/) || strUrl.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+        if (match && match[1]) return `https://drive.google.com/uc?id=${match[1]}`;
+    }
+    return strUrl;
+};
         const tabSchemas = {
             'CORPO CLINICO': ['ID', 'Médico', 'Especialidade', 'Segmento', 'Código UNIMED', 'CRM', 'Cor_Selo', 'Foto_URL'],
             'EXAMES DE IMAGEM': ['ID', 'Categoria', 'Código', 'Nome do Exame', 'Profissionais', 'Idade Permitida', 'Observações', 'Imagem_URL'],
@@ -976,9 +976,10 @@
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    // ADICIONE ESTA LINHA ABAIXO PARA DEFINIR userFoto
-    // Ela pega a foto do banco ou usa uma imagem padrão se estiver vazio
+    // ADICIONE ESTA LINHA AQUI:
     const userFoto = user?.Foto_Perfil_URL || 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
+    
+    // ... o restante do código que já existe
 
     useEffect(() => {
         const unsub = auth.onAuthStateChanged(async (u) => {
@@ -1202,4 +1203,5 @@
     </script>
 </body>
 </html>
+
 
