@@ -973,19 +973,32 @@
         };
 
         const App = () => {
-            const [user, setUser] = useState(null);
-            const [activeTab, setActiveTab] = useState('Home');
-            const [loading, setLoading] = useState(false);
-            const [sheetData, setSheetData] = useState({});
-            const [chatMessage, setChatMessage] = useState('');
-            const [chatFilter, setChatFilter] = useState('Geral'); 
-            const [searchGlobal, setSearchGlobal] = useState('');
-            
-            const [darkMode, setDarkMode] = useState(() => {
-                const saved = localStorage.getItem('theme');
-                if(saved) return saved === 'dark';
-                return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-            });
+    const [user, setUser] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    // ADICIONE ESTA LINHA ABAIXO PARA DEFINIR userFoto
+    // Ela pega a foto do banco ou usa uma imagem padrão se estiver vazio
+    const userFoto = user?.Foto_Perfil_URL || 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
+
+    useEffect(() => {
+        const unsub = auth.onAuthStateChanged(async (u) => {
+            if (u) {
+                // Busca os dados extras do usuário no Firestore
+                const userDoc = await db.collection('USUARIOS').where('E-mail', '==', u.email).get();
+                if (!userDoc.empty) {
+                    setUser({ ID: userDoc.docs[0].id, ...userDoc.docs[0].data() });
+                } else {
+                    setUser({ 'E-mail': u.email, 'Nome Completo': u.email.split('@')[0] });
+                }
+            } else {
+                setUser(null);
+            }
+            setLoading(false);
+        });
+        return () => unsub();
+    }, []);
+
+    // ... restante do código (if loading, if !user, etc)
             
             const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
             const [loginErrorMsg, setLoginErrorMsg] = useState('');
@@ -1189,3 +1202,4 @@
     </script>
 </body>
 </html>
+
