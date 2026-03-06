@@ -3,11 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    
     <meta name="theme-color" content="#1E40AF">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Portal SV">
     
     <link rel="apple-touch-icon" href="logo.png">
@@ -18,17 +16,10 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <script>
-        const VERSAO_ATUAL = "9.0.0"; // App Oficial + Boletins Multi-Mídia
+        const VERSAO_ATUAL = "8.5.0"; // Versão Limpa, sem Design Dinâmico, Auth Corrigida e com Dark Mode
         if (window.location.search.indexOf('v=' + VERSAO_ATUAL) === -1) {
             localStorage.clear(); sessionStorage.clear();
             window.location.replace(window.location.pathname + (window.location.pathname.indexOf('?') === -1 ? '?' : '&') + 'v=' + VERSAO_ATUAL);
-        }
-        
-        // Registra o Service Worker (sw.js) que você criou para funcionar offline como App
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW falhou (Normal localmente):', err));
-            });
         }
     </script>
 
@@ -38,10 +29,10 @@
     <script>
         tailwind.config = {
             darkMode: 'class', 
-            theme: { extend: { colors: { primary: 'var(--color-primary, #1E40AF)', secondary: 'var(--color-secondary, #F97316)', medical: 'var(--color-medical, #E0F2FE)' }, fontFamily: { sans: ['var(--font-family, Inter)', 'sans-serif'] }, borderRadius: { 'custom': 'var(--border-radius, 1.5rem)' }, animation: { 'pulse-fast': 'pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite', 'fade-in': 'fadeIn 0.3s ease-out', 'pop-in': 'popIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards', 'slide-up': 'slideUp 0.3s ease-out forwards', 'bounce-slight': 'bounceSlight 2s infinite ease-in-out' }, keyframes: { fadeIn: { '0%': { opacity: '0', transform: 'translateY(10px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } }, popIn: { '0%': { opacity: '0', transform: 'scale(0.95)' }, '100%': { opacity: '1', transform: 'scale(1)' } }, slideUp: { '0%': { opacity: '0', transform: 'translateY(100%)' }, '100%': { opacity: '1', transform: 'translateY(0)' } }, bounceSlight: { '0%, 100%': { transform: 'translateY(-10%)' }, '50%': { transform: 'translateY(0)' } } } } }
+            theme: { extend: { colors: { primary: '#1E40AF', secondary: '#F97316', medical: '#E0F2FE' }, fontFamily: { sans: ['Inter', 'sans-serif'] }, borderRadius: { 'custom': '1.5rem' }, animation: { 'pulse-fast': 'pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite', 'fade-in': 'fadeIn 0.3s ease-out', 'pop-in': 'popIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards', 'bounce-slight': 'bounceSlight 2s infinite ease-in-out' }, keyframes: { fadeIn: { '0%': { opacity: '0', transform: 'translateY(10px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } }, popIn: { '0%': { opacity: '0', transform: 'scale(0.95)' }, '100%': { opacity: '1', transform: 'scale(1)' } }, bounceSlight: { '0%, 100%': { transform: 'translateY(-10%)' }, '50%': { transform: 'translateY(0)' } } } } }
         }
     </script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -51,19 +42,18 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
 
     <style>
-        :root { --color-primary: #1E40AF; --color-secondary: #F97316; --color-medical: #E0F2FE; --color-bg: #F8FAFC; --font-family: 'Inter'; --border-radius: 1.5rem; --card-transition: all 0.3s ease; }
-        body { font-family: var(--font-family), sans-serif; overflow-x: hidden; transition: background-color 0.3s ease, color 0.3s ease; background-color: var(--color-bg); -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Inter', sans-serif; overflow-x: hidden; transition: background-color 0.3s ease, color 0.3s ease; background-color: #F8FAFC; -webkit-tap-highlight-color: transparent; }
         body.dark { background-color: #0f172a; } 
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         .dark ::-webkit-scrollbar-thumb { background: #475569; }
         .hide-scroll::-webkit-scrollbar { display: none; }
-        .card-hover { transition: var(--card-transition); border-radius: var(--border-radius); cursor: pointer; }
-        .card-hover:hover { transform: translateY(-5px) scale(1.02); z-index: 10; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); border-color: var(--color-primary); }
+        .card-hover { transition: all 0.3s ease; border-radius: 1.5rem; cursor: pointer; }
+        .card-hover:hover { transform: translateY(-5px) scale(1.02); z-index: 10; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); border-color: #1E40AF; }
         .glass-modal { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(16px); }
         .dark .glass-modal { background: rgba(15, 23, 42, 0.85); }
-        .rounded-custom { border-radius: var(--border-radius) !important; }
+        .rounded-custom { border-radius: 1.5rem !important; }
         .custom-scrollbar { overflow-y: auto; }
         .matrix-table { width: 100%; border-collapse: separate; border-spacing: 0 12px; }
         .matrix-table th { padding: 1rem; color: white; font-weight: 800; text-transform: uppercase; font-size: 0.85rem; text-align: center; border: none; }
@@ -73,7 +63,7 @@
         .matrix-row:hover { transform: translateY(-3px); box-shadow: 0 15px 25px -5px rgba(0,0,0,0.1); z-index: 20; }
         .dark .matrix-row { background-color: #1e293b; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3); }
         .matrix-row td { padding: 1rem; text-align: center; vertical-align: middle; border: none; }
-        .matrix-row td:first-child { background-color: #1e293b; color: white; font-weight: bold; border-radius: 1rem 0 0 1rem; text-align: left; position: sticky; left: 0; z-index: 20; border-left: 6px solid var(--color-primary); }
+        .matrix-row td:first-child { background-color: #1e293b; color: white; font-weight: bold; border-radius: 1rem 0 0 1rem; text-align: left; position: sticky; left: 0; z-index: 20; border-left: 6px solid #1E40AF; }
         .matrix-row td:last-child { border-radius: 0 1rem 1rem 0; }
     </style>
 </head>
@@ -92,16 +82,13 @@
             appId: "1:52988900084:web:9f5f2d494c22b10eb2a4a1"
         };
 
-        const isFirebaseConfigured = firebaseConfig.apiKey !== "" && !firebaseConfig.apiKey.includes("AIzaSySuaChave");
         let db = null; let auth = null;
-
-        if (isFirebaseConfigured) {
+        if (firebaseConfig.apiKey !== "" && !firebaseConfig.apiKey.includes("AIzaSySuaChave")) {
             try {
                 if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
                 db = firebase.firestore();
-                db.enablePersistence({ synchronizeTabs: true }).catch(function(err) {});
                 auth = firebase.auth();
-            } catch (error) {}
+            } catch (error) { console.error("Erro Firebase:", error); }
         }
 
         class ErrorBoundary extends Component {
@@ -112,8 +99,8 @@
                     <div className="p-10 text-center flex flex-col items-center justify-center min-h-screen bg-gray-50">
                         <i className="ph-fill ph-warning-circle text-6xl text-red-500 mb-4"></i>
                         <h2 className="text-3xl font-black text-gray-800 mb-2">Aviso do Sistema</h2>
-                        <p className="text-gray-500 mb-6 max-w-md">Ocorreu um erro interno. Fique tranquilo, seus dados estão seguros.</p>
-                        <button onClick={()=>window.location.reload()} className="bg-primary text-white px-10 py-4 rounded-xl font-black shadow-lg">Recarregar Painel</button>
+                        <p className="text-gray-500 mb-6 max-w-md">Ocorreu um erro ao processar a tela.</p>
+                        <button onClick={()=>window.location.reload()} className="bg-primary text-white px-10 py-4 rounded-xl font-black shadow-lg">Recarregar Portal</button>
                     </div>
                 );
                 return this.props.children; 
@@ -149,17 +136,25 @@
             'NOVIDADES_E_EVENTOS': ['ID', 'Tipo', 'Título', 'Mensagem', 'Data de Publicação', 'Imagem_URL'],
             'BOLETINS_INFORMATIVOS': ['ID', 'Título', 'Descrição', 'Tipo_Midia', 'Link_Arquivo', 'Data_Publicacao'],
             'CONTROLE_ATENDIMENTOS': ['ID', 'Profissional', 'Convênio', 'Qtd_Atual', 'Limite_Max'],
-            'USUARIOS': ['ID', 'Nome Completo', 'E-mail', 'Nível de Acesso', 'Data de Nascimento', 'Foto_Perfil_URL', 'Status', 'Competências', 'Formato Contratação', 'Horários Flexíveis', 'Dias de Trabalho', 'Hora Início', 'Hora Fim'],
+            'USUARIOS': ['ID', 'Nome Completo', 'E-mail', 'Nível de Acesso', 'Data de Nascimento', 'Foto_Perfil_URL', 'Status', 'Competências', 'Hora Início', 'Hora Fim', 'Horários Flexíveis', 'Formato Contratação'],
             'ESCALAS': ['ID', 'Tipo_Profissional', 'Nome_Profissional', 'Data', 'Turno', 'Horario', 'Unidade', 'Setor_Consultorio', 'Status_Turno', 'Substituindo'],
             'CHAT_MENSAGENS': ['ID', 'Data_Hora', 'Nome', 'Mensagem', 'Destinatario'],
             'LEMBRETES_HORA': ['ID', 'Hora', 'Mensagem'],
-            'CONFIGURACOES': ['ID', 'Chave', 'Valor'],
             'MURAL_AVISOS': ['ID', 'Layout', 'Título', 'Subtítulo', 'Imagem_URL', 'Link', 'Ativo']
         };
 
         const api = {
+            fetch: async (colName) => {
+                if(!db) return [];
+                try { const snap = await db.collection(colName).get(); return snap.docs.map(doc => ({ ID: doc.id, ...doc.data() })); } catch (e) { return []; }
+            },
+            fetchAll: async () => {
+                if(!db) return {}; let allData = {};
+                for (let c of Object.keys(tabSchemas)) { try { const snap = await db.collection(c).get(); allData[c] = snap.docs.map(doc => ({ ID: doc.id, ...doc.data() })); } catch(e) {} }
+                return allData;
+            },
             login: async (rawEmail, password) => {
-                if(!isFirebaseConfigured || !auth) return { success: false, message: 'As chaves não estão configuradas.' };
+                if(!auth) return { success: false, message: 'As chaves não estão configuradas.' };
                 try {
                     const email = rawEmail.trim(); await auth.signInWithEmailAndPassword(email, password);
                     const userDoc = await db.collection('USUARIOS').where('E-mail', '==', email).get();
@@ -192,15 +187,15 @@
             const [time, setTime] = useState(new Date());
             useEffect(() => { const timer = setInterval(() => setTime(new Date()), 1000); return () => clearInterval(timer); }, []);
             const hour = time.getHours();
-            let periodStr = 'Bom dia'; let icon = 'ph-sun'; let bgClass = 'bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-200';
-            if (hour >= 12 && hour < 18) { periodStr = 'Boa tarde'; icon = 'ph-cloud-sun'; bgClass = 'bg-orange-50 border-orange-200 text-orange-800 dark:bg-orange-900/30 dark:border-orange-800 dark:text-orange-200'; }
-            else if (hour >= 18 || hour < 6) { periodStr = 'Boa noite'; icon = 'ph-moon-stars'; bgClass = 'bg-indigo-900 border-indigo-700 text-indigo-100 dark:bg-slate-800 dark:border-slate-700 dark:text-indigo-200'; }
+            let periodStr = 'Bom dia'; let icon = 'ph-sun'; let bgClass = 'bg-blue-50 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200';
+            if (hour >= 12 && hour < 18) { periodStr = 'Boa tarde'; icon = 'ph-cloud-sun'; bgClass = 'bg-orange-50 text-orange-800 dark:bg-orange-900/30 dark:text-orange-200'; }
+            else if (hour >= 18 || hour < 6) { periodStr = 'Boa noite'; icon = 'ph-moon-stars'; bgClass = 'bg-indigo-900 text-indigo-100 dark:bg-slate-800 dark:text-indigo-200'; }
             const lembretes = Array.isArray(lembretesData) ? lembretesData : [];
             const lembreteAtual = lembretes.find(l => l && typeof l === 'object' && parseInt(safeString(l.Hora) || -1) === hour);
             const msg = lembreteAtual ? safeString(lembreteAtual.Mensagem) : 'Tenha um excelente turno de trabalho!';
 
             return (
-                <div className={`p-6 rounded-custom border-2 shadow-sm flex items-center justify-between transition-colors duration-1000 ${bgClass}`}>
+                <div className={`p-6 rounded-custom shadow-sm flex items-center justify-between transition-colors duration-1000 ${bgClass}`}>
                     <div className="flex items-center gap-5">
                         <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center shadow-inner"><i className={`ph-fill ${icon} text-4xl animate-spin-slow`}></i></div>
                         <div><h2 className="text-3xl md:text-4xl font-black tracking-tighter">{time.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit', second:'2-digit'})}</h2><p className="text-xs md:text-sm font-bold uppercase tracking-widest opacity-80 mt-1">{periodStr}</p></div>
@@ -237,11 +232,7 @@
                                                 </select>
                                             ) : colName === 'Tipo_Midia' ? (
                                                 <select className="w-full px-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl font-bold text-gray-800 dark:text-white" value={safeString(formData[colName])} onChange={e => setFormData({...formData, [colName]: e.target.value})}>
-                                                    <option value="Documento PDF">Documento (Drive PDF)</option>
-                                                    <option value="Apresentação">Apresentação (Slides Drive)</option>
-                                                    <option value="Vídeo">Vídeo (YouTube/Drive)</option>
-                                                    <option value="Imagem">Imagem Externa</option>
-                                                    <option value="Outro">Outro Formato</option>
+                                                    <option value="Documento PDF">Documento (Drive PDF)</option><option value="Apresentação">Apresentação (Slides Drive)</option><option value="Vídeo">Vídeo (YouTube/Drive)</option><option value="Imagem">Imagem Externa</option><option value="Outro">Outro Formato</option>
                                                 </select>
                                             ) : colName === 'Tipo' && title.includes('Contato') ? (
                                                 <select className="w-full px-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-primary font-bold text-gray-800 dark:text-white" value={safeString(formData[colName])} onChange={(e) => setFormData({...formData, [colName]: e.target.value})}>
@@ -473,30 +464,30 @@
             return (
                 <div className="space-y-6">
                     <div className="flex flex-col md:flex-row justify-between items-center bg-white dark:bg-slate-800 p-5 rounded-custom shadow-sm border border-gray-100 gap-4">
-                        <div className="relative w-full md:w-96"><i className="ph-bold ph-magnifying-glass absolute left-5 top-4 text-gray-400 text-xl"></i><input type="text" placeholder="Buscar médico..." value={search} onChange={e=>setSearch(e.target.value)} className="w-full pl-14 pr-6 py-4 bg-gray-50 border rounded-full outline-none focus:border-primary font-bold" /></div>
+                        <div className="relative w-full md:w-96"><i className="ph-bold ph-magnifying-glass absolute left-5 top-4 text-gray-400 text-xl"></i><input type="text" placeholder="Buscar médico..." value={search} onChange={e=>setSearch(e.target.value)} className="w-full pl-14 pr-6 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-full outline-none focus:ring-2 focus:ring-primary font-bold transition text-gray-800 dark:text-white" /></div>
                         {canEdit && <button onClick={()=>openModal({})} className="bg-primary text-white px-8 py-4 w-full md:w-auto rounded-full font-black shadow-lg hover:scale-105 transition flex items-center justify-center gap-2 shrink-0"><i className="ph-bold ph-user-plus text-xl"></i> Novo Médico</button>}
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                         {filtered.map((med, i) => (
-                            <div key={i} className="bg-white p-6 shadow-sm border rounded-[2rem] relative group card-hover flex flex-col">
-                                <div className="absolute top-0 inset-x-0 h-24 bg-gray-100" style={{backgroundColor: med.Cor_Selo ? `${safeString(med.Cor_Selo)}20` : ''}}></div>
+                            <div key={i} className="bg-white dark:bg-slate-800 p-6 shadow-sm border border-gray-100 dark:border-slate-700 rounded-[2rem] md:rounded-[2.5rem] relative overflow-hidden group card-hover flex flex-col">
+                                <div className="absolute top-0 inset-x-0 h-24 bg-gray-100 dark:bg-slate-900" style={{backgroundColor: med.Cor_Selo ? `${safeString(med.Cor_Selo)}20` : ''}}></div>
                                 <div className="relative z-10 flex flex-col items-center text-center mt-4">
-                                    {med.Foto_URL ? <img src={formatImageUrl(med.Foto_URL)} className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg mb-4" /> : <div className="w-24 h-24 rounded-full bg-white flex items-center justify-center text-3xl font-black text-gray-400 border-4 border-gray-50 shadow-lg mb-4">{safeString(med.Médico || 'M').charAt(0)}</div>}
-                                    <h3 className="font-black text-xl leading-tight text-gray-900">{safeString(med.Médico) || 'Sem Nome'}</h3>
+                                    {med.Foto_URL ? <img src={formatImageUrl(med.Foto_URL)} className="w-24 h-24 rounded-full object-cover border-4 border-white dark:border-slate-800 shadow-lg mb-4" /> : <div className="w-24 h-24 rounded-full bg-white dark:bg-slate-700 flex items-center justify-center text-3xl font-black text-gray-400 border-4 border-gray-50 dark:border-slate-800 shadow-lg mb-4">{safeString(med.Médico || 'M').charAt(0)}</div>}
+                                    <h3 className="font-black text-xl leading-tight text-gray-900 dark:text-white">{safeString(med.Médico) || 'Sem Nome'}</h3>
                                     <p className="text-sm font-bold text-primary mb-3 mt-1 uppercase tracking-wide" style={{color: med.Cor_Selo || 'var(--color-primary)'}}>{safeString(med.Especialidade) || 'Clínico'}</p>
                                     
-                                    <div className="w-full bg-gray-50 rounded-xl p-4 space-y-2 text-left mb-4 shadow-inner">
-                                        {med.CRM && <p className="text-[10px] md:text-xs font-bold text-gray-500 flex justify-between"><span>CRM</span> <span className="text-gray-800">{safeString(med.CRM)}</span></p>}
-                                        {med['Código UNIMED'] && <p className="text-[10px] md:text-xs font-bold text-gray-500 flex justify-between"><span>UNIMED</span> <span className="text-gray-800">{safeString(med['Código UNIMED'])}</span></p>}
-                                        {med.CBO && <p className="text-[10px] font-bold text-gray-500 flex justify-between items-center mt-2 pt-2 border-t border-gray-200"><span>CBO</span> <span className="bg-gray-200 text-gray-700 px-2 py-0.5 rounded">{safeString(med.CBO)}</span></p>}
+                                    <div className="w-full bg-gray-50 dark:bg-slate-900 rounded-xl md:rounded-2xl p-4 mt-auto space-y-2 text-left mb-4 shadow-inner">
+                                        {med.CRM && <p className="text-[10px] md:text-xs font-bold text-gray-500 flex justify-between"><span>CRM</span> <span className="text-gray-800 dark:text-slate-200">{safeString(med.CRM)}</span></p>}
+                                        {med['Código UNIMED'] && <p className="text-[10px] md:text-xs font-bold text-gray-500 flex justify-between"><span>UNIMED</span> <span className="text-gray-800 dark:text-slate-200">{safeString(med['Código UNIMED'])}</span></p>}
+                                        {med.CBO && <p className="text-[10px] font-bold text-gray-500 flex justify-between items-center mt-2 pt-2 border-t border-gray-200 dark:border-slate-700"><span>CBO</span> <span className="bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-slate-200 px-2 py-0.5 rounded">{safeString(med.CBO)}</span></p>}
                                     </div>
                                     
-                                    {canEdit && <button onClick={()=>openLancarEscala(safeString(med.Médico), true)} className="w-full bg-gray-900 text-white font-black py-3 rounded-xl shadow hover:bg-black transition flex justify-center items-center gap-2 text-xs"><i className="ph-bold ph-calendar-plus text-base"></i> Agendar Plantões</button>}
+                                    {canEdit && <button onClick={()=>openLancarEscala(safeString(med.Médico), true)} className="w-full bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-black py-3 rounded-xl shadow hover:bg-black transition flex justify-center items-center gap-2 text-xs"><i className="ph-bold ph-calendar-plus text-base"></i> Agendar Plantões</button>}
                                 </div>
                                 {canEdit && (
                                     <div className="absolute top-4 right-4 flex gap-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition z-20">
-                                        <button onClick={()=>openModal(med)} className="w-8 h-8 bg-white shadow rounded-lg hover:text-blue-600 flex items-center justify-center"><i className="ph-bold ph-pencil-simple"></i></button>
-                                        <button onClick={()=>{if(confirm('Excluir?')) handleDelete(med.ID)}} className="w-8 h-8 bg-white shadow rounded-lg hover:text-red-600 flex items-center justify-center"><i className="ph-bold ph-trash"></i></button>
+                                        <button onClick={()=>openModal(med)} className="w-8 h-8 bg-white dark:bg-slate-700 text-blue-600 rounded-lg shadow hover:bg-blue-600 hover:text-white flex items-center justify-center"><i className="ph-bold ph-pencil-simple"></i></button>
+                                        <button onClick={()=>{if(confirm('Excluir?')) handleDelete(med.ID)}} className="w-8 h-8 bg-white dark:bg-slate-700 text-red-600 rounded-lg shadow hover:bg-red-600 hover:text-white flex items-center justify-center"><i className="ph-bold ph-trash"></i></button>
                                     </div>
                                 )}
                             </div>
@@ -514,31 +505,33 @@
 
             return (
                 <div className="space-y-6 animate-fade-in">
-                    <div className="bg-white rounded-[2rem] md:rounded-custom p-4 shadow-sm border flex flex-col md:flex-row justify-between items-center gap-4">
-                        <div className="flex bg-gray-50 p-2 rounded-2xl gap-2 w-full md:w-auto">
-                            <button onClick={()=>setActiveTab('Ramal')} className={`flex-1 md:flex-none px-4 md:px-6 py-3 rounded-xl font-black text-xs md:text-sm ${activeTab==='Ramal'?'bg-white text-primary shadow':'text-gray-500'}`}>📞 Ramais</button>
-                            <button onClick={()=>setActiveTab('Email')} className={`flex-1 md:flex-none px-4 md:px-6 py-3 rounded-xl font-black text-xs md:text-sm ${activeTab==='Email'?'bg-white text-secondary shadow':'text-gray-500'}`}>📧 E-mails</button>
-                            <button onClick={()=>setActiveTab('Telefone')} className={`flex-1 md:flex-none px-4 md:px-6 py-3 rounded-xl font-black text-xs md:text-sm ${activeTab==='Telefone'?'bg-white text-green-600 shadow':'text-gray-500'}`}>📱 Externos</button>
+                    <div className="bg-white dark:bg-slate-800 rounded-[2rem] md:rounded-custom p-4 shadow-sm border border-gray-100 dark:border-slate-700 flex flex-col md:flex-row justify-between items-center gap-4">
+                        <div className="flex bg-gray-50 dark:bg-slate-900 p-2 rounded-2xl gap-2 w-full md:w-auto">
+                            <button onClick={()=>setActiveTab('Ramal')} className={`flex-1 md:flex-none px-4 md:px-6 py-3 rounded-xl font-black text-xs md:text-sm transition-all ${activeTab==='Ramal'?'bg-white dark:bg-slate-800 text-primary shadow-md':'text-gray-500'}`}>📞 Ramais</button>
+                            <button onClick={()=>setActiveTab('Email')} className={`flex-1 md:flex-none px-4 md:px-6 py-3 rounded-xl font-black text-xs md:text-sm transition-all ${activeTab==='Email'?'bg-white dark:bg-slate-800 text-secondary shadow-md':'text-gray-500'}`}>📧 E-mails</button>
+                            <button onClick={()=>setActiveTab('Telefone')} className={`flex-1 md:flex-none px-4 md:px-6 py-3 rounded-xl font-black text-xs md:text-sm transition-all ${activeTab==='Telefone'?'bg-white dark:bg-slate-800 text-green-600 shadow-md':'text-gray-500'}`}>📱 Externos</button>
                         </div>
                         <div className="relative w-full md:w-64"><i className="ph-bold ph-magnifying-glass absolute left-4 top-3 text-gray-400"></i><input type="text" placeholder="Buscar..." value={search} onChange={e=>setSearch(e.target.value)} className="w-full pl-12 pr-4 py-3 bg-gray-50 border rounded-xl font-bold outline-none focus:border-primary" /></div>
-                        {canEdit && <button onClick={()=>openModal({Tipo: activeTab}, schema)} className="bg-primary text-white w-full md:w-auto font-black px-6 py-3.5 rounded-xl shadow-md"><i className="ph-bold ph-plus"></i> Novo</button>}
+                        {canEdit && <button onClick={()=>openModal({Tipo: activeTab}, schema)} className="bg-primary text-white w-full md:w-auto font-black px-6 py-3.5 rounded-xl shadow-md hover:-translate-y-1 transition flex justify-center items-center gap-2 shrink-0"><i className="ph-bold ph-plus"></i> Novo Contato</button>}
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                         {filtered.map((item, i) => (
-                            <div key={i} className="bg-white border rounded-[2rem] p-6 shadow-sm card-hover relative group flex flex-col">
-                                <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest bg-gray-50 px-3 py-1.5 rounded-full mb-3 w-max">{safeString(item.Local_Setor) || 'Geral'}</span>
-                                <h3 className="font-black text-lg md:text-xl text-gray-900 mb-1">{safeString(item.Nome_Contato) || 'Sem Nome'}</h3>
+                            <div key={i} className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-[2rem] p-6 shadow-sm card-hover relative group flex flex-col">
+                                <span className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest bg-gray-50 dark:bg-slate-900 px-3 py-1.5 rounded-full mb-3 inline-block w-max">{safeString(item.Local_Setor) || 'Sem Local'}</span>
+                                <h3 className="font-black text-lg md:text-xl text-gray-900 dark:text-white mb-1">{safeString(item.Nome_Contato) || 'Sem Nome'}</h3>
                                 <p className={`text-base md:text-xl font-black mt-3 p-3 rounded-xl break-all ${activeTab==='Ramal'?'bg-blue-50 text-blue-700':activeTab==='Email'?'bg-orange-50 text-orange-700':'bg-green-50 text-green-700'}`}>{safeString(item.Valor_Contato)}</p>
                                 {item.Anotacoes && <p className="text-xs font-medium text-gray-500 mt-4 leading-tight">{safeString(item.Anotacoes)}</p>}
+                                
                                 {canEdit && (
                                     <div className="absolute top-4 right-4 flex gap-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition">
-                                        <button onClick={()=>openModal(item, schema)} className="p-2 text-blue-600 bg-white shadow rounded hover:text-blue-800"><i className="ph-bold ph-pencil-simple"></i></button>
-                                        <button onClick={()=>{if(confirm('Excluir?')) handleDelete(item.ID)}} className="p-2 text-red-600 bg-white shadow rounded hover:text-red-800"><i className="ph-bold ph-trash"></i></button>
+                                        <button onClick={()=>openModal(item, schema)} className="p-2 text-blue-600 bg-white shadow rounded-lg hover:bg-blue-600 hover:text-white"><i className="ph-bold ph-pencil-simple"></i></button>
+                                        <button onClick={()=>{if(confirm('Excluir?')) handleDelete(item.ID)}} className="p-2 text-red-600 bg-white shadow rounded-lg hover:bg-red-600 hover:text-white"><i className="ph-bold ph-trash"></i></button>
                                     </div>
                                 )}
                             </div>
                         ))}
+                        {filtered.length === 0 && <div className="col-span-full p-20 text-center text-gray-400 font-bold border-2 border-dashed rounded-3xl dark:border-slate-700">Nenhum {activeTab} cadastrado.</div>}
                     </div>
                 </div>
             )
@@ -567,474 +560,89 @@
             };
 
             return (
-                <div className="bg-white rounded-[2rem] md:rounded-[3rem] shadow-xl border h-[75vh] md:h-[80vh] flex flex-col md:flex-row overflow-hidden animate-fade-in">
-                    <div className="md:w-1/3 border-b md:border-r bg-gray-50 flex flex-col shrink-0">
-                        <div className="p-4 md:p-6 border-b bg-white"><h2 className="text-xl md:text-2xl font-black flex items-center gap-3"><i className="ph-fill ph-chats-circle text-primary"></i> Comunicação</h2></div>
+                <div className="bg-white dark:bg-slate-800 rounded-[2rem] md:rounded-[3rem] shadow-xl border border-gray-100 dark:border-slate-700 h-[75vh] md:h-[80vh] flex flex-col md:flex-row overflow-hidden animate-fade-in">
+                    <div className="md:w-1/3 border-b md:border-r border-gray-100 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-900/50 flex flex-col shrink-0">
+                        <div className="p-4 md:p-6 border-b border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800"><h2 className="text-xl md:text-2xl font-black flex items-center gap-3"><i className="ph-fill ph-chats-circle text-primary"></i> Comunicação</h2></div>
                         <div className="p-3 md:p-4 space-y-2 overflow-y-auto flex md:flex-col gap-2 md:gap-0 hide-scroll">
-                            <div onClick={()=>setActiveRoom('Geral')} className={`p-3 md:p-4 rounded-2xl cursor-pointer font-bold flex items-center gap-3 transition whitespace-nowrap md:whitespace-normal shrink-0 ${activeRoom==='Geral'?'bg-primary text-white shadow-md':'hover:bg-gray-100 text-gray-700'}`}><div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-white/20 flex items-center justify-center"><i className="ph-fill ph-users text-lg"></i></div> Fórum da Equipe</div>
-                            <div onClick={()=>setActiveRoom(isAdmin?'Caixa de Entrada':'Supervisão')} className={`p-3 md:p-4 rounded-2xl cursor-pointer font-bold flex items-center justify-between transition whitespace-nowrap md:whitespace-normal shrink-0 ${activeRoom!=='Geral'?'bg-gray-900 text-white shadow-md':'hover:bg-gray-100 text-gray-700'}`}><div className="flex items-center gap-3"><div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-white/20 flex items-center justify-center"><i className="ph-fill ph-shield-star text-lg"></i></div> {isAdmin?'Caixa Inbox':'Falar c/ Supervisão'}</div></div>
+                            <div onClick={()=>setActiveRoom('Geral')} className={`p-3 md:p-4 rounded-2xl cursor-pointer font-bold flex items-center gap-3 transition whitespace-nowrap md:whitespace-normal shrink-0 ${activeRoom==='Geral'?'bg-primary text-white shadow-md':'hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-700 dark:text-gray-300'}`}><div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-white/20 flex items-center justify-center"><i className="ph-fill ph-users text-lg md:text-xl"></i></div> Fórum da Equipe</div>
+                            <div onClick={()=>setActiveRoom(isAdmin?'Caixa de Entrada':'Supervisão')} className={`p-3 md:p-4 rounded-2xl cursor-pointer font-bold flex items-center justify-between transition whitespace-nowrap md:whitespace-normal shrink-0 ${activeRoom!=='Geral'?'bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-md':'hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-700 dark:text-gray-300'}`}><div className="flex items-center gap-3"><div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-white/20 dark:bg-black/10 flex items-center justify-center"><i className="ph-fill ph-shield-star text-lg md:text-xl"></i></div> {isAdmin?'Caixa Inbox':'Falar c/ Supervisão'}</div></div>
                         </div>
                     </div>
-                    <div className="md:w-2/3 flex flex-col bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-gray-50 flex-1 relative">
-                        <div className="p-4 md:p-6 bg-white/90 backdrop-blur border-b flex justify-between items-center shadow-sm z-10 shrink-0">
-                            <h3 className="font-black text-lg md:text-xl text-gray-900">{activeRoom}</h3>
-                            <button onClick={()=>onRefresh()} className="w-8 h-8 md:w-10 md:h-10 bg-gray-100 rounded-full flex items-center justify-center hover:text-primary transition"><i className="ph-bold ph-arrows-clockwise text-lg"></i></button>
+                    <div className="md:w-2/3 flex flex-col bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-gray-50 dark:bg-slate-900 flex-1 relative">
+                        <div className="p-4 md:p-6 bg-white/90 dark:bg-slate-800/90 backdrop-blur border-b border-gray-100 dark:border-slate-700 flex justify-between items-center shadow-sm z-10 shrink-0">
+                            <h3 className="font-black text-lg md:text-xl text-gray-900 dark:text-white">{activeRoom}</h3>
+                            <button onClick={()=>onRefresh()} className="w-8 h-8 md:w-10 md:h-10 bg-gray-100 dark:bg-slate-700 rounded-full flex items-center justify-center hover:text-primary transition"><i className="ph-bold ph-arrows-clockwise text-lg"></i></button>
                         </div>
                         <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-4 md:space-y-6 flex flex-col custom-scrollbar">
-                            {mensagensRoom.length === 0 && <div className="m-auto text-gray-400 font-bold bg-white p-4 md:p-6 rounded-2xl shadow-sm text-center text-sm">Nenhuma mensagem neste canal.</div>}
+                            {mensagensRoom.length === 0 && <div className="m-auto text-gray-400 font-bold bg-white dark:bg-slate-800 p-4 md:p-6 rounded-2xl shadow-sm text-center text-sm md:text-base">Nenhuma mensagem neste canal.</div>}
                             {mensagensRoom.map((m, i) => {
                                 const isMe = safeString(m.Nome) === myName;
                                 return (
                                     <div key={i} className={`flex flex-col gap-1 max-w-[85%] md:max-w-[70%] ${isMe ? 'self-end items-end' : 'self-start items-start'} animate-fade-in`}>
                                         <span className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest mx-2">{safeString(m.Nome)}</span>
-                                        <div className={`p-4 md:p-5 rounded-2xl shadow-md text-sm font-medium ${isMe ? 'bg-primary text-white rounded-tr-none' : 'bg-white border rounded-tl-none text-gray-800'}`}>{safeString(m.Mensagem)}</div>
+                                        <div className={`p-4 md:p-5 rounded-2xl shadow-md text-sm font-medium ${isMe ? 'bg-primary text-white rounded-tr-none' : 'bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-tl-none text-gray-800 dark:text-gray-200'}`}>{safeString(m.Mensagem)}</div>
                                     </div>
                                 )
                             })}
                         </div>
-                        <form onSubmit={handleSend} className="p-4 md:p-5 bg-white border-t flex gap-3 md:gap-4 shrink-0 z-10">
-                            <input type="text" value={msg} onChange={e=>setMsg(e.target.value)} placeholder="Escreva..." className="flex-1 bg-gray-50 border rounded-full px-4 md:px-6 py-3 md:py-4 outline-none focus:border-primary font-bold text-sm md:text-base" />
-                            <button type="submit" className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-primary text-white flex items-center justify-center shadow-lg hover:scale-105 transition"><i className="ph-fill ph-paper-plane-tilt text-lg md:text-xl"></i></button>
+                        <form onSubmit={handleSend} className="p-4 md:p-5 bg-white dark:bg-slate-800 border-t border-gray-100 dark:border-slate-700 flex gap-3 md:gap-4 shrink-0 z-10">
+                            <input type="text" value={msg} onChange={e=>setMsg(e.target.value)} placeholder="Escreva a sua mensagem..." className="flex-1 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-full px-4 md:px-6 py-3 md:py-4 outline-none focus:ring-2 focus:ring-primary font-bold transition text-gray-800 dark:text-white text-sm md:text-base" />
+                            <button type="submit" className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-primary text-white flex items-center justify-center shadow-lg hover:scale-105 transition transform shrink-0"><i className="ph-fill ph-paper-plane-tilt text-lg md:text-xl"></i></button>
                         </form>
                     </div>
                 </div>
             )
         };
 
-        const SenhasView = ({ data, canEdit, openModal, handleDelete, schema }) => {
-            const [search, setSearch] = useState('');
-            const filtered = data.filter(c => c && (safeString(c['Nome do Sistema']).toLowerCase().includes(search.toLowerCase()) || safeString(c.Login).toLowerCase().includes(search.toLowerCase()))).sort((a,b)=>safeString(a['Nome do Sistema']).localeCompare(safeString(b['Nome do Sistema'])));
-            const [visiblePwd, setVisiblePwd] = useState({});
-            const togglePwd = (id) => setVisiblePwd(p => ({...p, [id]: !p[id]}));
-
-            return (
-                <div className="space-y-6 animate-fade-in">
-                    <div className="flex flex-col md:flex-row justify-between items-center bg-white p-5 rounded-custom shadow-sm border gap-4">
-                        <div className="relative w-full md:w-96"><i className="ph-bold ph-magnifying-glass absolute left-5 top-4 text-gray-400 text-xl"></i><input type="text" placeholder="Buscar sistema ou login..." value={search} onChange={e=>setSearch(e.target.value)} className="w-full pl-14 pr-6 py-4 bg-gray-50 border rounded-full outline-none focus:border-primary font-bold" /></div>
-                        {canEdit && <button onClick={()=>openModal(null, schema)} className="bg-primary text-white font-black px-8 py-4 w-full md:w-auto rounded-full shadow-md hover:scale-105 transition flex justify-center items-center gap-2 shrink-0"><i className="ph-bold ph-plus text-xl"></i> Nova Senha</button>}
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                        {filtered.map((item, i) => (
-                            <div key={i} className="bg-white border rounded-[2rem] p-6 shadow-sm card-hover relative group flex flex-col">
-                                <div className="flex justify-between items-start mb-4">
-                                    <h3 className="font-black text-xl text-gray-900 flex items-center gap-2 truncate pr-2"><i className="ph-fill ph-lock-key text-primary shrink-0"></i> <span className="truncate">{safeString(item['Nome do Sistema'])}</span></h3>
-                                    {item['Link do Sistema'] && <a href={safeString(item['Link do Sistema'])} target="_blank" className="bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg text-xs font-black hover:bg-blue-600 hover:text-white transition shrink-0">Acessar <i className="ph-bold ph-arrow-square-out"></i></a>}
-                                </div>
-                                
-                                <div className="bg-gray-50 rounded-xl p-4 space-y-3 mb-4">
-                                    <div><p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Login</p><p className="font-bold text-gray-800 break-all">{safeString(item.Login)}</p></div>
-                                    <div>
-                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex justify-between">Senha <button onClick={()=>togglePwd(item.ID)} className="text-primary hover:underline">{visiblePwd[item.ID] ? 'Ocultar' : 'Mostrar'}</button></p>
-                                        <div className="flex justify-between items-center bg-white px-3 py-2 rounded-lg border mt-1">
-                                            <span className="font-mono font-bold text-gray-800">{visiblePwd[item.ID] ? safeString(item.Senha) : '••••••••••••'}</span>
-                                            <button onClick={()=>navigator.clipboard.writeText(safeString(item.Senha))} className="text-gray-400 hover:text-primary"><i className="ph-bold ph-copy"></i></button>
-                                        </div>
-                                    </div>
-                                </div>
-                                {item['Observações'] && <p className="text-xs font-medium text-gray-500 mt-auto">{safeString(item['Observações'])}</p>}
-
-                                {canEdit && (
-                                    <div className="absolute top-4 right-4 flex gap-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition">
-                                        <button onClick={()=>openModal(item, schema)} className="p-2 text-blue-600 bg-white shadow rounded hover:text-blue-800"><i className="ph-bold ph-pencil-simple"></i></button>
-                                        <button onClick={()=>{if(confirm('Excluir senha?')) handleDelete(item.ID)}} className="p-2 text-red-600 bg-white shadow rounded hover:text-red-800"><i className="ph-bold ph-trash"></i></button>
-                                    </div>
-                                )}
-                            </div>
-                        ))}
-                        {filtered.length === 0 && <div className="col-span-full p-20 text-center text-gray-400 font-bold border-2 border-dashed rounded-3xl">Nenhuma senha encontrada.</div>}
-                    </div>
-                </div>
-            );
-        };
-
-        const BoletinsView = ({ data, canEdit, openModal, handleDelete }) => {
-            const [selectedMedia, setSelectedMedia] = useState(null);
-            const ativos = Array.isArray(data) ? data.filter(d => d) : [];
-
-            return (
-                <div className="space-y-6 animate-fade-in">
-                    <div className="flex flex-col md:flex-row justify-between items-center bg-white p-5 rounded-custom shadow-sm border gap-4">
-                        <div>
-                            <h2 className="text-2xl font-black text-gray-800 flex items-center gap-3"><i className="ph-fill ph-newspaper text-primary"></i> Boletins e Treinamentos</h2>
-                            <p className="text-sm text-gray-500 font-medium ml-9 mt-1 hidden md:block">Materiais educativos e comunicados para a equipe.</p>
-                        </div>
-                        {canEdit && <button onClick={()=>openModal({Tipo_Midia: 'Documento PDF'})} className="bg-primary text-white px-8 py-4 w-full md:w-auto rounded-full font-black shadow-lg hover:-translate-y-1 transition flex items-center justify-center gap-2"><i className="ph-bold ph-plus text-xl"></i> Nova Mídia</button>}
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {ativos.map((item, i) => {
-                            let icon = 'ph-file-pdf'; let color = 'bg-blue-50 text-blue-600';
-                            const t = safeString(item.Tipo_Midia).toLowerCase();
-                            if(t.includes('vídeo') || t.includes('video')) { icon = 'ph-play-circle'; color = 'bg-red-50 text-red-600'; }
-                            else if(t.includes('imagem')) { icon = 'ph-image'; color = 'bg-green-50 text-green-600'; }
-                            else if(t.includes('apresentação')) { icon = 'ph-projector-screen'; color = 'bg-orange-50 text-orange-600'; }
-
-                            return (
-                                <div key={i} className="bg-white border rounded-[2rem] p-6 shadow-sm card-hover flex flex-col relative group">
-                                    <div className="flex items-start justify-between mb-4">
-                                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-3xl shadow-sm ${color}`}><i className={`ph-fill ${icon}`}></i></div>
-                                        <span className="text-[10px] font-black text-gray-400 bg-gray-50 px-3 py-1.5 rounded-full border">{safeString(item.Data_Publicacao).split('-').reverse().join('/')}</span>
-                                    </div>
-                                    <h3 className="font-black text-xl text-gray-900 leading-tight mb-2">{safeString(item.Título)}</h3>
-                                    <p className="text-sm text-gray-500 font-medium line-clamp-2 mb-6">{safeString(item.Descrição)}</p>
-                                    
-                                    <button onClick={()=>setSelectedMedia(item)} className="mt-auto w-full py-3 bg-gray-50 hover:bg-primary hover:text-white rounded-xl font-black transition flex items-center justify-center gap-2 text-gray-700 border">
-                                        Visualizar <i className="ph-bold ph-arrow-right"></i>
-                                    </button>
-
-                                    {canEdit && (
-                                        <div className="absolute top-4 right-4 flex gap-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition">
-                                            <button onClick={()=>openModal(item)} className="p-2 bg-white shadow rounded hover:text-blue-600"><i className="ph-bold ph-pencil-simple"></i></button>
-                                            <button onClick={()=>{if(confirm('Excluir?')) handleDelete(item.ID)}} className="p-2 bg-white shadow rounded hover:text-red-600"><i className="ph-bold ph-trash"></i></button>
-                                        </div>
-                                    )}
-                                </div>
-                            )
-                        })}
-                    </div>
-
-                    {selectedMedia && (
-                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 glass-modal" onClick={()=>setSelectedMedia(null)}>
-                            <div className="bg-white rounded-[2rem] w-full max-w-5xl shadow-2xl relative overflow-hidden border flex flex-col" onClick={e=>e.stopPropagation()}>
-                                <div className="p-4 md:p-6 bg-gray-900 text-white flex justify-between items-center shrink-0">
-                                    <h3 className="text-lg md:text-xl font-black truncate pr-4">{safeString(selectedMedia.Título)}</h3>
-                                    <button onClick={()=>setSelectedMedia(null)} className="w-10 h-10 bg-white/20 hover:bg-red-500 rounded-full flex justify-center items-center transition shrink-0"><i className="ph-bold ph-x"></i></button>
-                                </div>
-                                <div className="bg-gray-100 h-[60vh] md:h-[70vh] w-full relative flex items-center justify-center p-2">
-                                    {selectedMedia.Link_Arquivo ? (
-                                        safeString(selectedMedia.Tipo_Midia) === 'Imagem Externa' ? (
-                                            <img src={formatImageUrl(selectedMedia.Link_Arquivo)} className="max-w-full max-h-full object-contain rounded-lg shadow-lg" alt={selectedMedia.Título} />
-                                        ) : (
-                                            <iframe src={getEmbedUrl(selectedMedia.Link_Arquivo)} className="w-full h-full border-0 rounded-lg" allow="autoplay; encrypted-media" allowFullScreen></iframe>
-                                        )
-                                    ) : <div className="text-gray-400 font-black p-4 text-center">Link indisponível ou não suportado.</div>}
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            )
-        };
-
-        const EscalasContainer = ({ sheetData, user, onRefresh, showToast }) => {
-            const [activeSubTab, setActiveSubTab] = useState('Painel Hoje');
+        const DataTableGeneric = ({ title, tabName, data, user, onRefresh, showToast }) => {
+            const safeData = Array.isArray(data) ? data : [];
             const [isModalOpen, setIsModalOpen] = useState(false);
             const [formData, setFormData] = useState({});
-            const [loadingAction, setLoadingAction] = useState(false);
-            const [currentMonth, setCurrentMonth] = useState(new Date());
-            const [selectedDate, setSelectedDate] = useState(null); 
-            const [selectedPerson, setSelectedPerson] = useState(null); 
-            const [datesToSave, setDatesToSave] = useState([]); 
-            const [showSwapSugg, setShowSwapSugg] = useState(false);
-            const [searchTab, setSearchTab] = useState(''); 
-
+            const [loading, setLoading] = useState(false);
+            const [search, setSearch] = useState('');
+            const [currentSchema, setCurrentSchema] = useState([]);
+            
+            let dynamicKeys = ['ID'];
+            if (safeData.length > 0 && typeof safeData[0] === 'object' && safeData[0] !== null) dynamicKeys = Object.keys(safeData[0]);
+            
+            const schema = tabSchemas[tabName] || dynamicKeys || ['ID'];
             const nivelKey = user && typeof user === 'object' ? Object.keys(user).find(k => safeString(k).toLowerCase().includes('acesso')) : null;
-            const canEdit = nivelKey && ['admin', 'supervisor'].some(role => safeString(user[nivelKey]).toLowerCase().includes(role));
-            const isColab = user && typeof user === 'object' && safeString(user[nivelKey]).toLowerCase().includes('colaborador');
+            const canEdit = nivelKey && ['admin', 'supervisor', 'supervisão'].some(role => safeString(user[nivelKey]).toLowerCase().includes(role));
 
-            const escalas = Array.isArray(sheetData['ESCALAS']) ? sheetData['ESCALAS'] : [];
-            const corpoClinico = Array.isArray(sheetData['CORPO CLINICO']) ? sheetData['CORPO CLINICO'] : [];
-            const usuarios = Array.isArray(sheetData['USUARIOS']) ? sheetData['USUARIOS'] : [];
-            const controleUnimed = Array.isArray(sheetData['CONTROLE_ATENDIMENTOS']) ? sheetData['CONTROLE_ATENDIMENTOS'] : [];
-            
-            const todayStr = new Date().toLocaleDateString('pt-BR');
-            
-            const todayEscalas = escalas.filter(e => e && (safeString(e.Data).includes(todayStr) || safeString(e.Data).includes(todayStr.substring(0,5)))).sort((a,b)=>safeString(a.Nome_Profissional).localeCompare(safeString(b.Nome_Profissional)));
+            const filteredData = safeData.filter(row => row && typeof row === 'object' && Object.values(row).some(val => safeString(val).toLowerCase().includes(search.toLowerCase())));
 
-            const filteredEscalas = escalas.filter(esc => {
-                if(!esc || typeof esc !== 'object') return false;
-                const dt = safeString(esc.Data);
-                const currentMonthStr = `${String(currentMonth.getMonth() + 1).padStart(2, '0')}/${currentMonth.getFullYear()}`;
-                const currentMonthStrShort = `${String(currentMonth.getMonth() + 1).padStart(2, '0')}/${String(currentMonth.getFullYear()).slice(2)}`;
-                if(!dt.includes(currentMonthStr) && !dt.includes(currentMonthStrShort)) return false;
+            const openModal = (row = null, customSchema = null) => {
+                let initial = {}; const s = customSchema || schema;
+                s.forEach(col => initial[col] = row ? safeString(row[col]) : '');
+                setFormData(initial); setCurrentSchema(s); setIsModalOpen(true);
+            };
 
-                const tipo = safeString(esc.Tipo_Profissional).toLowerCase();
-                const nm = safeString(esc.Nome_Profissional).toLowerCase();
-                if (searchTab && !nm.includes(searchTab.toLowerCase())) return false;
+            const handleSave = async (e) => {
+                e.preventDefault(); setLoading(true);
+                const res = await api.saveRecord(tabName, formData, !!formData.ID);
+                setLoading(false);
+                if (res && res.success) { setIsModalOpen(false); onRefresh(tabName); showToast('Salvo com sucesso!'); } else showToast('Erro ao salvar.', 'error');
+            };
 
-                if (activeSubTab === 'Calendário Médicos') return tipo.includes('médico') || tipo.includes('medico') || tipo === '';
-                else if (activeSubTab === 'Calendário Equipe') return tipo.includes('colaborador') || tipo.includes('equipe') || tipo.includes('enfermagem');
-                return true; 
-            });
-
-            const daysInMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate();
-            const firstDayOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1).getDay();
-
-            const handleSaveBatch = async (e) => {
-                e.preventDefault(); if(datesToSave.length === 0) return showToast('Selecione uma data.', 'error');
-                setLoadingAction(true); let err = false;
-                for (let d of datesToSave) {
-                    const rec = { ...formData, Data: d }; if(datesToSave.length > 1) rec.ID = ''; 
-                    const res = await api.saveRecord('ESCALAS', rec, !!formData.ID && datesToSave.length === 1);
-                    if(!res.success) err = true;
+            const handleDelete = async (id) => {
+                if(confirm('Excluir este item permanentemente?')) {
+                    const res = await api.deleteRecord(tabName, id);
+                    if (res && res.success) { onRefresh(tabName); showToast('Excluído com sucesso!'); }
                 }
-                setLoadingAction(false); if(!err) { setIsModalOpen(false); onRefresh('ESCALAS'); showToast('Salvo!'); }
             };
 
-            const findSubstitutes = (missingPersonName) => {
-                const missingUser = usuarios.find(u => u && safeString(u['Nome Completo']) === missingPersonName);
-                if(!missingUser || !missingUser['Competências']) return [];
-                const requiredSkills = safeString(missingUser['Competências']).toLowerCase().split(',').map(s=>s.trim()).filter(s=>s);
-                return usuarios.filter(u => {
-                    if (!u || safeString(u['Nome Completo']) === missingPersonName) return false;
-                    const uSkills = safeString(u['Competências']).toLowerCase();
-                    const hasSkill = requiredSkills.some(rs => uSkills.includes(rs));
-                    const isWorkingToday = todayEscalas.some(e => e && safeString(e.Nome_Profissional) === safeString(u['Nome Completo']));
-                    return hasSkill && !isWorkingToday;
-                });
-            };
-
-            const handleStatusChange = async (esc, novoStatus) => {
-                await api.saveRecord('ESCALAS', { ...esc, Status_Turno: novoStatus }, true);
-                onRefresh('ESCALAS');
-            };
-
-            const handleUnimedUpdate = async (controleItem, num) => {
-                const newValue = Number(controleItem.Qtd_Atual || 0) + num;
-                if(newValue < 0) return;
-                await api.saveRecord('CONTROLE_ATENDIMENTOS', { ...controleItem, Qtd_Atual: String(newValue) }, true);
-                onRefresh('CONTROLE_ATENDIMENTOS');
-            };
-
-            const PainelDoDia = () => {
-                const setores = {};
-                const dataToShow = searchTab ? todayEscalas.filter(e => safeString(e.Nome_Profissional).toLowerCase().includes(searchTab.toLowerCase())) : todayEscalas;
-
-                dataToShow.forEach(e => {
-                    if(!e) return;
-                    const s = safeString(e.Setor_Consultorio) || 'Sem Setor Informado';
-                    if(!setores[s]) setores[s] = []; setores[s].push(e);
-                });
-
-                return (
-                    <div className="bg-white rounded-[2rem] md:rounded-[3rem] p-4 md:p-8 border min-h-[60vh]">
-                        <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
-                            <h3 className="text-2xl md:text-3xl font-black text-gray-800 flex items-center gap-3"><i className="ph-fill ph-kanban text-primary"></i> Operação de Hoje</h3>
-                            <div className="flex flex-wrap justify-center gap-4 text-xs font-bold uppercase tracking-widest bg-gray-50 p-3 rounded-xl md:rounded-full border w-full md:w-auto">
-                                <span className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-green-500"></div> Ativo</span>
-                                <span className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-orange-500"></div> Intervalo</span>
-                                <span className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-red-500"></div> Ausente</span>
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                            {Object.keys(setores).sort().map(setor => (
-                                <div key={setor} className="bg-gray-50 rounded-[2rem] p-5 md:p-6 shadow-inner border flex flex-col">
-                                    <h4 className="font-black text-gray-500 uppercase tracking-widest text-sm mb-4 px-2">{setor}</h4>
-                                    <div className="space-y-4">
-                                        {setores[setor].map((esc, i) => {
-                                            let isFimExpediente = false;
-                                            let userHoraFim = '';
-                                            const profData = usuarios.find(u => u && u['Nome Completo'] === esc.Nome_Profissional) || corpoClinico.find(c => c && c.Médico === esc.Nome_Profissional);
-                                            if (profData && profData['Hora Fim']) userHoraFim = profData['Hora Fim'];
-                                            else userHoraFim = esc.Horario;
-
-                                            if (isPastEnd(userHoraFim)) isFimExpediente = true;
-
-                                            const status = isFimExpediente ? 'Ausente (Fim Expediente)' : (safeString(esc.Status_Turno) || 'Trabalhando');
-                                            const isIntervalo = status === 'Intervalo';
-                                            const isAusente = status.includes('Ausente') || status === 'Folga' || status === 'Falta';
-                                            
-                                            let bgCard = isIntervalo ? 'bg-orange-50 border-orange-200' : isAusente ? 'bg-red-50 border-red-200 opacity-60' : 'bg-white border-gray-100';
-                                            
-                                            const cUnimed = controleUnimed.find(a => a && safeString(a.Profissional) === safeString(esc.Nome_Profissional));
-                                            let uPulseClass = '';
-                                            if (cUnimed) {
-                                                const q = Number(cUnimed.Qtd_Atual||0); const m = Number(cUnimed.Limite_Max||1);
-                                                if (m > 0 && m - q <= 5) uPulseClass = 'animate-pulse bg-red-500 text-white border-red-600';
-                                                else if (m > 0 && q/m >= 0.8) uPulseClass = 'animate-pulse bg-green-500 text-white border-green-600';
-                                                else uPulseClass = 'bg-blue-100 text-blue-800 border-blue-200';
-                                            }
-
-                                            return (
-                                                <div key={i} onClick={()=>(canEdit || isColab) && setSelectedPerson(esc)} className={`p-5 rounded-[1.5rem] border-2 shadow-sm cursor-pointer hover:shadow-md hover:border-primary transition relative flex flex-col gap-2 ${bgCard}`}>
-                                                    {isIntervalo && <div className="absolute -top-3 -right-3 w-10 h-10 bg-orange-500 text-white rounded-full flex items-center justify-center text-xl animate-bounce-slight shadow-lg border-2 border-white z-10">🥪</div>}
-                                                    
-                                                    <div className="flex justify-between items-start">
-                                                        <div>
-                                                            <span className={`font-black text-lg ${isAusente ? 'text-red-900' : 'text-gray-900'} block pr-4`}>{safeString(esc.Nome_Profissional)}</span>
-                                                            <p className="text-xs font-bold text-gray-500 mt-1"><i className="ph-fill ph-clock"></i> {safeString(esc.Horario)}</p>
-                                                        </div>
-                                                        {isAusente && <span className="text-[10px] uppercase font-black tracking-widest text-red-600 bg-red-100 px-2 py-1 rounded">Ausente</span>}
-                                                    </div>
-
-                                                    {esc.Substituindo && <p className="text-[10px] font-black text-primary bg-blue-50 px-2 py-1 rounded mt-1 uppercase w-max">Cobrindo: {safeString(esc.Substituindo)}</p>}
-                                                    
-                                                    {cUnimed && (
-                                                        <div className={`mt-2 flex flex-col md:flex-row justify-between items-center p-3 rounded-xl border gap-2 ${uPulseClass || 'border-blue-200 bg-blue-50/50'}`} onClick={(e)=>e.stopPropagation()}>
-                                                            <span className="text-[10px] font-black uppercase tracking-widest">Guia Unimed</span>
-                                                            <div className="flex items-center gap-4">
-                                                                <button onClick={()=>handleUnimedUpdate(cUnimed, -1)} className="w-8 h-8 bg-white/50 hover:bg-white rounded-full flex items-center justify-center font-black text-black shadow-sm text-lg">-</button>
-                                                                <span className="font-black text-lg w-16 text-center">{cUnimed.Qtd_Atual} <span className="opacity-50 text-xs">/ {cUnimed.Limite_Max}</span></span>
-                                                                <button onClick={()=>handleUnimedUpdate(cUnimed, 1)} className="w-8 h-8 bg-white/50 hover:bg-white rounded-full flex items-center justify-center font-black text-black shadow-sm text-lg">+</button>
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            )
-                                        })}
-                                    </div>
-                                </div>
-                            ))}
-                            {Object.keys(setores).length === 0 && <div className="col-span-full text-center p-10 md:p-20 text-gray-400 font-black text-xl md:text-2xl border-2 border-dashed border-gray-200 rounded-3xl">Ninguém encontrado.</div>}
-                        </div>
-                    </div>
-                )
-            };
+            if(tabName === 'CONVÊNIOS') return <><ConveniosMatrixView data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} schema={schema} /> {isModalOpen && <ModalForm title="Regra de Convênio" schema={currentSchema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
+            if(tabName === 'CORPO CLINICO') return <><CorpoClinicoCards data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} openLancarEscala={()=>{}} /> {isModalOpen && <ModalForm title="Médico" schema={schema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
+            if(tabName === 'CONTATOS') return <><ContatosViewTabs data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} schema={schema} /> {isModalOpen && <ModalForm title="Contato" schema={schema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
+            if(tabName === 'MURAL_AVISOS') return <><MuralAvisosView data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} /> {isModalOpen && <ModalForm title="Aviso" schema={schema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
+            if(tabName === 'BOLETINS_INFORMATIVOS') return <><BoletinsView data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} /> {isModalOpen && <ModalForm title="Mídia/Informativo" schema={schema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
+            if(tabName === 'SENHAS E LOGINS GERAIS') return <><SenhasView data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} schema={schema} /> {isModalOpen && <ModalForm title="Acesso" schema={schema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
 
             return (
-                <div className="space-y-8 animate-fade-in">
-                    <div className="bg-white rounded-custom p-4 shadow-sm border flex flex-col md:flex-row justify-between items-center gap-4">
-                        <div className="flex bg-gray-50 p-2 rounded-2xl gap-2 overflow-x-auto hide-scroll w-full md:w-auto">
-                            {['Painel Hoje', 'Calendário Médicos', 'Calendário Equipe'].map(tab => (
-                                <button key={tab} onClick={() => {setActiveSubTab(tab); setSearchTab('');}} className={`px-4 md:px-6 py-3 rounded-xl font-black text-sm md:text-base transition-all whitespace-nowrap ${activeSubTab === tab ? 'bg-white text-primary shadow-md' : 'text-gray-500 hover:bg-gray-200'}`}>{tab}</button>
-                            ))}
-                        </div>
-                        <div className="flex gap-2 w-full md:w-auto">
-                            <div className="relative flex-1 md:w-64"><i className="ph-bold ph-magnifying-glass absolute left-4 top-3.5 text-gray-400"></i><input type="text" placeholder="Nome..." value={searchTab} onChange={e=>setSearchTab(e.target.value)} className="w-full pl-12 pr-4 py-3 bg-gray-50 border rounded-xl font-bold outline-none focus:border-primary text-sm" /></div>
-                            {canEdit && <button onClick={() => { setFormData({ ID: '', Tipo_Profissional: activeSubTab.includes('Médicos') ? 'Médico' : 'Colaborador', Nome_Profissional: '', Turno: 'Manhã', Horario: '', Unidade: '', Setor_Consultorio: '', Status_Turno: 'Trabalhando', Substituindo: '' }); setDatesToSave([]); setIsModalOpen(true); }} className="bg-primary text-white font-black px-6 py-3 rounded-xl shadow-lg hover:scale-105 transition shrink-0"><i className="ph-bold ph-plus"></i></button>}
-                        </div>
-                    </div>
-
-                    {activeSubTab === 'Painel Hoje' ? <PainelDoDia /> : (
-                        <div className="bg-white rounded-[2rem] md:rounded-[3rem] shadow-sm border p-4 md:p-8 relative overflow-hidden">
-                            <div className="flex justify-between items-center mb-6 md:mb-10">
-                                <button onClick={()=>setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth()-1, 1))} className="w-10 h-10 md:w-14 md:h-14 bg-gray-50 rounded-xl md:rounded-2xl"><i className="ph-bold ph-caret-left"></i></button>
-                                <h2 className="text-2xl md:text-4xl font-black capitalize text-gray-900 text-center">{currentMonth.toLocaleString('pt-BR', { month: 'long', year: 'numeric' })}</h2>
-                                <button onClick={()=>setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth()+1, 1))} className="w-10 h-10 md:w-14 md:h-14 bg-gray-50 rounded-xl md:rounded-2xl"><i className="ph-bold ph-caret-right"></i></button>
-                            </div>
-                            <div className="grid grid-cols-7 gap-2 md:gap-4 mb-4 text-center"><div className="font-black text-gray-400 text-xs md:text-base">D</div><div className="font-black text-gray-400 text-xs md:text-base">S</div><div className="font-black text-gray-400 text-xs md:text-base">T</div><div className="font-black text-gray-400 text-xs md:text-base">Q</div><div className="font-black text-gray-400 text-xs md:text-base">Q</div><div className="font-black text-gray-400 text-xs md:text-base">S</div><div className="font-black text-gray-400 text-xs md:text-base">S</div></div>
-                            <div className="grid grid-cols-7 gap-2 md:gap-4 relative z-10">
-                                {Array(firstDayOfMonth).fill(null).map((_, i) => <div key={`e-${i}`} className="aspect-square opacity-20 bg-gray-50 rounded-xl md:rounded-3xl" />)}
-                                {Array(daysInMonth).fill(null).map((_, i) => {
-                                    const day = i + 1; const dateStrCompleto = `${String(day).padStart(2, '0')}/${String(currentMonth.getMonth() + 1).padStart(2, '0')}/${currentMonth.getFullYear()}`;
-                                    const pessoasNoDia = filteredEscalas.filter(e => e && (safeString(e.Data).includes(dateStrCompleto) || safeString(e.Data).includes(`${String(day).padStart(2, '0')}/${String(currentMonth.getMonth() + 1).padStart(2, '0')}/${String(currentMonth.getFullYear()).slice(2)}`)));
-                                    const isToday = dateStrCompleto === todayStr;
-                                    return (
-                                        <div key={day} onClick={() => setSelectedDate(dateStrCompleto)} className={`aspect-square rounded-xl md:rounded-[2rem] border-2 p-2 md:p-4 flex flex-col cursor-pointer transition-all ${isToday ? 'border-primary bg-blue-50/50 shadow-md' : 'border-gray-100 hover:border-primary/50 bg-white'}`}>
-                                            <span className={`text-base md:text-2xl font-black ${isToday ? 'text-primary' : 'text-gray-900'}`}>{day}</span>
-                                            <div className="mt-auto w-full space-y-1">{pessoasNoDia.length > 0 && <div className={`w-full text-center text-[8px] md:text-xs font-black py-1 md:py-2 rounded-lg md:rounded-xl shadow-sm ${activeSubTab.includes('Médicos') ? 'bg-primary text-white' : 'bg-secondary text-white'}`}>{pessoasNoDia.length} <span className="hidden md:inline">Plantão</span></div>}</div>
-                                        </div>
-                                    )
-                                })}
-                            </div>
-                        </div>
-                    )}
-                    
-                    {selectedDate && !selectedPerson && (
-                        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 glass-modal" onClick={() => setSelectedDate(null)}>
-                            <div className="bg-white rounded-[2rem] md:rounded-[3rem] w-full max-w-5xl p-6 md:p-10 shadow-2xl animate-pop-in relative border flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
-                                <button onClick={()=>setSelectedDate(null)} className="absolute top-4 right-4 md:top-8 md:right-8 w-10 h-10 md:w-12 h-12 bg-gray-100 hover:bg-red-500 hover:text-white rounded-full transition"><i className="ph-bold ph-x"></i></button>
-                                <h3 className="text-2xl md:text-4xl font-black mb-6 md:mb-10 flex items-center gap-4 text-gray-900">Plantão {selectedDate}</h3>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 overflow-y-auto custom-scrollbar flex-1 pb-4 pr-2">
-                                    {filteredEscalas.filter(e => e && (safeString(e.Data).includes(selectedDate) || safeString(e.Data).includes(selectedDate.substring(0,6) + selectedDate.substring(8,10)))).map((esc, i) => (
-                                        <div key={i} onClick={() => (canEdit || isColab) && setSelectedPerson(esc)} className="bg-white border-2 rounded-2xl md:rounded-3xl p-5 md:p-6 cursor-pointer card-hover hover:border-primary flex flex-col">
-                                            <h4 className="font-black text-lg md:text-xl mb-2 md:mb-3 text-gray-900">{safeString(esc.Nome_Profissional)}</h4>
-                                            <p className="text-xs md:text-sm font-black bg-gray-50 px-3 py-1.5 rounded-xl mb-4 text-gray-600 w-max">{safeString(esc.Turno)} • {safeString(esc.Horario)}</p>
-                                            <div className="mt-auto flex justify-between items-center"><span className="text-[10px] font-black uppercase px-3 py-1.5 rounded-full bg-green-100 text-green-800">{safeString(esc.Status_Turno)||'Ativo'}</span><span className="text-primary text-xs font-black bg-blue-50 px-3 py-1.5 rounded-lg">Abrir Card</span></div>
-                                        </div>
-                                    ))}
-                                    {filteredEscalas.filter(e => e && safeString(e.Data).includes(selectedDate)).length === 0 && <div className="col-span-full text-center text-gray-400 font-black text-xl p-10">Ninguém escalado.</div>}
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                    
-                    {selectedPerson && (
-                        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 backdrop-blur-xl bg-gray-900/60 animate-fade-in" onClick={() => {setSelectedPerson(null); setShowSwapSugg(false)}}>
-                            <div className="bg-white rounded-[2rem] md:rounded-[3rem] w-full max-w-lg p-6 md:p-8 shadow-2xl relative border max-h-[90vh] overflow-y-auto custom-scrollbar" onClick={e => e.stopPropagation()}>
-                                <button onClick={()=>{setSelectedPerson(null); setShowSwapSugg(false)}} className="absolute top-4 right-4 md:top-6 md:right-6 w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-full flex justify-center items-center transition"><i className="ph-bold ph-x"></i></button>
-                                
-                                <h2 className="text-2xl font-black mb-1 text-gray-900 pr-8">{safeString(selectedPerson.Nome_Profissional)}</h2>
-                                <p className="text-sm font-bold text-gray-400 mb-6 md:mb-8">{safeString(selectedPerson.Setor_Consultorio)} • {safeString(selectedPerson.Horario)}</p>
-
-                                <div className="space-y-4 mb-6 md:mb-8">
-                                    <h4 className="text-[10px] md:text-xs font-black uppercase text-gray-400 tracking-widest">Avisar Sistema:</h4>
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <button onClick={()=>{handleStatusChange(selectedPerson, 'Trabalhando'); setSelectedPerson(null);}} className="p-3 md:p-4 rounded-xl md:rounded-2xl border-2 hover:border-green-500 bg-green-50 border-green-200 text-green-700 font-black flex items-center justify-center gap-2 transition text-sm md:text-base"><i className="ph-fill ph-check-circle text-xl md:text-2xl"></i> Voltei</button>
-                                        <button onClick={()=>{handleStatusChange(selectedPerson, 'Intervalo'); setSelectedPerson(null);}} className="p-3 md:p-4 rounded-xl md:rounded-2xl border-2 hover:border-orange-500 bg-orange-50 border-orange-200 text-orange-700 font-black flex items-center justify-center gap-2 transition text-sm md:text-base"><i className="ph-fill ph-coffee text-xl md:text-2xl"></i> Fui Lanchar</button>
-                                    </div>
-                                </div>
-
-                                {canEdit && (
-                                    <div className="border-t pt-6 space-y-3">
-                                        <h4 className="text-[10px] md:text-xs font-black uppercase text-gray-400 tracking-widest mb-2">Ações Administrativas:</h4>
-                                        <button onClick={()=>setShowSwapSugg(!showSwapSugg)} className="w-full py-3 md:py-4 bg-gray-900 text-white rounded-xl md:rounded-2xl font-black shadow flex justify-center items-center gap-2 hover:scale-[1.02] transition"><i className="ph-bold ph-arrows-left-right"></i> Sugerir Substituto (Trocar)</button>
-                                        <button onClick={async()=>{if(confirm('Excluir plantão permanentemente?')){ await api.deleteRecord('ESCALAS', selectedPerson.ID); onRefresh('ESCALAS'); setSelectedPerson(null); setSelectedDate(null); }}} className="w-full py-3 md:py-4 bg-red-50 text-red-600 border border-red-100 rounded-xl md:rounded-2xl font-black transition flex justify-center items-center gap-2 hover:bg-red-600 hover:text-white"><i className="ph-bold ph-trash"></i> Excluir Plantão</button>
-                                    </div>
-                                )}
-
-                                {showSwapSugg && canEdit && (
-                                    <div className="mt-4 bg-gray-50 rounded-2xl p-4 border animate-fade-in">
-                                        <h4 className="text-[10px] md:text-xs font-black uppercase text-gray-500 mb-3">Colaboradores com as mesmas Competências:</h4>
-                                        <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-2">
-                                            {findSubstitutes(selectedPerson.Nome_Profissional).map((sub, idx) => (
-                                                <div key={idx} className="bg-white p-3 md:p-4 rounded-xl border flex justify-between items-center shadow-sm">
-                                                    <div>
-                                                        <p className="font-black text-sm text-gray-900">{safeString(sub['Nome Completo'])}</p>
-                                                        <p className="text-[10px] font-bold text-gray-400 mt-0.5" title={safeString(sub['Horários Flexíveis'])}>Disponível • {safeString(sub['Horários Flexíveis']).substring(0,25)}</p>
-                                                    </div>
-                                                    <button onClick={async()=>{ 
-                                                        await api.saveRecord('ESCALAS', { ...selectedPerson, ID: '', Nome_Profissional: safeString(sub['Nome Completo']), Substituindo: safeString(selectedPerson.Nome_Profissional) }, false);
-                                                        showToast(`Substituto acionado: ${sub['Nome Completo']}.`); 
-                                                        setSelectedPerson(null); setShowSwapSugg(false); 
-                                                        onRefresh('ESCALAS');
-                                                    }} className="bg-primary text-white text-[10px] md:text-xs font-black px-3 py-2 md:px-4 md:py-2.5 rounded-lg hover:bg-blue-700 transition shadow-md">Acionar</button>
-                                                </div>
-                                            ))}
-                                            {findSubstitutes(selectedPerson.Nome_Profissional).length === 0 && <p className="text-sm font-bold text-gray-400 text-center py-6 border-2 border-dashed rounded-xl">Nenhum compatível livre hoje.</p>}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    )}
-                    
-                    {isModalOpen && (
-                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 glass-modal" onMouseDown={()=>setIsModalOpen(false)}>
-                            <div className="bg-white rounded-[2rem] md:rounded-[3rem] w-full max-w-6xl max-h-[90vh] flex flex-col shadow-2xl animate-pop-in border" onMouseDown={e=>e.stopPropagation()}>
-                                <div className="p-6 md:p-8 border-b flex justify-between items-center bg-gray-50/50 shrink-0">
-                                    <h3 className="text-xl md:text-3xl font-black text-gray-900">Lançamento em Lote</h3>
-                                    <button onClick={() => setIsModalOpen(false)} className="w-10 h-10 md:w-12 h-12 bg-white rounded-full hover:bg-red-500 hover:text-white shadow-sm text-xl transition flex justify-center items-center"><i className="ph-bold ph-x"></i></button>
-                                </div>
-                                <div className="p-6 md:p-8 flex flex-col lg:flex-row gap-8 md:gap-12 overflow-y-auto custom-scrollbar">
-                                    <div className="lg:w-1/2">
-                                        <h4 className="font-black mb-4 md:mb-6 text-lg md:text-xl text-gray-900">1. Selecione as Datas</h4>
-                                        <div className="grid grid-cols-7 gap-2">
-                                            {Array(firstDayOfMonth).fill(null).map((_, i) => <div key={`empty-${i}`} />)}
-                                            {Array(daysInMonth).fill(null).map((_, i) => {
-                                                const day = i + 1; const dStr = `${String(day).padStart(2, '0')}/${String(currentMonth.getMonth() + 1).padStart(2, '0')}/${currentMonth.getFullYear()}`; const sel = datesToSave.includes(dStr);
-                                                return <button type="button" key={day} onClick={() => { if(sel) setDatesToSave(datesToSave.filter(x => x !== dStr)); else setDatesToSave([...datesToSave, dStr]); }} className={`w-full aspect-square rounded-xl md:rounded-2xl font-black text-sm md:text-lg transition-all ${sel ? 'bg-primary text-white shadow-xl scale-110' : 'bg-white border-2 hover:border-primary shadow-sm text-gray-800'}`}>{day}</button>
-                                            })}
-                                        </div>
-                                    </div>
-                                    <div className="lg:w-1/2">
-                                        <h4 className="font-black mb-4 md:mb-6 text-lg md:text-xl text-gray-900">2. Dados do Plantão</h4>
-                                        <form id="esc-form" onSubmit={handleSaveBatch} className="space-y-4 md:space-y-6">
-                                            <div><label className="block text-[10px] md:text-xs font-black text-gray-400 mb-2 uppercase tracking-widest">Profissional</label><select className="w-full px-4 md:px-5 py-3 md:py-4 bg-gray-50 border rounded-xl md:rounded-custom outline-none focus:border-primary font-black text-gray-900" value={safeString(formData.Nome_Profissional)} onChange={e => {
-                                                const nome = e.target.value;
-                                                const refObj = activeSubTab.includes('Médicos') ? corpoClinico.find(c => c && c.Médico === nome) : usuarios.find(u => u && u['Nome Completo'] === nome);
-                                                const hInicio = refObj ? safeString(refObj['Hora Início']) : ''; const hFim = refObj ? safeString(refObj['Hora Fim']) : '';
-                                                const autoHorario = hInicio && hFim ? `${hInicio} às ${hFim}` : formData.Horario;
-                                                setFormData({...formData, Nome_Profissional: nome, Horario: autoHorario});
-                                            }} required><option value="">Selecione...</option>{activeSubTab.includes('Médicos') ? corpoClinico.map((m,i) => m && <option key={i} value={safeString(m.Médico)}>{safeString(m.Médico)}</option>) : usuarios.map((u,i) => u && <option key={i} value={safeString(u['Nome Completo'])}>{safeString(u['Nome Completo'])}</option>)}</select></div>
-                                            <div className="grid grid-cols-2 gap-4 md:gap-6">
-                                                <div><label className="block text-[10px] md:text-xs font-black text-gray-400 mb-2 uppercase tracking-widest">Turno</label><select className="w-full px-4 md:px-5 py-3 md:py-4 bg-gray-50 border rounded-xl md:rounded-custom outline-none font-bold text-gray-900" value={safeString(formData.Turno)} onChange={e => setFormData({...formData, Turno: e.target.value})}><option value="Manhã">Manhã</option><option value="Tarde">Tarde</option><option value="Noite">Noite</option></select></div>
-                                                <div><label className="block text-[10px] md:text-xs font-black text-gray-400 mb-2 uppercase tracking-widest">Horário</label><input type="text" className="w-full px-4 md:px-5 py-3 md:py-4 bg-gray-50 border rounded-xl md:rounded-custom outline-none font-bold text-gray-900" value={safeString(formData.Horario)} onChange={e => setFormData({...formData, Horario: e.target.value})} placeholder="Ex: 08:00 às 18:00" /></div>
-                                            </div>
-                                            <div className="grid grid-cols-2 gap-4 md:gap-6">
-                                                <div><label className="block text-[10px] md:text-xs font-black text-gray-400 mb-2 uppercase tracking-widest">Unidade</label><input type="text" className="w-full px-4 md:px-5 py-3 md:py-4 bg-gray-50 border rounded-xl md:rounded-custom outline-none font-bold text-gray-900" value={safeString(formData.Unidade)} onChange={e => setFormData({...formData, Unidade: e.target.value})} placeholder="Sede" /></div>
-                                                <div><label className="block text-[10px] md:text-xs font-black text-gray-400 mb-2 uppercase tracking-widest">Setor / Consultório</label><input type="text" className="w-full px-4 md:px-5 py-3 md:py-4 bg-gray-50 border rounded-xl md:rounded-custom outline-none font-bold text-gray-900" value={safeString(formData.Setor_Consultorio)} onChange={e => setFormData({...formData, Setor_Consultorio: e.target.value})} placeholder="Recepção 1" /></div>
-                                            </div>
-                                        </form>
-                                    </div>
-                                </div>
-                                <div className="p-6 border-t flex justify-end gap-4 bg-gray-50/50"><button onClick={() => setIsModalOpen(false)} className="px-10 py-4 font-black text-gray-500 hover:text-gray-800 transition">Cancelar</button><button type="submit" form="esc-form" disabled={loadingAction} className="px-12 py-4 bg-primary text-white font-black rounded-custom shadow-xl hover:-translate-y-1 transition">{loadingAction?'Gravando...':'Gravar Múltiplos'}</button></div>
-                            </div>
-                        </div>
-                    )}
-                </div>
+                <>
+                    <DefaultTableView title={title} schema={schema} filteredData={filteredData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} search={search} setSearch={setSearch} />
+                    {isModalOpen && <ModalForm title={title} schema={currentSchema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}
+                </>
             );
         };
 
@@ -1051,11 +659,11 @@
             const [isOffline, setIsOffline] = useState(!navigator.onLine);
             const [isSharedAuth, setIsSharedAuth] = useState(localStorage.getItem('shared_auth') === 'true');
 
-            const SENHA_ACESSO_GERAL = "csv123"; 
+            // ⚠️ SENHA DE ACESSO GERAL PARA COLABORADORES
+            const SENHA_ACESSO_GERAL = "Csv@123"; 
 
             const userFoto = user?.Foto_Perfil_URL || 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
             const userName = user?.['Nome Completo'] || (isSharedAuth ? 'Equipe São Vicente' : 'Usuário');
-            const [logoUrl, setLogoUrl] = useState(''); 
 
             const nivelKey = user && typeof user === 'object' ? Object.keys(user).find(k => safeString(k).toLowerCase().includes('acesso')) : null;
             const isAdmin = user && nivelKey && ['admin', 'supervisor', 'supervisão'].some(role => safeString(user[nivelKey]).toLowerCase().includes(role));
@@ -1067,31 +675,6 @@
                 return () => { window.removeEventListener('online', handleOnline); window.removeEventListener('offline', handleOffline); }
             }, []);
 
-            // Sincronização ao Vivo (Real-Time)
-            useEffect(() => {
-                if(!user || !isFirebaseConfigured) return;
-                const unsubs = [];
-                
-                const syncCol = (colName) => {
-                    unsubs.push(db.collection(colName).onSnapshot(snap => {
-                        const data = snap.docs.map(d => ({ID: d.id, ...d.data()}));
-                        setSheetData(prev => ({...prev, [colName]: data}));
-                        if(colName === 'CONFIGURACOES') {
-                            data.forEach(c => {
-                                if(!c) return;
-                                if(c.Chave === 'cor_primaria') document.documentElement.style.setProperty('--color-primary', c.Valor);
-                                if(c.Chave === 'cor_secundaria') document.documentElement.style.setProperty('--color-secondary', c.Valor);
-                                if(c.Chave === 'cor_fundo') document.documentElement.style.setProperty('--color-bg', c.Valor);
-                                if(c.Chave === 'logo_url') setLogoUrl(c.Valor); 
-                            });
-                        }
-                    }));
-                };
-
-                syncCol('ESCALAS'); syncCol('CHAT_MENSAGENS'); syncCol('CONTROLE_ATENDIMENTOS'); syncCol('CONFIGURACOES');
-                return () => unsubs.forEach(fn => fn && fn());
-            }, [user]);
-
             useEffect(() => {
                 const unsub = auth?.onAuthStateChanged(async (u) => {
                     if (u && !isSharedAuth) {
@@ -1102,19 +685,29 @@
                         } catch (err) {
                             setUser({ 'E-mail': u.email, 'Nome Completo': u.email.split('@')[0], 'Nível de Acesso': 'Colaborador' });
                         }
-                        loadData('Home');
                     } else {
-                        if(isSharedAuth) {
-                            setUser({ 'Nome Completo': 'Equipe São Vicente', 'Nível de Acesso': 'Colaborador' });
-                            loadData('Home');
-                        } else setUser(null);
+                        if(isSharedAuth) setUser({ 'Nome Completo': 'Equipe São Vicente', 'Nível de Acesso': 'Colaborador' });
+                        else setUser(null);
                     }
                     setLoading(false);
                 });
                 return () => unsub && unsub();
             }, [isSharedAuth]);
                     
-            const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+            const showToast = (msg, type = 'success') => { setToast({ show: true, message: msg, type }); setTimeout(() => setToast(p => ({ ...p, show: false })), 3500); };
+
+            useEffect(() => {
+                if (darkMode) { document.documentElement.classList.add('dark'); localStorage.setItem('theme', 'dark'); } 
+                else { document.documentElement.classList.remove('dark'); localStorage.setItem('theme', 'light'); }
+            }, [darkMode]);
+
+            useEffect(() => {
+                const init = async () => {
+                    if(!isFirebaseConfigured) return;
+                    const allData = await api.fetchAll(); 
+                    if(allData && Object.keys(allData).length > 0) setSheetData(allData);
+                }; init();
+            }, []);
 
             const loadData = async (tab) => {
                 setLoading(true);
@@ -1130,12 +723,15 @@
                 setLoading(false);
             };
 
+            const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
             if (!user) {
                 const handleFirebaseLogin = async (e) => {
                     e.preventDefault(); setLoading(true); setLoginErrorMsg('');
-                    localStorage.setItem('shared_auth', 'false'); setIsSharedAuth(false);
+                    localStorage.removeItem('shared_auth'); setIsSharedAuth(false);
                     const res = await api.login(e.target.email.value, e.target.password.value);
-                    if (!res.success) setLoginErrorMsg(res?.message || 'Erro ao conectar.');
+                    if (res && res.success) { setUser(res.user); loadData('Home'); } 
+                    else { setLoginErrorMsg(res?.message || 'Erro ao conectar.'); }
                     setLoading(false);
                 };
 
@@ -1146,17 +742,18 @@
                         localStorage.setItem('shared_auth', 'true');
                         setIsSharedAuth(true);
                         setUser({ 'Nome Completo': 'Equipe São Vicente', 'Nível de Acesso': 'Colaborador' });
+                        loadData('Home');
                     } else { setLoginErrorMsg('Senha incorreta.'); }
                 };
 
                 return (
                     <div className="min-h-screen bg-medical flex flex-col items-center justify-center p-4">
-                        {isOffline && <div className="mb-6 bg-red-600 text-white px-6 py-2 rounded-full font-bold shadow-lg animate-pulse flex items-center gap-2 text-sm"><i className="ph-bold ph-wifi-slash"></i> Sem Internet. O login pode falhar se não estiver em cache.</div>}
+                        {isOffline && <div className="mb-6 bg-red-600 text-white px-6 py-2 rounded-full font-bold shadow-lg flex items-center gap-2 text-sm"><i className="ph-bold ph-wifi-slash"></i> Sem Internet. O login pode falhar.</div>}
                         <div className="bg-white rounded-[2rem] md:rounded-[3rem] shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col md:flex-row animate-fade-in border">
                             <div className="md:w-5/12 bg-gradient-to-br from-primary to-blue-800 text-white p-10 md:p-12 flex flex-col justify-center relative">
                                 <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
                                 <div className="relative z-10 text-center">
-                                    {logoUrl ? <img src={formatImageUrl(logoUrl)} className="w-24 h-24 md:w-32 md:h-32 mx-auto object-contain mb-6 drop-shadow-xl" alt="Logo" /> : <div className="w-24 h-24 md:w-28 md:h-28 mx-auto bg-white/10 rounded-[2rem] flex items-center justify-center mb-6 backdrop-blur-sm shadow-xl"><i className="ph-fill ph-heartbeat text-6xl md:text-7xl"></i></div>}
+                                    <div className="w-24 h-24 md:w-28 md:h-28 mx-auto bg-white/10 rounded-[2rem] flex items-center justify-center mb-6 backdrop-blur-sm shadow-xl"><i className="ph-fill ph-heartbeat text-6xl md:text-7xl"></i></div>
                                     <h1 className="text-3xl md:text-4xl font-black mb-4">São Vicente</h1>
                                     <p className="text-blue-100 font-medium text-xs md:text-sm">Portal interno de comunicação, escalas e processos da clínica.</p>
                                 </div>
@@ -1167,17 +764,14 @@
                                 {loginView === 'selecao' && (
                                     <div className="space-y-4 md:space-y-6 animate-fade-in">
                                         <h2 className="text-xl md:text-2xl font-black text-gray-800 mb-6 md:mb-8 text-center md:text-left">Selecione seu acesso:</h2>
-                                        
                                         <button onClick={()=>setLoginView('geral')} className="w-full bg-blue-50 hover:bg-primary group p-5 md:p-6 rounded-[1.5rem] md:rounded-2xl border-2 border-blue-100 hover:border-primary transition flex items-center gap-4 md:gap-6 text-left">
                                             <div className="w-14 h-14 md:w-16 md:h-16 rounded-xl bg-white text-primary flex justify-center items-center shrink-0 shadow-sm"><i className="ph-fill ph-users text-2xl md:text-3xl"></i></div>
                                             <div><h3 className="font-black text-lg md:text-xl text-gray-900 group-hover:text-white transition">Acesso Colaboradores</h3><p className="text-xs md:text-sm text-gray-500 group-hover:text-blue-100 transition mt-1">Escalas, ramais, guias e consultas.</p></div>
                                         </button>
-
                                         <button onClick={()=>setLoginView('supervisor')} className="w-full bg-orange-50 hover:bg-secondary group p-5 md:p-6 rounded-[1.5rem] md:rounded-2xl border-2 border-orange-100 hover:border-secondary transition flex items-center gap-4 md:gap-6 text-left">
                                             <div className="w-14 h-14 md:w-16 md:h-16 rounded-xl bg-white text-secondary flex justify-center items-center shrink-0 shadow-sm"><i className="ph-fill ph-shield-star text-2xl md:text-3xl"></i></div>
-                                            <div><h3 className="font-black text-lg md:text-xl text-gray-900 group-hover:text-white transition">Acesso Gestão</h3><p className="text-xs md:text-sm text-gray-500 group-hover:text-orange-100 transition mt-1">Edição de dados e controle de clínica.</p></div>
+                                            <div><h3 className="font-black text-lg md:text-xl text-gray-900 group-hover:text-white transition">Acesso Gestão</h3><p className="text-xs md:text-sm text-gray-500 group-hover:text-orange-100 transition mt-1">Edição de dados e controle da clínica.</p></div>
                                         </button>
-
                                         <div className="pt-6 text-center"><button onClick={()=>setLoginView('admin')} className="text-xs font-bold text-gray-400 hover:text-primary transition underline decoration-dashed underline-offset-4">Acesso Administrador Restrito</button></div>
                                     </div>
                                 )}
@@ -1225,55 +819,59 @@
                 { id: 'REMOÇÕES', icon: 'ph-car', label: 'Remoções' },
                 { id: 'SENHAS E LOGINS GERAIS', icon: 'ph-lock-key', label: 'Senhas de Sistemas' }
             ];
-            const adminMenus = [ { id: 'CONTROLE_ATENDIMENTOS', icon: 'ph-chart-line-up', label: 'Metas Unimed' }, { id: 'USUARIOS', icon: 'ph-users', label: 'Colaboradores' }, { id: 'DESIGN_INTERFACE', icon: 'ph-magic-wand', label: 'Design de Interface' }, { id: 'LEMBRETES_HORA', icon: 'ph-clock', label: 'Avisos do Relógio' } ];
+            const adminMenus = [ { id: 'CONTROLE_ATENDIMENTOS', icon: 'ph-chart-line-up', label: 'Metas Unimed' }, { id: 'USUARIOS', icon: 'ph-users', label: 'Colaboradores' }, { id: 'LEMBRETES_HORA', icon: 'ph-clock', label: 'Avisos do Relógio' } ];
 
             const foundMenu = menus.concat(adminMenus).find(m => m.id === activeTab);
             const titleTab = foundMenu ? foundMenu.label : activeTab;
 
             return (
-                <div className="min-h-screen flex flex-col md:flex-row overflow-hidden relative selection:bg-primary selection:text-white bg-medical">
-                    {isOffline && <div className="absolute top-0 inset-x-0 z-[99999] bg-red-600 text-white text-[10px] md:text-xs font-black py-2 md:py-1.5 flex justify-center items-center gap-2 shadow-md animate-fade-in"><i className="ph-bold ph-wifi-slash text-sm md:text-base"></i> Sem Conexão: Operando com dados salvos em cache local.</div>}
+                <div className={`min-h-screen flex flex-col md:flex-row overflow-hidden relative selection:bg-primary selection:text-white ${darkMode ? 'dark bg-slate-900 text-slate-100' : 'bg-medical'}`}>
+                    
+                    {isOffline && <div className="absolute top-0 inset-x-0 z-[99999] bg-red-600 text-white text-[10px] md:text-xs font-black py-2 md:py-1.5 flex justify-center items-center gap-2 shadow-md animate-fade-in"><i className="ph-bold ph-wifi-slash text-sm md:text-base"></i> Sem Conexão: Operando com dados salvos em cache.</div>}
                     {toast.show && <div className={`fixed bottom-4 md:bottom-8 right-4 md:right-8 z-[9999] px-6 md:px-8 py-4 md:py-5 rounded-xl md:rounded-custom shadow-2xl text-white font-black text-sm md:text-lg animate-slide-up bg-green-500`}><i className="ph-bold ph-check-circle text-xl md:text-2xl"></i> {toast.message}</div>}
 
                     <div className="md:hidden bg-primary text-white p-4 flex justify-between items-center z-40 shadow-lg relative">
-                        <div className="flex items-center gap-3 font-black text-xl">
-                            {logoUrl ? <img src={formatImageUrl(logoUrl)} className="h-8 object-contain" alt="Logo" /> : <i className="ph-fill ph-heartbeat text-2xl"></i>}
-                            Portal SV
+                        <div className="flex items-center gap-3 font-black text-xl"><i className="ph-fill ph-heartbeat text-2xl"></i> Portal SV</div>
+                        <div className="flex gap-2">
+                            <button onClick={()=>setDarkMode(!darkMode)} className="text-2xl p-1 bg-white/10 rounded-lg"><i className={`ph-fill ${darkMode ? 'ph-sun' : 'ph-moon'}`}></i></button>
+                            <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="text-2xl p-1 bg-white/10 rounded-lg"><i className={`ph-bold ${isMobileMenuOpen ? 'ph-x' : 'ph-list'}`}></i></button>
                         </div>
-                        <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="text-3xl p-1 bg-white/10 rounded-lg"><i className={`ph-bold ${isMobileMenuOpen ? 'ph-x' : 'ph-list'}`}></i></button>
                     </div>
 
                     {isMobileMenuOpen && <div className="fixed inset-0 bg-black/60 z-40 md:hidden backdrop-blur-sm" onClick={() => setIsMobileMenuOpen(false)}></div>}
 
-                    <aside className={`fixed inset-y-0 left-0 w-72 md:w-80 bg-white border-r flex flex-col h-screen shrink-0 shadow-2xl z-50 transform ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 transition-transform duration-300 ease-in-out`}>
-                        <div className="p-6 md:p-8 flex items-center border-b bg-gray-50/50 cursor-pointer" onClick={()=>{setActiveTab('Home'); setIsMobileMenuOpen(false);}}>
-                            {logoUrl ? <img src={formatImageUrl(logoUrl)} className="w-12 h-12 md:w-16 md:h-16 object-contain mr-3" alt="Logo" /> : <div className="bg-primary text-white p-2 md:p-3 rounded-xl md:rounded-2xl mr-3 shadow-md"><i className="ph-fill ph-heartbeat text-2xl md:text-3xl"></i></div>}
-                            <div><h1 className="text-xl md:text-2xl font-black leading-none text-gray-900">Portal</h1><span className="text-[10px] font-black text-primary uppercase tracking-widest">São Vicente</span></div>
+                    <aside className={`fixed inset-y-0 left-0 w-72 md:w-80 bg-white dark:bg-slate-800 border-r border-gray-100 dark:border-slate-700 flex flex-col h-screen shrink-0 shadow-2xl z-50 transform ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 transition-transform duration-300 ease-in-out`}>
+                        <div className="p-6 md:p-8 flex items-center justify-between border-b border-gray-100 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-900/50 cursor-pointer" onClick={()=>{setActiveTab('Home'); setIsMobileMenuOpen(false);}}>
+                            <div className="flex items-center">
+                                <div className="bg-primary text-white p-2 md:p-3 rounded-xl md:rounded-2xl mr-3 shadow-md"><i className="ph-fill ph-heartbeat text-2xl md:text-3xl"></i></div>
+                                <div><h1 className="text-xl md:text-2xl font-black leading-none text-gray-900 dark:text-white">Portal</h1><span className="text-[10px] font-black text-primary uppercase tracking-widest">São Vicente</span></div>
+                            </div>
+                            <button onClick={(e)=>{e.stopPropagation(); setDarkMode(!darkMode)}} className="hidden md:flex text-gray-400 hover:text-primary text-2xl bg-gray-100 dark:bg-slate-700 p-2 rounded-xl transition"><i className={`ph-fill ${darkMode ? 'ph-sun' : 'ph-moon'}`}></i></button>
                         </div>
-                        <div className="p-5 md:p-6 border-b flex items-center gap-4">
-                            {userFoto ? <img src={formatImageUrl(userFoto)} className="w-12 h-12 md:w-14 md:h-14 rounded-xl md:rounded-custom object-cover shadow-md shrink-0 border-2 border-white" alt="Avatar" /> : <div className="w-12 h-12 md:w-14 md:h-14 rounded-xl md:rounded-custom bg-gradient-to-tr from-secondary to-orange-400 flex items-center justify-center text-white font-black text-xl md:text-2xl shadow-md shrink-0">{safeString(userName || 'U').charAt(0).toUpperCase()}</div>}
+                        <div className="p-5 md:p-6 border-b border-gray-50 dark:border-slate-700 flex items-center gap-4">
+                            {userFoto ? <img src={formatImageUrl(userFoto)} className="w-12 h-12 md:w-14 md:h-14 rounded-xl md:rounded-custom object-cover shadow-md shrink-0 border-2 border-white dark:border-slate-700" alt="Avatar" /> : <div className="w-12 h-12 md:w-14 md:h-14 rounded-xl md:rounded-custom bg-gradient-to-tr from-secondary to-orange-400 flex items-center justify-center text-white font-black text-xl md:text-2xl shadow-md shrink-0">{safeString(userName || 'U').charAt(0).toUpperCase()}</div>}
                             <div className="flex-1 overflow-hidden">
-                                <p className="text-sm md:text-base font-black truncate text-gray-900">{userName}</p>
+                                <p className="text-sm md:text-base font-black truncate text-gray-900 dark:text-white">{userName}</p>
                                 <p className="text-[9px] md:text-[10px] font-black text-primary bg-primary/10 px-2 py-1 rounded-md inline-block mt-1 uppercase tracking-widest">{isAdmin?'Gestão/Admin':'Equipe'}</p>
                             </div>
                         </div>
                         <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-1 custom-scrollbar pb-8 mt-4 md:mt-0">
                             <div className="px-3 md:px-4 mb-2 mt-2 text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest">Menu Principal</div>
-                            {menus.map(m => <button key={m.id} onClick={()=>{setActiveTab(m.id); setIsMobileMenuOpen(false);}} className={`w-full flex items-center gap-3 md:gap-4 px-4 md:px-5 py-3 rounded-xl md:rounded-custom text-xs md:text-sm font-bold transition-all ${activeTab===m.id?'bg-primary text-white shadow-xl md:scale-[1.02]':'text-gray-500 hover:bg-gray-100'}`}><i className={`ph-fill ${m.icon} text-lg md:text-xl`}></i> {m.label}</button>)}
+                            {menus.map(m => <button key={m.id} onClick={()=>{setActiveTab(m.id); loadData(m.id); setIsMobileMenuOpen(false);}} className={`w-full flex items-center gap-3 md:gap-4 px-4 md:px-5 py-3 rounded-xl md:rounded-custom text-xs md:text-sm font-bold transition-all ${activeTab===m.id?'bg-primary text-white shadow-xl md:scale-[1.02]':'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700'}`}><i className={`ph-fill ${m.icon} text-lg md:text-xl`}></i> {m.label}</button>)}
                             
                             {isAdmin && (
                                 <>
                                     <div className="px-3 md:px-4 mt-6 mb-2 text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest">Gestão Avançada</div>
-                                    {adminMenus.map(m => <button key={m.id} onClick={()=>{setActiveTab(m.id); setIsMobileMenuOpen(false);}} className={`w-full flex items-center gap-3 md:gap-4 px-4 md:px-5 py-3 rounded-xl md:rounded-custom text-xs md:text-sm font-bold transition-all ${activeTab===m.id?'bg-gray-900 text-white shadow-xl md:scale-[1.02]':'text-gray-500 hover:bg-gray-100'}`}><i className={`ph-fill ${m.icon} text-lg md:text-xl`}></i> {m.label}</button>)}
+                                    {adminMenus.map(m => <button key={m.id} onClick={()=>{setActiveTab(m.id); loadData(m.id); setIsMobileMenuOpen(false);}} className={`w-full flex items-center gap-3 md:gap-4 px-4 md:px-5 py-3 rounded-xl md:rounded-custom text-xs md:text-sm font-bold transition-all ${activeTab===m.id?'bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-xl md:scale-[1.02]':'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700'}`}><i className={`ph-fill ${m.icon} text-lg md:text-xl`}></i> {m.label}</button>)}
                                 </>
                             )}
-                            <button onClick={()=>{auth?.signOut(); localStorage.removeItem('shared_auth'); setIsSharedAuth(false); setUser(null);}} className="w-full flex items-center gap-3 md:gap-4 px-4 md:px-5 py-3 rounded-xl md:rounded-custom text-xs md:text-sm font-bold text-red-600 hover:bg-red-50 mt-8 transition"><i className="ph-fill ph-sign-out text-lg md:text-xl"></i> Sair</button>
+                            <button onClick={()=>{auth?.signOut(); localStorage.removeItem('shared_auth'); setIsSharedAuth(false); setUser(null);}} className="w-full flex items-center gap-3 md:gap-4 px-4 md:px-5 py-3 rounded-xl md:rounded-custom text-xs md:text-sm font-bold text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 mt-8 transition"><i className="ph-fill ph-sign-out text-lg md:text-xl"></i> Sair do Sistema</button>
                         </div>
                     </aside>
 
                     <main className="flex-1 h-[calc(100vh-76px)] md:h-screen overflow-y-auto relative custom-scrollbar p-4 md:p-10 pt-6 md:pt-10">
                         <ErrorBoundary>
-                            {loading && <div className="fixed inset-0 bg-white/70 backdrop-blur z-40 flex items-center justify-center"><div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin shadow-lg"></div></div>}
+                            {loading && <div className="fixed inset-0 bg-white/70 dark:bg-slate-900/70 backdrop-blur z-40 flex items-center justify-center"><div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin shadow-lg"></div></div>}
 
                             {activeTab === 'Home' && !loading && (
                                 <div className="space-y-8 md:space-y-12 animate-fade-in max-w-[1400px] mx-auto">
@@ -1299,10 +897,10 @@
                                     )}
 
                                     <div>
-                                        <h3 className="text-xl md:text-3xl font-black mb-6 md:mb-8 text-gray-900 px-2">Acesso Rápido</h3>
+                                        <h3 className="text-xl md:text-3xl font-black mb-6 md:mb-8 text-gray-900 dark:text-white px-2">Acesso Rápido</h3>
                                         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 md:gap-6">
-                                            {[ { l: 'Mural', i: 'ph-presentation-chart', bg:'bg-blue-50', c:'text-blue-600', t: 'MURAL_AVISOS' }, { l: 'Painel', i: 'ph-kanban', bg:'bg-orange-50', c:'text-orange-600', t: 'ESCALAS' }, { l: 'Boletins', i: 'ph-newspaper', bg:'bg-purple-50', c:'text-purple-600', t: 'BOLETINS_INFORMATIVOS' }, { l: 'Consultas', i: 'ph-stethoscope', bg:'bg-blue-50', c:'text-blue-600', t: 'CONSULTA E PROCEDIMENTOS' }, { l: 'Imagem', i: 'ph-bone', bg:'bg-green-50', c:'text-green-600', t: 'EXAMES DE IMAGEM' }, { l: 'Senhas', i: 'ph-lock-key', bg:'bg-red-50', c:'text-red-600', t: 'SENHAS E LOGINS GERAIS' } ].map((d, i) => (
-                                                <button key={i} onClick={()=>{setActiveTab(d.t)}} className={`${d.bg} ${d.c} p-4 md:p-6 rounded-[1.5rem] md:rounded-[2rem] flex flex-col items-center justify-center gap-3 md:gap-4 card-hover shadow-sm border border-transparent`}>
+                                            {[ { l: 'Mural', i: 'ph-presentation-chart', bg:'bg-blue-50 dark:bg-blue-900/30', c:'text-blue-600 dark:text-blue-400', t: 'MURAL_AVISOS' }, { l: 'Painel', i: 'ph-kanban', bg:'bg-orange-50 dark:bg-orange-900/30', c:'text-orange-600 dark:text-orange-400', t: 'ESCALAS' }, { l: 'Boletins', i: 'ph-newspaper', bg:'bg-purple-50 dark:bg-purple-900/30', c:'text-purple-600 dark:text-purple-400', t: 'BOLETINS_INFORMATIVOS' }, { l: 'Consultas', i: 'ph-stethoscope', bg:'bg-blue-50 dark:bg-blue-900/30', c:'text-blue-600 dark:text-blue-400', t: 'CONSULTA E PROCEDIMENTOS' }, { l: 'Imagem', i: 'ph-bone', bg:'bg-green-50 dark:bg-green-900/30', c:'text-green-600 dark:text-green-400', t: 'EXAMES DE IMAGEM' }, { l: 'Senhas', i: 'ph-lock-key', bg:'bg-red-50 dark:bg-red-900/30', c:'text-red-600 dark:text-red-400', t: 'SENHAS E LOGINS GERAIS' } ].map((d, i) => (
+                                                <button key={i} onClick={()=>{setActiveTab(d.t);loadData(d.t)}} className={`${d.bg} ${d.c} p-4 md:p-6 rounded-[1.5rem] md:rounded-[2rem] flex flex-col items-center justify-center gap-3 md:gap-4 card-hover shadow-sm border border-transparent dark:border-slate-700`}>
                                                     <i className={`ph-fill ${d.i} text-3xl md:text-4xl`}></i><span className="font-black text-[10px] md:text-xs text-center uppercase tracking-widest">{d.l}</span>
                                                 </button>
                                             ))}
@@ -1317,10 +915,8 @@
                             {activeTab === 'EXAMES LABORATORIAIS' && !loading && <GenericCardView data={sheetData['EXAMES LABORATORIAIS']} canEdit={canEdit} openModal={(row, s)=>setSheetData(p=>({...p, __modal: {tab: activeTab, row: row, sch: s}}))} handleDelete={(id)=>api.deleteRecord(activeTab, id)} schema={tabSchemas[activeTab]} titleField="Procedimento" descField="Preparo" extraField="Prazo de Liberação" title="Lab." />}
                             {activeTab === 'REMOÇÕES' && !loading && <GenericCardView data={sheetData['REMOÇÕES']} canEdit={canEdit} openModal={(row, s)=>setSheetData(p=>({...p, __modal: {tab: activeTab, row: row, sch: s}}))} handleDelete={(id)=>api.deleteRecord(activeTab, id)} schema={tabSchemas[activeTab]} titleField="Nome do Hospital/Clínica" descField="Informações Importantes" extraField="Contato" title="Remoção" />}
                             {activeTab === 'INSTITUTOS' && !loading && <InstitutosView data={sheetData['INSTITUTOS']} canEdit={canEdit} openModal={(row, s)=>setSheetData(p=>({...p, __modal: {tab: activeTab, row: row, sch: s}}))} handleDelete={(id)=>api.deleteRecord(activeTab, id)} schema={tabSchemas[activeTab]} />}
-
                             {activeTab === 'CHAT_MENSAGENS' && !loading && <ChatModerno chatData={sheetData['CHAT_MENSAGENS']} user={user} onSaveChat={api.saveRecord} onRefresh={()=>loadData('CHAT_MENSAGENS')} />}
                             {activeTab === 'ESCALAS' && !loading && <EscalasContainer sheetData={sheetData} user={user} onRefresh={()=>loadData('ESCALAS')} showToast={showToast} />}
-                            {activeTab === 'DESIGN_INTERFACE' && !loading && <DesignInterfacePanel sheetData={sheetData} onRefresh={()=>loadData('CONFIGURACOES')} showToast={showToast} />}
 
                             {['CONVÊNIOS', 'CORPO CLINICO', 'CONTATOS', 'MURAL_AVISOS', 'BOLETINS_INFORMATIVOS', 'SENHAS E LOGINS GERAIS', 'CONTROLE_ATENDIMENTOS', 'USUARIOS', 'LEMBRETES_HORA'].includes(activeTab) && !loading && (
                                 <DataTableGeneric title={titleTab} tabName={activeTab} data={sheetData[activeTab] || []} user={user} onRefresh={()=>loadData(activeTab)} showToast={showToast} />
