@@ -9,17 +9,26 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Portal SV">
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/149/149071.png">
-    <link rel="manifest" href='data:application/manifest+json;utf-8,{"name":"Portal São Vicente","short_name":"Portal SV","start_url":"/","display":"standalone","background_color":"#F8FAFC","theme_color":"#1E40AF","icons":[{"src":"https://cdn-icons-png.flaticon.com/512/149/149071.png","sizes":"512x512","type":"image/png"}]}'>
+    
+    <link rel="apple-touch-icon" href="logo.png">
+    <link rel="icon" type="image/png" href="logo.png">
+    <link rel="manifest" href="manifest.json">
 
     <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <script>
-        const VERSAO_ATUAL = "8.1.0"; 
+        const VERSAO_ATUAL = "9.0.0"; // App Oficial + Boletins Multi-Mídia
         if (window.location.search.indexOf('v=' + VERSAO_ATUAL) === -1) {
             localStorage.clear(); sessionStorage.clear();
             window.location.replace(window.location.pathname + (window.location.pathname.indexOf('?') === -1 ? '?' : '&') + 'v=' + VERSAO_ATUAL);
+        }
+        
+        // Registra o Service Worker (sw.js) que você criou para funcionar offline como App
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW falhou (Normal localmente):', err));
+            });
         }
     </script>
 
@@ -103,7 +112,7 @@
                     <div className="p-10 text-center flex flex-col items-center justify-center min-h-screen bg-gray-50">
                         <i className="ph-fill ph-warning-circle text-6xl text-red-500 mb-4"></i>
                         <h2 className="text-3xl font-black text-gray-800 mb-2">Aviso do Sistema</h2>
-                        <p className="text-gray-500 mb-6 max-w-md">Ocorreu um erro interno de renderização. Nenhuma informação foi perdida.</p>
+                        <p className="text-gray-500 mb-6 max-w-md">Ocorreu um erro interno. Fique tranquilo, seus dados estão seguros.</p>
                         <button onClick={()=>window.location.reload()} className="bg-primary text-white px-10 py-4 rounded-xl font-black shadow-lg">Recarregar Painel</button>
                     </div>
                 );
@@ -127,7 +136,7 @@
         };
 
         const tabSchemas = {
-            'CONVÊNIOS': ['ID', 'Código', 'Procedimento'], // Dinâmico
+            'CONVÊNIOS': ['ID', 'Código', 'Procedimento'], 
             'CORPO CLINICO': ['ID', 'Médico', 'Especialidade', 'Segmento', 'Código UNIMED', 'CRM', 'CBO', 'Cor_Selo', 'Foto_URL'], 
             'EXAMES DE IMAGEM': ['ID', 'Categoria', 'Código', 'Nome do Exame', 'Profissionais', 'Idade Permitida', 'Observações', 'Imagem_URL'],
             'EXAMES DE IMAGEM E OUTROS': ['ID', 'Código', 'Descrição', 'Valor', 'Prazo de Laudo', 'Onde Encontrar', 'Imagem_URL'],
@@ -140,7 +149,7 @@
             'NOVIDADES_E_EVENTOS': ['ID', 'Tipo', 'Título', 'Mensagem', 'Data de Publicação', 'Imagem_URL'],
             'BOLETINS_INFORMATIVOS': ['ID', 'Título', 'Descrição', 'Tipo_Midia', 'Link_Arquivo', 'Data_Publicacao'],
             'CONTROLE_ATENDIMENTOS': ['ID', 'Profissional', 'Convênio', 'Qtd_Atual', 'Limite_Max'],
-            'USUARIOS': ['ID', 'Nome Completo', 'E-mail', 'Nível de Acesso', 'Data de Nascimento', 'Foto_Perfil_URL', 'Status', 'Competências', 'Hora Início', 'Hora Fim', 'Dias de Trabalho', 'Horários Flexíveis', 'Formato Contratação'],
+            'USUARIOS': ['ID', 'Nome Completo', 'E-mail', 'Nível de Acesso', 'Data de Nascimento', 'Foto_Perfil_URL', 'Status', 'Competências', 'Formato Contratação', 'Horários Flexíveis', 'Dias de Trabalho', 'Hora Início', 'Hora Fim'],
             'ESCALAS': ['ID', 'Tipo_Profissional', 'Nome_Profissional', 'Data', 'Turno', 'Horario', 'Unidade', 'Setor_Consultorio', 'Status_Turno', 'Substituindo'],
             'CHAT_MENSAGENS': ['ID', 'Data_Hora', 'Nome', 'Mensagem', 'Destinatario'],
             'LEMBRETES_HORA': ['ID', 'Hora', 'Mensagem'],
@@ -149,15 +158,6 @@
         };
 
         const api = {
-            fetch: async (colName) => {
-                if(!db) return [];
-                try { const snap = await db.collection(colName).get(); return snap.docs.map(doc => ({ ID: doc.id, ...doc.data() })); } catch (e) { return []; }
-            },
-            fetchAll: async () => {
-                if(!db) return {}; let allData = {};
-                for (let c of Object.keys(tabSchemas)) { try { const snap = await db.collection(c).get(); allData[c] = snap.docs.map(doc => ({ ID: doc.id, ...doc.data() })); } catch(e) {} }
-                return allData;
-            },
             login: async (rawEmail, password) => {
                 if(!isFirebaseConfigured || !auth) return { success: false, message: 'As chaves não estão configuradas.' };
                 try {
@@ -237,7 +237,11 @@
                                                 </select>
                                             ) : colName === 'Tipo_Midia' ? (
                                                 <select className="w-full px-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl font-bold text-gray-800 dark:text-white" value={safeString(formData[colName])} onChange={e => setFormData({...formData, [colName]: e.target.value})}>
-                                                    <option value="Documento PDF">Documento (Drive PDF)</option><option value="Vídeo">Vídeo (YouTube/Drive)</option>
+                                                    <option value="Documento PDF">Documento (Drive PDF)</option>
+                                                    <option value="Apresentação">Apresentação (Slides Drive)</option>
+                                                    <option value="Vídeo">Vídeo (YouTube/Drive)</option>
+                                                    <option value="Imagem">Imagem Externa</option>
+                                                    <option value="Outro">Outro Formato</option>
                                                 </select>
                                             ) : colName === 'Tipo' && title.includes('Contato') ? (
                                                 <select className="w-full px-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-primary font-bold text-gray-800 dark:text-white" value={safeString(formData[colName])} onChange={(e) => setFormData({...formData, [colName]: e.target.value})}>
@@ -404,61 +408,14 @@
             )
         };
 
-        const MuralAvisosView = ({ data, canEdit, openModal, handleDelete }) => {
-            const safeData = Array.isArray(data) ? data : [];
-            const ativos = safeData.filter(item => item && typeof item === 'object' && safeString(item.Ativo).toLowerCase() !== 'não' && safeString(item.Ativo).toLowerCase() !== 'nao');
-
-            return (
-                <div className="space-y-8 animate-fade-in">
-                    <div className="flex flex-col md:flex-row justify-between items-center bg-white dark:bg-slate-800 p-5 rounded-custom shadow-sm border border-gray-100 dark:border-slate-700 gap-4">
-                        <div>
-                            <h2 className="text-2xl font-black text-gray-800 dark:text-white flex items-center gap-3"><i className="ph-fill ph-presentation-chart text-primary"></i> Mural de Avisos</h2>
-                            <p className="text-sm text-gray-500 font-medium ml-9 mt-1 hidden md:block">Quadros de avisos em destaque e comunicados oficiais.</p>
-                        </div>
-                        {canEdit && <button onClick={()=>openModal({Layout: 'Padrão'})} className="bg-primary text-white w-full md:w-auto px-8 py-4 rounded-full font-black shadow-lg hover:-translate-y-1 transition flex items-center justify-center gap-2"><i className="ph-bold ph-plus text-xl"></i> Criar Anúncio</button>}
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
-                        {ativos.map((item, i) => {
-                            const layout = safeString(item.Layout) || 'Padrão';
-                            if (layout === 'Só Texto') {
-                                return (
-                                    <div key={i} className="bg-gradient-to-br from-blue-600 to-indigo-800 rounded-[2rem] md:rounded-custom shadow-lg p-8 md:p-10 card-hover flex flex-col justify-center text-white relative group overflow-hidden min-h-[300px] md:h-[350px]">
-                                        <i className="ph-fill ph-megaphone absolute -right-10 -bottom-10 text-[8rem] md:text-[10rem] opacity-10"></i>
-                                        <h3 className="text-2xl md:text-4xl font-black leading-tight mb-4 z-10">{safeString(item.Título) || 'Aviso Interno'}</h3>
-                                        <p className="text-base md:text-xl font-medium opacity-90 z-10">{safeString(item.Subtítulo)}</p>
-                                        {canEdit && <div className="absolute top-4 right-4 flex gap-2 opacity-100 md:opacity-0 group-hover:opacity-100 transition z-20"><button onClick={()=>openModal(item)} className="w-10 h-10 bg-white/20 hover:bg-white text-white hover:text-blue-600 rounded-xl flex items-center justify-center transition"><i className="ph-bold ph-pencil-simple text-lg"></i></button><button onClick={()=>{if(confirm('Excluir?')) handleDelete(item.ID)}} className="w-10 h-10 bg-white/20 hover:bg-red-500 text-white rounded-xl flex items-center justify-center transition"><i className="ph-bold ph-trash text-lg"></i></button></div>}
-                                    </div>
-                                )
-                            }
-                            return (
-                                <div key={i} className={`bg-white dark:bg-slate-800 rounded-[2rem] md:rounded-custom shadow-lg overflow-hidden relative group border border-gray-100 dark:border-slate-700 card-hover flex flex-col ${layout==='Imagem Grande'?'min-h-[400px] md:h-[500px]':'min-h-[300px] md:h-[350px]'}`}>
-                                    {item.Imagem_URL ? <div className="absolute inset-0 w-full h-full bg-cover bg-center transition-transform duration-1000 group-hover:scale-105" style={{backgroundImage: `url('${formatImageUrl(item.Imagem_URL)}')`}}></div> : <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-primary to-blue-800 opacity-90"></div>}
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent"></div>
-                                    <div className="relative z-10 p-6 md:p-8 mt-auto">
-                                        <h3 className="text-2xl md:text-4xl font-black text-white leading-tight mb-2 drop-shadow-md">{safeString(item.Título)}</h3>
-                                        {item.Subtítulo && <p className="text-base md:text-xl font-bold text-gray-200 drop-shadow-md">{safeString(item.Subtítulo)}</p>}
-                                        {item.Link && <a href={safeString(item.Link)} target="_blank" className="mt-4 inline-block bg-white text-gray-900 font-black px-6 py-3 rounded-xl shadow-lg hover:bg-gray-100 transition text-sm md:text-base">Acessar Link</a>}
-                                        {canEdit && <div className="absolute top-4 right-4 flex gap-2 opacity-100 md:opacity-0 group-hover:opacity-100 transition"><button onClick={()=>openModal(item)} className="w-10 h-10 bg-white/20 hover:bg-white text-white hover:text-blue-600 rounded-xl flex items-center justify-center transition"><i className="ph-bold ph-pencil-simple text-lg"></i></button><button onClick={()=>{if(confirm('Excluir?')) handleDelete(item.ID)}} className="w-10 h-10 bg-white/20 hover:bg-red-500 text-white rounded-xl flex items-center justify-center transition"><i className="ph-bold ph-trash text-lg"></i></button></div>}
-                                    </div>
-                                </div>
-                            )
-                        })}
-                        {ativos.length === 0 && <div className="col-span-full p-10 md:p-20 text-center text-gray-400 font-black text-xl border-2 border-dashed border-gray-200 dark:border-slate-700 rounded-custom">Nenhum aviso cadastrado no momento.</div>}
-                    </div>
-                </div>
-            );
-        };
-
         const ConveniosMatrixView = ({ data, canEdit, openModal, handleDelete, schema }) => {
             const safeData = Array.isArray(data) ? data : [];
             const [search, setSearch] = useState('');
             
-            // LÓGICA DE COLUNAS DINÂMICAS REVISADA
             let dynamicCols = new Set();
             safeData.forEach(row => { if(row && typeof row === 'object') Object.keys(row).forEach(k => { if(k !== 'ID' && k !== 'Código' && k !== 'Procedimento') dynamicCols.add(k); }); });
             let insurances = Array.from(dynamicCols);
-            if(insurances.length === 0) insurances = ['Unimed', 'Particular']; // Fallback inicial caso vazio
+            if(insurances.length === 0) insurances = ['Unimed', 'Particular'];
 
             let allKeys = ['ID', 'Código', 'Procedimento', ...insurances];
             let procColName = 'Procedimento';
@@ -528,10 +485,10 @@
                                     <h3 className="font-black text-xl leading-tight text-gray-900">{safeString(med.Médico) || 'Sem Nome'}</h3>
                                     <p className="text-sm font-bold text-primary mb-3 mt-1 uppercase tracking-wide" style={{color: med.Cor_Selo || 'var(--color-primary)'}}>{safeString(med.Especialidade) || 'Clínico'}</p>
                                     
-                                    <div className="w-full bg-gray-50 rounded-xl p-4 space-y-2 text-left mb-4">
-                                        {med.CRM && <p className="text-xs font-bold text-gray-500 flex justify-between"><span>CRM</span> <span className="text-gray-800">{safeString(med.CRM)}</span></p>}
-                                        {med['Código UNIMED'] && <p className="text-xs font-bold text-gray-500 flex justify-between"><span>UNIMED</span> <span className="text-gray-800">{safeString(med['Código UNIMED'])}</span></p>}
-                                        {med.CBO && <p className="text-[10px] font-bold text-gray-500 flex justify-between items-center mt-2 pt-2 border-t"><span>CBO</span> <span className="bg-gray-200 text-gray-700 px-2 py-0.5 rounded">{safeString(med.CBO)}</span></p>}
+                                    <div className="w-full bg-gray-50 rounded-xl p-4 space-y-2 text-left mb-4 shadow-inner">
+                                        {med.CRM && <p className="text-[10px] md:text-xs font-bold text-gray-500 flex justify-between"><span>CRM</span> <span className="text-gray-800">{safeString(med.CRM)}</span></p>}
+                                        {med['Código UNIMED'] && <p className="text-[10px] md:text-xs font-bold text-gray-500 flex justify-between"><span>UNIMED</span> <span className="text-gray-800">{safeString(med['Código UNIMED'])}</span></p>}
+                                        {med.CBO && <p className="text-[10px] font-bold text-gray-500 flex justify-between items-center mt-2 pt-2 border-t border-gray-200"><span>CBO</span> <span className="bg-gray-200 text-gray-700 px-2 py-0.5 rounded">{safeString(med.CBO)}</span></p>}
                                     </div>
                                     
                                     {canEdit && <button onClick={()=>openLancarEscala(safeString(med.Médico), true)} className="w-full bg-gray-900 text-white font-black py-3 rounded-xl shadow hover:bg-black transition flex justify-center items-center gap-2 text-xs"><i className="ph-bold ph-calendar-plus text-base"></i> Agendar Plantões</button>}
@@ -706,29 +663,35 @@
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {ativos.map((item, i) => (
-                            <div key={i} className="bg-white border rounded-[2rem] p-6 shadow-sm card-hover flex flex-col relative group">
-                                <div className="flex items-start justify-between mb-4">
-                                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-3xl shadow-sm ${safeString(item.Tipo_Midia).includes('Vídeo') ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'}`}>
-                                        <i className={`ph-fill ${safeString(item.Tipo_Midia).includes('Vídeo') ? 'ph-play-circle' : 'ph-file-pdf'}`}></i>
-                                    </div>
-                                    <span className="text-[10px] font-black text-gray-400 bg-gray-50 px-3 py-1.5 rounded-full border">{safeString(item.Data_Publicacao).split('-').reverse().join('/')}</span>
-                                </div>
-                                <h3 className="font-black text-xl text-gray-900 leading-tight mb-2">{safeString(item.Título)}</h3>
-                                <p className="text-sm text-gray-500 font-medium line-clamp-2 mb-6">{safeString(item.Descrição)}</p>
-                                
-                                <button onClick={()=>setSelectedMedia(item)} className="mt-auto w-full py-3 bg-gray-50 hover:bg-primary hover:text-white rounded-xl font-black transition flex items-center justify-center gap-2 text-gray-700 border">
-                                    Visualizar <i className="ph-bold ph-arrow-right"></i>
-                                </button>
+                        {ativos.map((item, i) => {
+                            let icon = 'ph-file-pdf'; let color = 'bg-blue-50 text-blue-600';
+                            const t = safeString(item.Tipo_Midia).toLowerCase();
+                            if(t.includes('vídeo') || t.includes('video')) { icon = 'ph-play-circle'; color = 'bg-red-50 text-red-600'; }
+                            else if(t.includes('imagem')) { icon = 'ph-image'; color = 'bg-green-50 text-green-600'; }
+                            else if(t.includes('apresentação')) { icon = 'ph-projector-screen'; color = 'bg-orange-50 text-orange-600'; }
 
-                                {canEdit && (
-                                    <div className="absolute top-4 right-4 flex gap-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition">
-                                        <button onClick={()=>openModal(item)} className="p-2 bg-white shadow rounded hover:text-blue-600"><i className="ph-bold ph-pencil-simple"></i></button>
-                                        <button onClick={()=>{if(confirm('Excluir?')) handleDelete(item.ID)}} className="p-2 bg-white shadow rounded hover:text-red-600"><i className="ph-bold ph-trash"></i></button>
+                            return (
+                                <div key={i} className="bg-white border rounded-[2rem] p-6 shadow-sm card-hover flex flex-col relative group">
+                                    <div className="flex items-start justify-between mb-4">
+                                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-3xl shadow-sm ${color}`}><i className={`ph-fill ${icon}`}></i></div>
+                                        <span className="text-[10px] font-black text-gray-400 bg-gray-50 px-3 py-1.5 rounded-full border">{safeString(item.Data_Publicacao).split('-').reverse().join('/')}</span>
                                     </div>
-                                )}
-                            </div>
-                        ))}
+                                    <h3 className="font-black text-xl text-gray-900 leading-tight mb-2">{safeString(item.Título)}</h3>
+                                    <p className="text-sm text-gray-500 font-medium line-clamp-2 mb-6">{safeString(item.Descrição)}</p>
+                                    
+                                    <button onClick={()=>setSelectedMedia(item)} className="mt-auto w-full py-3 bg-gray-50 hover:bg-primary hover:text-white rounded-xl font-black transition flex items-center justify-center gap-2 text-gray-700 border">
+                                        Visualizar <i className="ph-bold ph-arrow-right"></i>
+                                    </button>
+
+                                    {canEdit && (
+                                        <div className="absolute top-4 right-4 flex gap-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition">
+                                            <button onClick={()=>openModal(item)} className="p-2 bg-white shadow rounded hover:text-blue-600"><i className="ph-bold ph-pencil-simple"></i></button>
+                                            <button onClick={()=>{if(confirm('Excluir?')) handleDelete(item.ID)}} className="p-2 bg-white shadow rounded hover:text-red-600"><i className="ph-bold ph-trash"></i></button>
+                                        </div>
+                                    )}
+                                </div>
+                            )
+                        })}
                     </div>
 
                     {selectedMedia && (
@@ -738,9 +701,13 @@
                                     <h3 className="text-lg md:text-xl font-black truncate pr-4">{safeString(selectedMedia.Título)}</h3>
                                     <button onClick={()=>setSelectedMedia(null)} className="w-10 h-10 bg-white/20 hover:bg-red-500 rounded-full flex justify-center items-center transition shrink-0"><i className="ph-bold ph-x"></i></button>
                                 </div>
-                                <div className="bg-gray-100 h-[60vh] md:h-[70vh] w-full relative flex items-center justify-center">
+                                <div className="bg-gray-100 h-[60vh] md:h-[70vh] w-full relative flex items-center justify-center p-2">
                                     {selectedMedia.Link_Arquivo ? (
-                                        <iframe src={getEmbedUrl(selectedMedia.Link_Arquivo)} className="w-full h-full border-0" allow="autoplay; encrypted-media" allowFullScreen></iframe>
+                                        safeString(selectedMedia.Tipo_Midia) === 'Imagem Externa' ? (
+                                            <img src={formatImageUrl(selectedMedia.Link_Arquivo)} className="max-w-full max-h-full object-contain rounded-lg shadow-lg" alt={selectedMedia.Título} />
+                                        ) : (
+                                            <iframe src={getEmbedUrl(selectedMedia.Link_Arquivo)} className="w-full h-full border-0 rounded-lg" allow="autoplay; encrypted-media" allowFullScreen></iframe>
+                                        )
                                     ) : <div className="text-gray-400 font-black p-4 text-center">Link indisponível ou não suportado.</div>}
                                 </div>
                             </div>
@@ -1071,108 +1038,6 @@
             );
         };
 
-        const DesignInterfacePanel = ({ sheetData, onRefresh, showToast }) => {
-            const configs = Array.isArray(sheetData['CONFIGURACOES']) ? sheetData['CONFIGURACOES'] : [];
-            const getConfig = (chave, def) => { const item = configs.find(c => c && c.Chave === chave); return item ? item.Valor : def; };
-
-            const [primary, setPrimary] = useState(getConfig('cor_primaria', '#1E40AF'));
-            const [secondary, setSecondary] = useState(getConfig('cor_secundaria', '#F97316'));
-            const [bg, setBg] = useState(getConfig('cor_fundo', '#F8FAFC'));
-            const [logo, setLogo] = useState(getConfig('logo_url', ''));
-            const [fontFamily, setFontFamily] = useState(getConfig('font_family', 'Inter'));
-            const [borderRadius, setBorderRadius] = useState(getConfig('border_radius', '1.5rem'));
-            const [saving, setSaving] = useState(false);
-
-            const handleSaveDesign = async (e) => {
-                e.preventDefault(); setSaving(true);
-                const settingsToSave = [ { key: 'cor_primaria', val: primary }, { key: 'cor_secundaria', val: secondary }, { key: 'cor_fundo', val: bg }, { key: 'logo_url', val: logo }, { key: 'font_family', val: fontFamily }, { key: 'border_radius', val: borderRadius } ];
-                for (let setting of settingsToSave) {
-                    const existing = configs.find(c => c && c.Chave === setting.key);
-                    await api.saveRecord('CONFIGURACOES', { 'ID': existing ? existing.ID : '', 'Chave': setting.key, 'Valor': setting.val }, !!existing);
-                }
-                await onRefresh('CONFIGURACOES'); setSaving(false); showToast("Design atualizado!", "success");
-            };
-
-            return (
-                <div className="bg-white rounded-[2rem] md:rounded-custom shadow-sm border p-6 md:p-8 max-w-5xl mx-auto animate-fade-in">
-                    <h2 className="text-2xl md:text-3xl font-black mb-6 md:mb-8 flex items-center gap-3"><i className="ph-fill ph-magic-wand text-primary"></i> Estilo do Portal</h2>
-                    <form onSubmit={handleSaveDesign} className="space-y-6 md:space-y-8">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
-                            <div className="bg-gray-50 p-5 md:p-6 rounded-xl md:rounded-custom border space-y-4 shadow-inner">
-                                <h3 className="font-black text-gray-800 flex items-center gap-2"><i className="ph-fill ph-palette text-gray-400"></i> Cores</h3>
-                                <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Primária</label><input type="color" value={primary} onChange={(e) => setPrimary(e.target.value)} className="w-full h-12 rounded-lg cursor-pointer border-0 bg-transparent" /></div>
-                                <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Secundária</label><input type="color" value={secondary} onChange={(e) => setSecondary(e.target.value)} className="w-full h-12 rounded-lg cursor-pointer border-0 bg-transparent" /></div>
-                                <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Fundo Claro</label><input type="color" value={bg} onChange={(e) => setBg(e.target.value)} className="w-full h-12 rounded-lg cursor-pointer border-0 bg-transparent" /></div>
-                            </div>
-                            <div className="bg-gray-50 p-5 md:p-6 rounded-xl md:rounded-custom border space-y-4 shadow-inner">
-                                <h3 className="font-black text-gray-800 flex items-center gap-2"><i className="ph-fill ph-shapes text-gray-400"></i> Formatos</h3>
-                                <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Bordas</label><select className="w-full p-4 rounded-xl border font-bold outline-none focus:border-primary" value={borderRadius} onChange={e=>setBorderRadius(e.target.value)}><option value="0px">Reto (Clássico)</option><option value="0.5rem">Suave</option><option value="1.5rem">Moderno (Redondo)</option></select></div>
-                                <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Fonte</label><select className="w-full p-4 rounded-xl border font-bold outline-none focus:border-primary" value={fontFamily} onChange={e=>setFontFamily(e.target.value)}><option value="Inter">Inter (Limpa)</option><option value="Roboto">Roboto</option></select></div>
-                            </div>
-                            <div className="bg-gray-50 p-5 md:p-6 rounded-xl md:rounded-custom border space-y-4 shadow-inner">
-                                <h3 className="font-black text-gray-800 flex items-center gap-2"><i className="ph-fill ph-image text-gray-400"></i> Logo do Portal</h3>
-                                <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">URL (Drive ou Site)</label><input type="url" value={logo} onChange={e=>setLogo(e.target.value)} className="w-full p-4 rounded-xl border text-xs font-bold outline-none focus:border-primary" placeholder="https://..." /></div>
-                            </div>
-                        </div>
-                        <div className="flex justify-end border-t pt-6">
-                            <button type="submit" disabled={saving} className="bg-primary hover:opacity-90 text-white font-black py-4 px-12 rounded-xl md:rounded-full shadow-xl hover:-translate-y-1 transition w-full md:w-auto flex items-center justify-center gap-2">
-                                {saving ? <i className="ph animate-spin ph-spinner text-xl"></i> : <i className="ph-bold ph-floppy-disk text-xl"></i>} {saving ? 'Salvando...' : 'Aplicar Design'}
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            )
-        };
-
-        const DefaultTableView = ({ title, schema, filteredData, canEdit, openModal, handleDelete, search, setSearch }) => {
-            return (
-                <div className="bg-white rounded-[2rem] md:rounded-custom shadow-sm border overflow-hidden animate-fade-in">
-                    <div className="p-6 md:p-8 border-b bg-gray-50/50 flex flex-col md:flex-row justify-between items-center gap-6">
-                        <h2 className="text-2xl md:text-3xl font-black tracking-tight flex items-center gap-3 text-gray-900 w-full md:w-auto"><div className="w-2 md:w-3 h-6 md:h-8 bg-primary rounded-full"></div> {title}</h2>
-                        <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
-                            <div className="relative flex-1 sm:w-80 md:w-96"><i className="ph-bold ph-magnifying-glass absolute left-5 top-4 text-gray-400 text-xl"></i><input type="text" placeholder="Pesquisar..." value={search} onChange={e=>setSearch(e.target.value)} className="w-full pl-14 pr-6 py-4 bg-white shadow-sm border rounded-xl md:rounded-full outline-none focus:border-primary font-bold transition" /></div>
-                            {canEdit && <button onClick={() => openModal(null, schema)} className="bg-gray-900 text-white font-black px-8 py-4 rounded-xl md:rounded-full shadow-xl hover:-translate-y-1 transition flex items-center justify-center gap-2 shrink-0"><i className="ph-bold ph-plus text-xl"></i> Novo</button>}
-                        </div>
-                    </div>
-                    <div className="overflow-x-auto p-2 md:p-4 custom-scrollbar">
-                        <table className="w-full text-left border-collapse min-w-[800px]">
-                            <thead>
-                                <tr className="text-gray-400 text-[10px] uppercase tracking-widest border-b-2">
-                                    {schema.filter(c=>safeString(c)!=='ID').map((col, i) => <th key={`th-${i}`} className="p-4 md:p-6 font-black">{safeString(col)}</th>)}
-                                    {canEdit && <th className="p-4 md:p-6 font-black text-right">Ações</th>}
-                                </tr>
-                            </thead>
-                            <tbody className="text-xs md:text-sm font-bold text-gray-800">
-                                {filteredData.length === 0 ? <tr><td colSpan="100%" className="text-center p-10 md:p-20 text-gray-400 font-black text-lg md:text-xl border-2 border-dashed rounded-3xl m-4 block">Nenhum dado cadastrado.</td></tr> : 
-                                filteredData.map((row, i) => (
-                                    <tr key={`tr-${i}`} className="hover:bg-blue-50/30 border-b transition group">
-                                        {schema.filter(c=>safeString(c)!=='ID').map((col, j) => {
-                                            const val = safeString(row[col]);
-                                            const cLower = safeString(col).toLowerCase();
-                                            return (
-                                            <td key={`td-${i}-${j}`} className="p-4 md:p-6 whitespace-nowrap">
-                                                {cLower.includes('url') || cLower.includes('foto') || cLower.includes('imagem') ? (val ? <img src={formatImageUrl(val)} className="h-10 w-10 md:h-14 md:w-14 object-cover rounded-xl md:rounded-2xl shadow-sm border" /> : <div className="h-10 w-10 md:h-14 md:w-14 bg-gray-100 rounded-xl md:rounded-2xl flex items-center justify-center text-gray-300"><i className="ph-fill ph-image text-lg md:text-xl"></i></div>) :
-                                                 cLower.includes('senha') ? '••••••••' :
-                                                 val === 'Sim' || val === 'Ativo' ? <span className="bg-green-100 border border-green-200 text-green-800 px-3 py-1.5 md:px-4 md:py-2 rounded-lg md:rounded-xl text-[10px] md:text-xs font-black uppercase tracking-wider">{val}</span> :
-                                                 val === 'Não' || val === 'Inativo' ? <span className="bg-red-100 border border-red-200 text-red-800 px-3 py-1.5 md:px-4 md:py-2 rounded-lg md:rounded-xl text-[10px] md:text-xs font-black uppercase tracking-wider">{val}</span> :
-                                                 val || '-'}
-                                            </td>
-                                        )})}
-                                        {canEdit && (
-                                            <td className="p-4 md:p-6 flex justify-end gap-2 md:opacity-50 md:group-hover:opacity-100 transition">
-                                                <button onClick={()=>openModal(row, schema)} className="text-blue-600 bg-blue-50 hover:bg-blue-600 hover:text-white p-2.5 md:p-3 rounded-lg md:rounded-xl transition shadow-sm"><i className="ph-bold ph-pencil-simple text-lg md:text-xl"></i></button>
-                                                <button onClick={()=>handleDelete(row.ID)} className="text-red-600 bg-red-50 hover:bg-red-600 hover:text-white p-2.5 md:p-3 rounded-lg md:rounded-xl transition shadow-sm"><i className="ph-bold ph-trash text-lg md:text-xl"></i></button>
-                                            </td>
-                                        )}
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            );
-        };
-
         const App = () => {
             const [user, setUser] = useState(null);
             const [loading, setLoading] = useState(true);
@@ -1186,7 +1051,7 @@
             const [isOffline, setIsOffline] = useState(!navigator.onLine);
             const [isSharedAuth, setIsSharedAuth] = useState(localStorage.getItem('shared_auth') === 'true');
 
-            const SENHA_ACESSO_GERAL = "Csv@123"; 
+            const SENHA_ACESSO_GERAL = "csv123"; 
 
             const userFoto = user?.Foto_Perfil_URL || 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
             const userName = user?.['Nome Completo'] || (isSharedAuth ? 'Equipe São Vicente' : 'Usuário');
@@ -1196,45 +1061,13 @@
             const isAdmin = user && nivelKey && ['admin', 'supervisor', 'supervisão'].some(role => safeString(user[nivelKey]).toLowerCase().includes(role));
 
             useEffect(() => {
-                const handleOnline = () => { setIsOffline(false); showToast('Conexão restabelecida! Sincronizando...', 'success'); };
-                const handleOffline = () => { setIsOffline(true); showToast('Rede perdida. Modo offline ativado.', 'warning'); };
+                const handleOnline = () => { setIsOffline(false); showToast('Conexão restabelecida!', 'success'); };
+                const handleOffline = () => { setIsOffline(true); showToast('Rede perdida. Usando cache.', 'warning'); };
                 window.addEventListener('online', handleOnline); window.addEventListener('offline', handleOffline);
                 return () => { window.removeEventListener('online', handleOnline); window.removeEventListener('offline', handleOffline); }
             }, []);
 
-            useEffect(() => {
-                const init = async () => {
-                    if(!isFirebaseConfigured) return;
-                    const allData = await api.fetchAll(); 
-                    if(allData && Object.keys(allData).length > 0) {
-                        setSheetData(allData);
-                        const conf = allData['CONFIGURACOES'] || [];
-                        conf.forEach(c => {
-                            if(!c) return;
-                            if(c.Chave === 'cor_primaria') document.documentElement.style.setProperty('--color-primary', c.Valor);
-                            if(c.Chave === 'cor_secundaria') document.documentElement.style.setProperty('--color-secondary', c.Valor);
-                            if(c.Chave === 'cor_fundo') document.documentElement.style.setProperty('--color-bg', c.Valor);
-                            if(c.Chave === 'logo_url') setLogoUrl(c.Valor); 
-                        });
-                    }
-                }; init();
-            }, []);
-
-            const loadData = async (tab) => {
-                setLoading(true);
-                if (tab === 'Home') {
-                    const [news, atend, lembretes, mural] = await Promise.all([api.fetch('NOVIDADES_E_EVENTOS'), api.fetch('CONTROLE_ATENDIMENTOS'), api.fetch('LEMBRETES_HORA'), api.fetch('MURAL_AVISOS')]);
-                    setSheetData(prev => ({ ...prev, 'NOVIDADES_E_EVENTOS': news, 'CONTROLE_ATENDIMENTOS': atend, 'LEMBRETES_HORA': lembretes, 'MURAL_AVISOS': mural }));
-                } else if (tab === 'ESCALAS') {
-                    const [escala, medicos, u, cont] = await Promise.all([api.fetch('ESCALAS'), api.fetch('CORPO CLINICO'), api.fetch('USUARIOS'), api.fetch('CONTROLE_ATENDIMENTOS')]);
-                    setSheetData(prev => ({ ...prev, 'ESCALAS': escala, 'CORPO CLINICO': medicos, 'USUARIOS': u, 'CONTROLE_ATENDIMENTOS': cont }));
-                } else {
-                    const data = await api.fetch(tab); setSheetData(prev => ({ ...prev, [tab]: data }));
-                }
-                setLoading(false);
-            };
-
-            // REAL-TIME LISTENER (Sincronização ao Vivo)
+            // Sincronização ao Vivo (Real-Time)
             useEffect(() => {
                 if(!user || !isFirebaseConfigured) return;
                 const unsubs = [];
@@ -1283,12 +1116,26 @@
                     
             const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+            const loadData = async (tab) => {
+                setLoading(true);
+                if (tab === 'Home') {
+                    const [news, atend, lembretes, mural] = await Promise.all([api.fetch('NOVIDADES_E_EVENTOS'), api.fetch('CONTROLE_ATENDIMENTOS'), api.fetch('LEMBRETES_HORA'), api.fetch('MURAL_AVISOS')]);
+                    setSheetData(prev => ({ ...prev, 'NOVIDADES_E_EVENTOS': news, 'CONTROLE_ATENDIMENTOS': atend, 'LEMBRETES_HORA': lembretes, 'MURAL_AVISOS': mural }));
+                } else if (tab === 'ESCALAS') {
+                    const [escala, medicos, u, cont] = await Promise.all([api.fetch('ESCALAS'), api.fetch('CORPO CLINICO'), api.fetch('USUARIOS'), api.fetch('CONTROLE_ATENDIMENTOS')]);
+                    setSheetData(prev => ({ ...prev, 'ESCALAS': escala, 'CORPO CLINICO': medicos, 'USUARIOS': u, 'CONTROLE_ATENDIMENTOS': cont }));
+                } else {
+                    const data = await api.fetch(tab); setSheetData(prev => ({ ...prev, [tab]: data }));
+                }
+                setLoading(false);
+            };
+
             if (!user) {
                 const handleFirebaseLogin = async (e) => {
                     e.preventDefault(); setLoading(true); setLoginErrorMsg('');
                     localStorage.setItem('shared_auth', 'false'); setIsSharedAuth(false);
                     const res = await api.login(e.target.email.value, e.target.password.value);
-                    if (!res.success) setLoginErrorMsg(res?.message || 'Erro ao conectar com o servidor.');
+                    if (!res.success) setLoginErrorMsg(res?.message || 'Erro ao conectar.');
                     setLoading(false);
                 };
 
@@ -1299,7 +1146,7 @@
                         localStorage.setItem('shared_auth', 'true');
                         setIsSharedAuth(true);
                         setUser({ 'Nome Completo': 'Equipe São Vicente', 'Nível de Acesso': 'Colaborador' });
-                    } else { setLoginErrorMsg('Senha de acesso geral incorreta.'); }
+                    } else { setLoginErrorMsg('Senha incorreta.'); }
                 };
 
                 return (
@@ -1309,11 +1156,7 @@
                             <div className="md:w-5/12 bg-gradient-to-br from-primary to-blue-800 text-white p-10 md:p-12 flex flex-col justify-center relative">
                                 <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
                                 <div className="relative z-10 text-center">
-                                    {logoUrl ? (
-                                        <img src={formatImageUrl(logoUrl)} className="w-24 h-24 md:w-32 md:h-32 mx-auto object-contain mb-6 drop-shadow-xl" alt="Logo" />
-                                    ) : (
-                                        <div className="w-24 h-24 md:w-28 md:h-28 mx-auto bg-white/10 rounded-[2rem] flex items-center justify-center mb-6 backdrop-blur-sm shadow-xl"><i className="ph-fill ph-heartbeat text-6xl md:text-7xl"></i></div>
-                                    )}
+                                    {logoUrl ? <img src={formatImageUrl(logoUrl)} className="w-24 h-24 md:w-32 md:h-32 mx-auto object-contain mb-6 drop-shadow-xl" alt="Logo" /> : <div className="w-24 h-24 md:w-28 md:h-28 mx-auto bg-white/10 rounded-[2rem] flex items-center justify-center mb-6 backdrop-blur-sm shadow-xl"><i className="ph-fill ph-heartbeat text-6xl md:text-7xl"></i></div>}
                                     <h1 className="text-3xl md:text-4xl font-black mb-4">São Vicente</h1>
                                     <p className="text-blue-100 font-medium text-xs md:text-sm">Portal interno de comunicação, escalas e processos da clínica.</p>
                                 </div>
@@ -1327,7 +1170,7 @@
                                         
                                         <button onClick={()=>setLoginView('geral')} className="w-full bg-blue-50 hover:bg-primary group p-5 md:p-6 rounded-[1.5rem] md:rounded-2xl border-2 border-blue-100 hover:border-primary transition flex items-center gap-4 md:gap-6 text-left">
                                             <div className="w-14 h-14 md:w-16 md:h-16 rounded-xl bg-white text-primary flex justify-center items-center shrink-0 shadow-sm"><i className="ph-fill ph-users text-2xl md:text-3xl"></i></div>
-                                            <div><h3 className="font-black text-lg md:text-xl text-gray-900 group-hover:text-white transition">Acesso Colaboradores</h3><p className="text-xs md:text-sm text-gray-500 group-hover:text-blue-100 transition mt-1">Visualização de escalas, ramais e consultas.</p></div>
+                                            <div><h3 className="font-black text-lg md:text-xl text-gray-900 group-hover:text-white transition">Acesso Colaboradores</h3><p className="text-xs md:text-sm text-gray-500 group-hover:text-blue-100 transition mt-1">Escalas, ramais, guias e consultas.</p></div>
                                         </button>
 
                                         <button onClick={()=>setLoginView('supervisor')} className="w-full bg-orange-50 hover:bg-secondary group p-5 md:p-6 rounded-[1.5rem] md:rounded-2xl border-2 border-orange-100 hover:border-secondary transition flex items-center gap-4 md:gap-6 text-left">
@@ -1356,7 +1199,7 @@
                                         <p className="text-xs md:text-sm text-gray-500 mb-6 md:mb-8">Faça login com suas credenciais do painel.</p>
                                         <div><label className="block text-[10px] font-black text-gray-400 mb-2 uppercase tracking-widest">E-mail</label><div className="relative"><i className="ph-fill ph-user absolute left-5 top-4 text-gray-400 text-xl"></i><input name="email" type="email" className="w-full pl-14 pr-5 py-4 bg-gray-50 border rounded-xl outline-none focus:border-primary font-bold text-gray-900 transition" required /></div></div>
                                         <div><label className="block text-[10px] font-black text-gray-400 mb-2 uppercase tracking-widest">Senha</label><div className="relative"><i className="ph-fill ph-lock-key absolute left-5 top-4 text-gray-400 text-xl"></i><input name="password" type="password" className="w-full pl-14 pr-5 py-4 bg-gray-50 border rounded-xl outline-none focus:border-primary font-bold text-gray-900 transition" required /></div></div>
-                                        <button type="submit" disabled={loading} className={`w-full ${loginView === 'admin' ? 'bg-gray-900 text-white' : 'bg-secondary text-white'} font-black py-4 md:py-5 rounded-xl shadow-xl transition transform hover:-translate-y-1`}>{loading ? 'Conectando...' : 'Acessar'}</button>
+                                        <button type="submit" disabled={loading} className={`w-full ${loginView === 'admin' ? 'bg-gray-900' : 'bg-secondary'} text-white font-black py-4 md:py-5 rounded-xl shadow-xl hover:-translate-y-1 transition transform`}>{loading ? 'Conectando...' : 'Acessar'}</button>
                                     </form>
                                 )}
                             </div>
@@ -1389,7 +1232,6 @@
 
             return (
                 <div className="min-h-screen flex flex-col md:flex-row overflow-hidden relative selection:bg-primary selection:text-white bg-medical">
-                    
                     {isOffline && <div className="absolute top-0 inset-x-0 z-[99999] bg-red-600 text-white text-[10px] md:text-xs font-black py-2 md:py-1.5 flex justify-center items-center gap-2 shadow-md animate-fade-in"><i className="ph-bold ph-wifi-slash text-sm md:text-base"></i> Sem Conexão: Operando com dados salvos em cache local.</div>}
                     {toast.show && <div className={`fixed bottom-4 md:bottom-8 right-4 md:right-8 z-[9999] px-6 md:px-8 py-4 md:py-5 rounded-xl md:rounded-custom shadow-2xl text-white font-black text-sm md:text-lg animate-slide-up bg-green-500`}><i className="ph-bold ph-check-circle text-xl md:text-2xl"></i> {toast.message}</div>}
 
@@ -1425,7 +1267,7 @@
                                     {adminMenus.map(m => <button key={m.id} onClick={()=>{setActiveTab(m.id); setIsMobileMenuOpen(false);}} className={`w-full flex items-center gap-3 md:gap-4 px-4 md:px-5 py-3 rounded-xl md:rounded-custom text-xs md:text-sm font-bold transition-all ${activeTab===m.id?'bg-gray-900 text-white shadow-xl md:scale-[1.02]':'text-gray-500 hover:bg-gray-100'}`}><i className={`ph-fill ${m.icon} text-lg md:text-xl`}></i> {m.label}</button>)}
                                 </>
                             )}
-                            <button onClick={()=>{auth?.signOut(); localStorage.removeItem('shared_auth'); setIsSharedAuth(false); setUser(null);}} className="w-full flex items-center gap-3 md:gap-4 px-4 md:px-5 py-3 rounded-xl md:rounded-custom text-xs md:text-sm font-bold text-red-600 hover:bg-red-50 mt-8 transition"><i className="ph-fill ph-sign-out text-lg md:text-xl"></i> Sair do Sistema</button>
+                            <button onClick={()=>{auth?.signOut(); localStorage.removeItem('shared_auth'); setIsSharedAuth(false); setUser(null);}} className="w-full flex items-center gap-3 md:gap-4 px-4 md:px-5 py-3 rounded-xl md:rounded-custom text-xs md:text-sm font-bold text-red-600 hover:bg-red-50 mt-8 transition"><i className="ph-fill ph-sign-out text-lg md:text-xl"></i> Sair</button>
                         </div>
                     </aside>
 
