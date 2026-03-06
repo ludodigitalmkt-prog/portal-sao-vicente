@@ -5,18 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
     <meta name="theme-color" content="#1E40AF">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Portal SV">
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/149/149071.png">
-    
     <link rel="manifest" href='data:application/manifest+json;utf-8,{"name":"Portal São Vicente","short_name":"Portal SV","start_url":".","display":"standalone","background_color":"#F8FAFC","theme_color":"#1E40AF","icons":[{"src":"https://cdn-icons-png.flaticon.com/512/149/149071.png","sizes":"512x512","type":"image/png"}]}'>
 
     <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <script>
-        const VERSAO_ATUAL = "6.2.0";
+        const VERSAO_ATUAL = "6.3.0";
         if (window.location.search.indexOf('v=' + VERSAO_ATUAL) === -1) {
             localStorage.clear(); sessionStorage.clear();
             window.location.replace(window.location.pathname + (window.location.pathname.indexOf('?') === -1 ? '?' : '&') + 'v=' + VERSAO_ATUAL);
@@ -117,6 +117,7 @@
             try {
                 if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
                 db = firebase.firestore();
+                // OFFLINE MODE
                 db.enablePersistence({ synchronizeTabs: true }).catch(function(err) { console.log("Offline mode warning:", err.code); });
                 auth = firebase.auth();
             } catch (error) { console.error("Erro Firebase:", error); }
@@ -126,7 +127,7 @@
             constructor(props) { super(props); this.state = { hasError: false }; }
             static getDerivedStateFromError(error) { return { hasError: true }; }
             render() {
-                if (this.state.hasError) return <div className="p-10 text-center"><h2 className="text-2xl font-black text-red-500">Erro na Interface</h2><p className="text-gray-500 mb-6">Uma informação do banco de dados causou conflito.</p><button onClick={()=>window.location.reload()} className="bg-primary text-white px-8 py-3 rounded-xl font-bold shadow-lg hover:scale-105 transition">Recarregar Painel</button></div>;
+                if (this.state.hasError) return <div className="p-10 text-center"><h2 className="text-2xl font-black text-red-500">Aviso do Sistema</h2><p className="text-gray-500 mb-6">Uma informação do banco de dados causou conflito na renderização.</p><button onClick={()=>window.location.reload()} className="bg-primary text-white px-8 py-3 rounded-xl font-bold shadow-lg hover:scale-105 transition">Recarregar Painel</button></div>;
                 return this.props.children; 
             }
         }
@@ -151,6 +152,7 @@
             return str;
         };
 
+        // CORREÇÃO DO DRIVE (CSP / X-Frame-Options Bypass via Preview mode)
         const getEmbedUrl = (url) => {
             const str = safeString(url).trim();
             if (str.includes('youtube.com/watch')) return str.replace('watch?v=', 'embed/');
@@ -214,7 +216,7 @@
                     let userData = { 'E-mail': email, 'Nome Completo': email.split('@')[0], 'Nível de Acesso': 'Admin' };
                     if (!userDoc.empty) {
                         userData = { ID: userDoc.docs[0].id, ...userDoc.docs[0].data() };
-                        if (userData.Status && String(userData.Status).toLowerCase() !== 'ativo') { await auth.signOut(); return { success: false, message: 'Conta inativa.' }; }
+                        if (userData.Status && String(userData.Status).toLowerCase() === 'inativo') { await auth.signOut(); return { success: false, message: 'Conta inativa.' }; }
                     }
                     return { success: true, user: userData };
                 } catch (error) { return { success: false, message: "E-mail ou senha incorretos." }; }
@@ -329,26 +331,82 @@
             )
         };
 
+        const ChatModerno = ({ chatData, user, onSaveChat, onRefresh }) => {
+            const [msg, setMsg] = useState('');
+            const [activeRoom, setActiveRoom] = useState('Geral'); 
+            const isAdmin = user && ['admin', 'supervisor'].some(r => safeString(user['Nível de Acesso']).toLowerCase().includes(r));
+            const myName = safeString(user['Nome Completo']);
+            const chatLog = Array.isArray(chatData) ? chatData : [];
+            const isGeral = activeRoom === 'Geral';
+            
+            const mensagensRoom = chatLog.filter(m => {
+                if(!m) return false;
+                if(isGeral) return safeString(m.Destinatario) === 'Geral';
+                return (safeString(m.Nome) === myName && safeString(m.Destinatario) === activeRoom) || (safeString(m.Nome) === activeRoom && safeString(m.Destinatario) === myName);
+            }).sort((a,b) => new Date(a.Data_Hora) - new Date(b.Data_Hora));
+
+            const handleSend = async (e) => {
+                e.preventDefault(); if(!msg)return;
+                let dest = activeRoom;
+                if(!isAdmin && activeRoom === 'Supervisão') dest = 'Supervisão';
+                await onSaveChat('CHAT_MENSAGENS', {ID:'', Data_Hora:new Date().toISOString(), Nome:myName, Mensagem:msg, Destinatario:dest}, false);
+                setMsg(''); onRefresh();
+            };
+
+            return (
+                <div className="bg-white dark:bg-slate-800 rounded-[2rem] md:rounded-[3rem] shadow-xl border border-gray-100 dark:border-slate-700 h-[75vh] md:h-[80vh] flex flex-col md:flex-row overflow-hidden animate-fade-in">
+                    <div className="md:w-1/3 border-b md:border-r border-gray-100 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-900/50 flex flex-col shrink-0">
+                        <div className="p-4 md:p-6 border-b border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800"><h2 className="text-xl md:text-2xl font-black flex items-center gap-3"><i className="ph-fill ph-chats-circle text-primary"></i> Comunicação</h2></div>
+                        <div className="p-3 md:p-4 space-y-2 overflow-y-auto flex md:flex-col gap-2 md:gap-0 hide-scroll">
+                            <div onClick={()=>setActiveRoom('Geral')} className={`p-3 md:p-4 rounded-2xl cursor-pointer font-bold flex items-center gap-3 transition whitespace-nowrap md:whitespace-normal shrink-0 ${activeRoom==='Geral'?'bg-primary text-white shadow-md':'hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-700 dark:text-gray-300'}`}><div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-white/20 flex items-center justify-center"><i className="ph-fill ph-users text-lg md:text-xl"></i></div> Fórum da Equipe</div>
+                            <div onClick={()=>setActiveRoom(isAdmin?'Caixa de Entrada':'Supervisão')} className={`p-3 md:p-4 rounded-2xl cursor-pointer font-bold flex items-center justify-between transition whitespace-nowrap md:whitespace-normal shrink-0 ${activeRoom!=='Geral'?'bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-md':'hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-700 dark:text-gray-300'}`}><div className="flex items-center gap-3"><div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-white/20 dark:bg-black/10 flex items-center justify-center"><i className="ph-fill ph-shield-star text-lg md:text-xl"></i></div> {isAdmin?'Caixa Inbox':'Falar c/ Supervisão'}</div></div>
+                        </div>
+                    </div>
+                    <div className="md:w-2/3 flex flex-col bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-gray-50 dark:bg-slate-900 flex-1 relative">
+                        <div className="p-4 md:p-6 bg-white/90 dark:bg-slate-800/90 backdrop-blur border-b border-gray-100 dark:border-slate-700 flex justify-between items-center shadow-sm z-10 shrink-0">
+                            <h3 className="font-black text-lg md:text-xl text-gray-900 dark:text-white">{activeRoom}</h3>
+                            <button onClick={()=>onRefresh()} className="w-8 h-8 md:w-10 md:h-10 bg-gray-100 dark:bg-slate-700 rounded-full flex items-center justify-center hover:text-primary transition"><i className="ph-bold ph-arrows-clockwise text-lg"></i></button>
+                        </div>
+                        <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-4 md:space-y-6 flex flex-col custom-scrollbar">
+                            {mensagensRoom.length === 0 && <div className="m-auto text-gray-400 font-bold bg-white dark:bg-slate-800 p-4 md:p-6 rounded-2xl shadow-sm text-center text-sm md:text-base">Nenhuma mensagem neste canal.</div>}
+                            {mensagensRoom.map((m, i) => {
+                                const isMe = safeString(m.Nome) === myName;
+                                return (
+                                    <div key={i} className={`flex flex-col gap-1 max-w-[85%] md:max-w-[70%] ${isMe ? 'self-end items-end' : 'self-start items-start'} animate-fade-in`}>
+                                        <span className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest mx-2">{safeString(m.Nome)}</span>
+                                        <div className={`p-4 md:p-5 rounded-2xl shadow-md text-sm font-medium ${isMe ? 'bg-primary text-white rounded-tr-none' : 'bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-tl-none text-gray-800 dark:text-gray-200'}`}>{safeString(m.Mensagem)}</div>
+                                    </div>
+                                )
+                            })}
+                        </div>
+                        <form onSubmit={handleSend} className="p-4 md:p-5 bg-white dark:bg-slate-800 border-t border-gray-100 dark:border-slate-700 flex gap-3 md:gap-4 shrink-0 z-10">
+                            <input type="text" value={msg} onChange={e=>setMsg(e.target.value)} placeholder="Escreva a sua mensagem..." className="flex-1 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-full px-4 md:px-6 py-3 md:py-4 outline-none focus:ring-2 focus:ring-primary font-bold transition text-gray-800 dark:text-white text-sm md:text-base" />
+                            <button type="submit" className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-primary text-white flex items-center justify-center shadow-lg hover:scale-105 transition transform shrink-0"><i className="ph-fill ph-paper-plane-tilt text-lg md:text-xl"></i></button>
+                        </form>
+                    </div>
+                </div>
+            )
+        };
+
         const SenhasView = ({ data, canEdit, openModal, handleDelete, schema }) => {
             const [search, setSearch] = useState('');
             const filtered = data.filter(c => c && (safeString(c['Nome do Sistema']).toLowerCase().includes(search.toLowerCase()) || safeString(c.Login).toLowerCase().includes(search.toLowerCase())));
             const [visiblePwd, setVisiblePwd] = useState({});
-
             const togglePwd = (id) => setVisiblePwd(p => ({...p, [id]: !p[id]}));
 
             return (
                 <div className="space-y-6 animate-fade-in">
                     <div className="flex flex-col md:flex-row justify-between items-center bg-white dark:bg-slate-800 p-5 rounded-custom shadow-sm border border-gray-100 dark:border-slate-700 gap-4">
                         <div className="relative w-full md:w-96"><i className="ph-bold ph-magnifying-glass absolute left-5 top-4 text-gray-400 text-xl"></i><input type="text" placeholder="Buscar sistema ou login..." value={search} onChange={e=>setSearch(e.target.value)} className="w-full pl-14 pr-6 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-full outline-none focus:ring-2 focus:ring-primary font-bold transition text-gray-800 dark:text-white" /></div>
-                        {canEdit && <button onClick={()=>openModal(null, schema)} className="bg-primary text-white font-black px-8 py-4 w-full md:w-auto rounded-full shadow-md hover:-translate-y-1 transition shrink-0"><i className="ph-bold ph-plus"></i> Nova Senha</button>}
+                        {canEdit && <button onClick={()=>openModal(null, schema)} className="bg-primary text-white font-black px-8 py-4 w-full md:w-auto rounded-full shadow-md hover:-translate-y-1 transition shrink-0 flex justify-center items-center gap-2"><i className="ph-bold ph-plus text-xl"></i> Nova Senha</button>}
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                         {filtered.map((item, i) => (
                             <div key={i} className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-[2rem] p-6 shadow-sm card-hover relative group flex flex-col">
                                 <div className="flex justify-between items-start mb-4">
-                                    <h3 className="font-black text-xl text-gray-900 dark:text-white flex items-center gap-2"><i className="ph-fill ph-lock-key text-primary"></i> {safeString(item['Nome do Sistema'])}</h3>
-                                    {item['Link do Sistema'] && <a href={safeString(item['Link do Sistema'])} target="_blank" className="bg-blue-50 dark:bg-blue-900/30 text-blue-600 px-3 py-1.5 rounded-lg text-xs font-black hover:bg-blue-600 hover:text-white transition">Acessar <i className="ph-bold ph-arrow-square-out"></i></a>}
+                                    <h3 className="font-black text-xl text-gray-900 dark:text-white flex items-center gap-2 truncate pr-2"><i className="ph-fill ph-lock-key text-primary shrink-0"></i> <span className="truncate">{safeString(item['Nome do Sistema'])}</span></h3>
+                                    {item['Link do Sistema'] && <a href={safeString(item['Link do Sistema'])} target="_blank" className="bg-blue-50 dark:bg-blue-900/30 text-blue-600 px-3 py-1.5 rounded-lg text-xs font-black hover:bg-blue-600 hover:text-white transition shrink-0">Acessar <i className="ph-bold ph-arrow-square-out"></i></a>}
                                 </div>
                                 
                                 <div className="bg-gray-50 dark:bg-slate-900 rounded-xl p-4 space-y-3 mb-4">
@@ -364,14 +422,14 @@
                                 {item['Observações'] && <p className="text-xs font-medium text-gray-500 mt-auto">{safeString(item['Observações'])}</p>}
 
                                 {canEdit && (
-                                    <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition">
+                                    <div className="absolute top-4 right-4 flex gap-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition">
                                         <button onClick={()=>openModal(item, schema)} className="p-2 text-blue-600 bg-white dark:bg-slate-700 shadow rounded-lg hover:bg-blue-600 hover:text-white"><i className="ph-bold ph-pencil-simple"></i></button>
-                                        <button onClick={()=>{if(confirm('Excluir?')) handleDelete(item.ID)}} className="p-2 text-red-600 bg-white dark:bg-slate-700 shadow rounded-lg hover:bg-red-600 hover:text-white"><i className="ph-bold ph-trash"></i></button>
+                                        <button onClick={()=>{if(confirm('Excluir senha?')) handleDelete(item.ID)}} className="p-2 text-red-600 bg-white dark:bg-slate-700 shadow rounded-lg hover:bg-red-600 hover:text-white"><i className="ph-bold ph-trash"></i></button>
                                     </div>
                                 )}
                             </div>
                         ))}
-                        {filtered.length === 0 && <div className="col-span-full p-20 text-center text-gray-400 font-bold border-2 border-dashed rounded-3xl">Nenhuma senha encontrada.</div>}
+                        {filtered.length === 0 && <div className="col-span-full p-20 text-center text-gray-400 font-bold border-2 border-dashed border-gray-200 dark:border-slate-700 rounded-3xl">Nenhuma senha encontrada.</div>}
                     </div>
                 </div>
             );
@@ -408,7 +466,7 @@
                                 </button>
 
                                 {canEdit && (
-                                    <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition">
+                                    <div className="absolute top-4 right-4 flex gap-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition">
                                         <button onClick={()=>openModal(item)} className="p-2 bg-white dark:bg-slate-700 shadow rounded-lg hover:text-blue-600"><i className="ph-bold ph-pencil-simple"></i></button>
                                         <button onClick={()=>{if(confirm('Excluir?')) handleDelete(item.ID)}} className="p-2 bg-white dark:bg-slate-700 shadow rounded-lg hover:text-red-600"><i className="ph-bold ph-trash"></i></button>
                                     </div>
@@ -490,7 +548,6 @@
             const [datesToSave, setDatesToSave] = useState([]); 
             const [showSwapSugg, setShowSwapSugg] = useState(false);
 
-            // Permissões e Segurança
             const nivelKey = user && typeof user === 'object' ? Object.keys(user).find(k => safeString(k).toLowerCase().includes('acesso')) : null;
             const canEdit = nivelKey && ['admin', 'supervisor'].some(role => safeString(user[nivelKey]).toLowerCase().includes(role));
             const isColab = user && typeof user === 'object' && safeString(user[nivelKey]).toLowerCase().includes('colaborador');
@@ -588,7 +645,6 @@
                                             
                                             let bgCard = isIntervalo ? 'bg-orange-50 dark:bg-orange-900/30 border-orange-200' : isAusente ? 'bg-red-50 dark:bg-red-900/30 border-red-200 opacity-60' : 'bg-white dark:bg-slate-800 border-gray-100 dark:border-slate-600';
                                             
-                                            // CONTROLE UNIMED
                                             const cUnimed = controleUnimed.find(a => a && safeString(a.Profissional) === safeString(esc.Nome_Profissional));
                                             let uPulseClass = '';
                                             if (cUnimed) {
@@ -670,7 +726,6 @@
                         </div>
                     )}
                     
-                    {/* Popups de Edição/Visualização do Calendário (Mês) */}
                     {selectedDate && !selectedPerson && (
                         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 glass-modal" onClick={() => setSelectedDate(null)}>
                             <div className="bg-white dark:bg-slate-800 rounded-[2rem] md:rounded-[3rem] w-full max-w-5xl p-6 md:p-10 shadow-2xl animate-pop-in relative border border-gray-100 dark:border-slate-700 flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
@@ -690,7 +745,6 @@
                         </div>
                     )}
                     
-                    {/* Popup de Ação Específica (Status, Troca, Exclusão) */}
                     {selectedPerson && (
                         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 backdrop-blur-xl bg-gray-900/60 animate-fade-in" onClick={() => {setSelectedPerson(null); setShowSwapSugg(false)}}>
                             <div className="bg-white dark:bg-slate-800 rounded-[2rem] md:rounded-[3rem] w-full max-w-lg p-6 md:p-8 shadow-2xl relative border border-white dark:border-slate-700 max-h-[90vh] overflow-y-auto custom-scrollbar" onClick={e => e.stopPropagation()}>
@@ -741,7 +795,6 @@
                         </div>
                     )}
                     
-                    {/* Modal de Lançamento em Lote */}
                     {isModalOpen && (
                         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 glass-modal" onMouseDown={()=>setIsModalOpen(false)}>
                             <div className="bg-white dark:bg-slate-800 rounded-[2rem] md:rounded-[3rem] w-full max-w-6xl max-h-[90vh] flex flex-col shadow-2xl animate-pop-in border border-gray-100 dark:border-slate-700" onMouseDown={e=>e.stopPropagation()}>
@@ -954,14 +1007,14 @@
             const [darkMode, setDarkMode] = useState(false);
             const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
             
-            // Lógica de Login e Mobile
+            // Lógica de Login Misto
             const [loginView, setLoginView] = useState('selecao'); // selecao | geral | painel
             const [loginErrorMsg, setLoginErrorMsg] = useState('');
             const [isOffline, setIsOffline] = useState(!navigator.onLine);
             const [isSharedAuth, setIsSharedAuth] = useState(localStorage.getItem('shared_auth') === 'true');
             const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-            // ⚠️ SENHA DE ACESSO GERAL PARA COLABORADORES DA CLÍNICA
+            // ⚠️ SENHA DE ACESSO GERAL PARA COLABORADORES
             const SENHA_ACESSO_GERAL = "Csv@123"; 
 
             const userFoto = user?.Foto_Perfil_URL || 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
@@ -970,23 +1023,22 @@
             const nivelKey = user && typeof user === 'object' ? Object.keys(user).find(k => safeString(k).toLowerCase().includes('acesso')) : null;
             const isAdmin = user && nivelKey && ['admin', 'supervisor', 'supervisão'].some(role => safeString(user[nivelKey]).toLowerCase().includes(role));
 
-            // Detector Inteligente de Internet
             useEffect(() => {
-                const handleOnline = () => { setIsOffline(false); showToast('Conexão restabelecida! Sincronizando com a nuvem...', 'success'); };
-                const handleOffline = () => { setIsOffline(true); showToast('Rede perdida. Modo leitura ativado (Offline).', 'warning'); };
+                const handleOnline = () => { setIsOffline(false); showToast('Conexão restabelecida! Sincronizando...', 'success'); };
+                const handleOffline = () => { setIsOffline(true); showToast('Rede perdida. Modo offline ativado.', 'warning'); };
                 window.addEventListener('online', handleOnline); window.addEventListener('offline', handleOffline);
                 return () => { window.removeEventListener('online', handleOnline); window.removeEventListener('offline', handleOffline); }
             }, []);
 
             useEffect(() => {
                 const unsub = auth?.onAuthStateChanged(async (u) => {
-                    if (u) {
+                    if (u && !isSharedAuth) {
                         try {
                             const userDoc = await db.collection('USUARIOS').where('E-mail', '==', u.email).get();
                             if (!userDoc.empty) setUser({ ID: userDoc.docs[0].id, ...userDoc.docs[0].data() });
-                            else setUser({ 'E-mail': u.email, 'Nome Completo': u.email.split('@')[0], 'Nível de Acesso': 'Admin' });
+                            else setUser({ 'E-mail': u.email, 'Nome Completo': u.email.split('@')[0], 'Nível de Acesso': 'Colaborador' });
                         } catch (err) {
-                            setUser({ 'E-mail': u.email, 'Nome Completo': u.email.split('@')[0], 'Nível de Acesso': 'Admin' });
+                            setUser({ 'E-mail': u.email, 'Nome Completo': u.email.split('@')[0], 'Nível de Acesso': 'Colaborador' });
                         }
                     } else {
                         if(isSharedAuth) setUser({ 'Nome Completo': 'Equipe São Vicente', 'Nível de Acesso': 'Colaborador' });
@@ -1038,34 +1090,22 @@
             if (!user) {
                 const handleFirebaseLogin = async (e) => {
                     e.preventDefault(); setLoading(true); setLoginErrorMsg('');
+                    setIsSharedAuth(false); localStorage.removeItem('shared_auth');
                     const res = await api.login(e.target.email.value, e.target.password.value);
                     if (res && res.success) { setUser(res.user); loadData('Home'); } 
                     else { setLoginErrorMsg(res?.message || 'Erro ao conectar com o servidor.'); }
                     setLoading(false);
                 };
 
-                // Acesso Automático por E-mail "Fantasma" do Firebase (Segurança extra + Funcionamento Offline)
-                const handleSharedLogin = async (e) => {
-                    e.preventDefault(); setLoginErrorMsg(''); setLoading(true);
+                const handleSharedLogin = (e) => {
+                    e.preventDefault(); setLoginErrorMsg('');
                     if (e.target.shared_password.value === SENHA_ACESSO_GERAL) {
-                        try {
-                            const res = await api.login('equipe@portal.com', SENHA_ACESSO_GERAL);
-                            if(res && res.success) {
-                                localStorage.setItem('shared_auth', 'true');
-                                setIsSharedAuth(true);
-                            } else {
-                                // Fallback se não criou o email equipe@portal.com no Firebase Auth ainda
-                                localStorage.setItem('shared_auth', 'true');
-                                setIsSharedAuth(true);
-                                setUser({ 'Nome Completo': 'Equipe São Vicente', 'Nível de Acesso': 'Colaborador' });
-                                loadData('Home');
-                            }
-                        } catch(err) {
-                            localStorage.setItem('shared_auth', 'true');
-                            setIsSharedAuth(true);
-                        }
+                        auth?.signOut(); // <-- FORÇA LOGOUT DO FIREBASE PARA EVITAR O BUG DO ADMIN FANTASMA
+                        localStorage.setItem('shared_auth', 'true');
+                        setIsSharedAuth(true);
+                        setUser({ 'Nome Completo': 'Equipe São Vicente', 'Nível de Acesso': 'Colaborador' });
+                        loadData('Home');
                     } else { setLoginErrorMsg('Senha de acesso geral incorreta.'); }
-                    setLoading(false);
                 };
 
                 return (
@@ -1089,10 +1129,11 @@
                                             <div className="w-14 h-14 md:w-16 md:h-16 rounded-xl bg-white dark:bg-slate-800 text-primary flex justify-center items-center shrink-0 shadow-sm"><i className="ph-fill ph-users text-2xl md:text-3xl"></i></div>
                                             <div><h3 className="font-black text-lg md:text-xl text-gray-900 dark:text-white group-hover:text-white transition">Acesso Equipe</h3><p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 group-hover:text-blue-100 transition mt-1">Visualização de escalas, ramais e consultas.</p></div>
                                         </button>
-                                        <button onClick={()=>setLoginView('painel')} className="w-full bg-orange-50 hover:bg-secondary dark:bg-slate-700 dark:hover:bg-secondary group p-5 md:p-6 rounded-[1.5rem] md:rounded-2xl border-2 border-orange-100 dark:border-slate-600 hover:border-secondary transition flex items-center gap-4 md:gap-6 text-left">
+                                        <button onClick={()=>setLoginView('supervisor')} className="w-full bg-orange-50 hover:bg-secondary dark:bg-slate-700 dark:hover:bg-secondary group p-5 md:p-6 rounded-[1.5rem] md:rounded-2xl border-2 border-orange-100 dark:border-slate-600 hover:border-secondary transition flex items-center gap-4 md:gap-6 text-left">
                                             <div className="w-14 h-14 md:w-16 md:h-16 rounded-xl bg-white dark:bg-slate-800 text-secondary flex justify-center items-center shrink-0 shadow-sm"><i className="ph-fill ph-shield-star text-2xl md:text-3xl"></i></div>
                                             <div><h3 className="font-black text-lg md:text-xl text-gray-900 dark:text-white group-hover:text-white transition">Acesso Gestão</h3><p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 group-hover:text-orange-100 transition mt-1">Edição de dados e controle da clínica.</p></div>
                                         </button>
+                                        <div className="pt-6 text-center"><button onClick={()=>setLoginView('admin')} className="text-xs font-bold text-gray-400 hover:text-primary transition underline decoration-dashed underline-offset-4">Acesso Administrador Restrito</button></div>
                                     </div>
                                 )}
                                 {loginView === 'geral' && (
@@ -1100,18 +1141,18 @@
                                         <button type="button" onClick={()=>{setLoginView('selecao'); setLoginErrorMsg('');}} className="text-gray-400 hover:text-primary flex items-center gap-2 mb-4 md:mb-6 font-bold text-sm"><i className="ph-bold ph-arrow-left"></i> Voltar</button>
                                         <h2 className="text-xl md:text-2xl font-black text-gray-800 dark:text-white mb-1 md:mb-2">Acesso da Equipe</h2>
                                         <p className="text-xs md:text-sm text-gray-500 mb-6 md:mb-8">Digite a senha geral fornecida pela coordenação.</p>
-                                        <div><label className="block text-[10px] font-black text-gray-400 mb-2 uppercase tracking-widest">Senha de Acesso Único</label><div className="relative"><i className="ph-fill ph-lock-key absolute left-5 top-4 text-gray-400 text-xl"></i><input name="shared_password" type="password" className="w-full pl-14 pr-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-100 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-primary font-bold text-gray-900 dark:text-white transition" placeholder="Sua senha..." required /></div></div>
+                                        <div><label className="block text-[10px] font-black text-gray-400 mb-2 uppercase tracking-widest">Senha de Acesso</label><div className="relative"><i className="ph-fill ph-lock-key absolute left-5 top-4 text-gray-400 text-xl"></i><input name="shared_password" type="password" className="w-full pl-14 pr-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-100 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-primary font-bold text-gray-900 dark:text-white transition" placeholder="Sua senha..." required /></div></div>
                                         <button type="submit" disabled={loading} className="w-full bg-primary hover:opacity-90 text-white font-black py-4 md:py-5 rounded-xl shadow-xl shadow-primary/30 transition transform hover:-translate-y-1">{loading?'Entrando...':'Entrar no Portal'}</button>
                                     </form>
                                 )}
-                                {loginView === 'painel' && (
+                                {(loginView === 'supervisor' || loginView === 'admin') && (
                                     <form onSubmit={handleFirebaseLogin} className="space-y-6 animate-fade-in">
                                         <button type="button" onClick={()=>{setLoginView('selecao'); setLoginErrorMsg('');}} className="text-gray-400 hover:text-primary flex items-center gap-2 mb-4 md:mb-6 font-bold text-sm"><i className="ph-bold ph-arrow-left"></i> Voltar</button>
-                                        <h2 className="text-xl md:text-2xl font-black text-gray-800 dark:text-white mb-1 md:mb-2">Acesso Gestão</h2>
-                                        <p className="text-xs md:text-sm text-gray-500 mb-6 md:mb-8">Faça login com e-mail e senha do painel.</p>
+                                        <h2 className="text-xl md:text-2xl font-black text-gray-800 dark:text-white mb-1 md:mb-2">Acesso {loginView === 'admin' ? 'Administrador' : 'Supervisor'}</h2>
+                                        <p className="text-xs md:text-sm text-gray-500 mb-6 md:mb-8">Faça login com suas credenciais do Firebase.</p>
                                         <div><label className="block text-[10px] font-black text-gray-400 mb-2 uppercase tracking-widest">E-mail</label><div className="relative"><i className="ph-fill ph-user absolute left-5 top-4 text-gray-400 text-xl"></i><input name="email" type="email" className="w-full pl-14 pr-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-100 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-primary font-bold text-gray-900 dark:text-white transition" required /></div></div>
                                         <div><label className="block text-[10px] font-black text-gray-400 mb-2 uppercase tracking-widest">Senha</label><div className="relative"><i className="ph-fill ph-lock-key absolute left-5 top-4 text-gray-400 text-xl"></i><input name="password" type="password" className="w-full pl-14 pr-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-100 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-primary font-bold text-gray-900 dark:text-white transition" required /></div></div>
-                                        <button type="submit" disabled={loading} className="w-full bg-secondary hover:opacity-90 text-white font-black py-4 md:py-5 rounded-xl shadow-xl shadow-secondary/30 transition transform hover:-translate-y-1">{loading ? 'Conectando...' : 'Acessar Gestão'}</button>
+                                        <button type="submit" disabled={loading} className={`w-full ${loginView === 'admin' ? 'bg-gray-900 dark:bg-white dark:text-gray-900 shadow-gray-900/30' : 'bg-secondary shadow-secondary/30'} hover:opacity-90 text-white font-black py-4 md:py-5 rounded-xl shadow-xl transition transform hover:-translate-y-1`}>{loading ? 'Conectando...' : 'Acessar Gestão'}</button>
                                     </form>
                                 )}
                             </div>
@@ -1150,16 +1191,16 @@
                     
                     {toast.show && <div className={`fixed bottom-4 md:bottom-8 right-4 md:right-8 z-[9999] px-6 md:px-8 py-4 md:py-5 rounded-xl md:rounded-custom shadow-2xl text-white font-black text-sm md:text-lg animate-slide-up bg-green-500`}><i className="ph-bold ph-check-circle text-xl md:text-2xl"></i> {toast.message}</div>}
 
-                    {/* HEADER MOBILE (Navegação Celular) */}
+                    {/* HEADER MOBILE */}
                     <div className="md:hidden bg-primary text-white p-4 flex justify-between items-center z-40 shadow-lg relative">
                         <div className="flex items-center gap-2 font-black text-xl"><i className="ph-fill ph-heartbeat"></i> Portal SV</div>
                         <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="text-3xl p-1 bg-white/10 rounded-lg"><i className={`ph-bold ${isMobileMenuOpen ? 'ph-x' : 'ph-list'}`}></i></button>
                     </div>
 
-                    {/* OVERLAY ESCURO MOBILE */}
+                    {/* OVERLAY MOBILE */}
                     {isMobileMenuOpen && <div className="fixed inset-0 bg-black/60 z-40 md:hidden backdrop-blur-sm" onClick={() => setIsMobileMenuOpen(false)}></div>}
 
-                    {/* MENU LATERAL (Sidebar) */}
+                    {/* MENU LATERAL */}
                     <aside className={`fixed inset-y-0 left-0 w-72 md:w-80 bg-white dark:bg-slate-800 border-r border-gray-100 dark:border-slate-700 flex flex-col h-screen shrink-0 shadow-2xl z-50 transform ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 transition-transform duration-300 ease-in-out`}>
                         <div className="p-6 md:p-8 flex items-center border-b border-gray-100 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-900/50 cursor-pointer" onClick={()=>{setActiveTab('Home'); loadData('Home'); setIsMobileMenuOpen(false);}}>
                             <div className="bg-primary text-white p-2 md:p-3 rounded-xl md:rounded-2xl mr-3 shadow-md"><i className="ph-fill ph-heartbeat text-2xl md:text-3xl"></i></div>
