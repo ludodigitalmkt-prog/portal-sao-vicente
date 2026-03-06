@@ -8,7 +8,7 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <script>
-        const VERSAO_ATUAL = "5.0.0"; // Atualizado
+        const VERSAO_ATUAL = "6.0.0"; // Versão nova com Login Dinâmico
         if (window.location.search.indexOf('v=' + VERSAO_ATUAL) === -1) {
             localStorage.clear(); sessionStorage.clear();
             window.location.replace(window.location.pathname + (window.location.pathname.indexOf('?') === -1 ? '?' : '&') + 'v=' + VERSAO_ATUAL);
@@ -31,22 +31,19 @@
                         'fade-in': 'fadeIn 0.4s ease-out', 
                         'pop-in': 'popIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards',
                         'slide-up': 'slideUp 0.4s ease-out forwards',
-                        'ticker': 'ticker 25s linear infinite',
-                        'spin-slow': 'spin 8s linear infinite',
                         'bounce-slight': 'bounceSlight 2s infinite ease-in-out'
                     },
                     keyframes: { 
                         fadeIn: { '0%': { opacity: '0', transform: 'translateY(10px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
                         popIn: { '0%': { opacity: '0', transform: 'scale(0.95)' }, '100%': { opacity: '1', transform: 'scale(1)' } },
                         slideUp: { '0%': { opacity: '0', transform: 'translateY(100%)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
-                        ticker: { '0%': { transform: 'translateX(100%)' }, '100%': { transform: 'translateX(-100%)' } },
                         bounceSlight: { '0%, 100%': { transform: 'translateY(-5%)' }, '50%': { transform: 'translateY(0)' } }
                     }
                 }
             }
         }
     </script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Roboto:wght@300;400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -70,8 +67,8 @@
         .card-hover:hover { transform: translateY(-5px) scale(1.02); z-index: 10; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
         .glass-modal { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(16px); }
         .dark .glass-modal { background: rgba(15, 23, 42, 0.85); }
-        .ticker-container { display: flex; overflow: hidden; white-space: nowrap; width: 100%; align-items: center; }
         .rounded-custom { border-radius: var(--border-radius) !important; }
+        .custom-scrollbar { overflow-y: auto; }
 
         .matrix-table { width: 100%; border-collapse: separate; border-spacing: 0 12px; }
         .matrix-table th { padding: 1.5rem 1rem; color: white; font-weight: 800; text-transform: uppercase; font-size: 0.85rem; text-align: center; border: none; }
@@ -113,6 +110,12 @@
             try {
                 if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
                 db = firebase.firestore();
+                
+                // MODO OFFLINE ATIVADO
+                db.enablePersistence({ synchronizeTabs: true }).catch(function(err) {
+                    console.log("Aviso Cache Offline:", err.code);
+                });
+
                 auth = firebase.auth();
             } catch (error) { console.error("Erro crítico ao inicializar Firebase:", error); }
         }
@@ -776,7 +779,6 @@
                         </div>
                     )}
                     
-                    {/* Popups de Edição/Visualização do Calendário (Mês) */}
                     {selectedDate && !selectedPerson && (
                         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 glass-modal" onClick={() => setSelectedDate(null)}>
                             <div className="bg-white dark:bg-slate-800 rounded-[3rem] w-full max-w-5xl p-10 shadow-2xl animate-pop-in relative border border-gray-100 dark:border-slate-700" onClick={e => e.stopPropagation()}>
@@ -796,7 +798,6 @@
                         </div>
                     )}
                     
-                    {/* Popup de Edição Específica / Kanban / Substituição */}
                     {selectedPerson && canEdit && (
                         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 backdrop-blur-xl bg-gray-900/60 animate-fade-in" onClick={() => {setSelectedPerson(null); setShowSwapSugg(false)}}>
                             <div className="bg-white dark:bg-slate-800 rounded-[3rem] w-full max-w-lg p-8 shadow-2xl relative border border-white dark:border-slate-700" onClick={e => e.stopPropagation()}>
@@ -1036,25 +1037,47 @@
             const [sheetData, setSheetData] = useState({});
             const [darkMode, setDarkMode] = useState(false);
             const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+            
+            // Lógica de Redes de Login
+            const [loginView, setLoginView] = useState('selecao'); // selecao | geral | painel
             const [loginErrorMsg, setLoginErrorMsg] = useState('');
+            const [isOffline, setIsOffline] = useState(!navigator.onLine);
+            const [isSharedAuth, setIsSharedAuth] = useState(localStorage.getItem('shared_auth') === 'true');
+
+            // 👉 AQUI VOCÊ DEFINE A SENHA GERAL DA EQUIPE:
+            const SENHA_ACESSO_GERAL = "Csv@123"; 
 
             const userFoto = user?.Foto_Perfil_URL || 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
-            const userName = user?.['Nome Completo'] || user?.['E-mail']?.split('@')[0] || 'Usuário';
+            const userName = user?.['Nome Completo'] || (isSharedAuth ? 'Equipe São Vicente' : 'Usuário');
 
             const nivelKey = user && typeof user === 'object' ? Object.keys(user).find(k => safeString(k).toLowerCase().includes('acesso')) : null;
             const isAdmin = user && nivelKey && ['admin', 'supervisor', 'supervisão'].some(role => safeString(user[nivelKey]).toLowerCase().includes(role));
 
+            // Detector Inteligente de Internet
+            useEffect(() => {
+                const handleOnline = () => { setIsOffline(false); showToast('Conexão restabelecida! Sincronizando com a nuvem...', 'success'); };
+                const handleOffline = () => { setIsOffline(true); showToast('Rede perdida. Modo leitura ativado (Offline).', 'warning'); };
+                window.addEventListener('online', handleOnline); window.addEventListener('offline', handleOffline);
+                return () => { window.removeEventListener('online', handleOnline); window.removeEventListener('offline', handleOffline); }
+            }, []);
+
             useEffect(() => {
                 const unsub = auth?.onAuthStateChanged(async (u) => {
                     if (u) {
-                        const userDoc = await db.collection('USUARIOS').where('E-mail', '==', u.email).get();
-                        if (!userDoc.empty) setUser({ ID: userDoc.docs[0].id, ...userDoc.docs[0].data() });
-                        else setUser({ 'E-mail': u.email, 'Nome Completo': u.email.split('@')[0], 'Nível de Acesso': 'Colaborador' });
-                    } else setUser(null);
+                        try {
+                            const userDoc = await db.collection('USUARIOS').where('E-mail', '==', u.email).get();
+                            if (!userDoc.empty) setUser({ ID: userDoc.docs[0].id, ...userDoc.docs[0].data() });
+                            else setUser({ 'E-mail': u.email, 'Nome Completo': u.email.split('@')[0], 'Nível de Acesso': 'Admin' });
+                        } catch (err) {
+                            setUser({ 'E-mail': u.email, 'Nome Completo': u.email.split('@')[0], 'Nível de Acesso': 'Admin' });
+                        }
+                    } else {
+                        if(!isSharedAuth) setUser(null);
+                    }
                     setLoading(false);
                 });
                 return () => unsub && unsub();
-            }, []);
+            }, [isSharedAuth]);
                     
             const showToast = (msg, type = 'success') => { setToast({ show: true, message: msg, type }); setTimeout(() => setToast(p => ({ ...p, show: false })), 3500); };
 
@@ -1093,35 +1116,97 @@
                 setLoading(false);
             };
 
-            if (!user) {
-                const handleLogin = async (e) => {
+            // TELA DE LOGIN REDESENHADA
+            if (!user && !isSharedAuth) {
+                const handleFirebaseLogin = async (e) => {
                     e.preventDefault(); setLoading(true); setLoginErrorMsg('');
                     const res = await api.login(e.target.email.value, e.target.password.value);
                     if (res && res.success) { setUser(res.user); loadData('Home'); } 
                     else { setLoginErrorMsg(res?.message || 'Erro ao conectar com o servidor.'); }
                     setLoading(false);
                 };
+
+                const handleSharedLogin = (e) => {
+                    e.preventDefault(); setLoginErrorMsg('');
+                    if (e.target.shared_password.value === SENHA_ACESSO_GERAL) {
+                        localStorage.setItem('shared_auth', 'true');
+                        setIsSharedAuth(true);
+                        setUser({ 'Nome Completo': 'Equipe São Vicente', 'Nível de Acesso': 'Colaborador' });
+                        loadData('Home');
+                    } else {
+                        setLoginErrorMsg('Senha de acesso geral incorreta.');
+                    }
+                };
+
                 return (
-                    <div className="min-h-screen bg-medical dark:bg-slate-900 flex items-center justify-center p-4">
-                        <div className="bg-white dark:bg-slate-800 rounded-[3rem] shadow-2xl w-full max-w-md overflow-hidden animate-fade-in border border-gray-100 dark:border-slate-700">
-                            <div className="p-12 bg-gradient-to-br from-primary to-blue-800 text-white text-center relative">
+                    <div className="min-h-screen bg-medical dark:bg-slate-900 flex flex-col items-center justify-center p-4">
+                        {isOffline && (
+                            <div className="mb-6 bg-red-600 text-white px-6 py-2 rounded-full font-bold shadow-lg animate-pulse flex items-center gap-2">
+                                <i className="ph-bold ph-wifi-slash"></i> Sem Internet. O login pode falhar se não estiver em cache.
+                            </div>
+                        )}
+                        <div className="bg-white dark:bg-slate-800 rounded-[3rem] shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col md:flex-row animate-fade-in border border-gray-100 dark:border-slate-700">
+                            
+                            <div className="md:w-5/12 bg-gradient-to-br from-primary to-blue-800 text-white p-12 flex flex-col justify-center relative">
                                 <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
-                                <div className="relative z-10">
+                                <div className="relative z-10 text-center">
                                     <div className="w-28 h-28 mx-auto bg-white/10 rounded-[2rem] flex items-center justify-center mb-6 backdrop-blur-sm shadow-xl"><i className="ph-fill ph-heartbeat text-7xl"></i></div>
-                                    <h1 className="text-4xl font-black">São Vicente</h1>
+                                    <h1 className="text-4xl font-black mb-4">São Vicente</h1>
+                                    <p className="text-blue-100 font-medium text-sm">Portal interno de comunicação, escalas e processos da clínica.</p>
                                 </div>
                             </div>
-                            <form onSubmit={handleLogin} className="p-10 space-y-6">
+
+                            <div className="md:w-7/12 p-12 bg-white dark:bg-slate-800 flex flex-col justify-center">
                                 {loginErrorMsg && (
-                                    <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 p-4 rounded-xl flex gap-3 items-start animate-pop-in">
+                                    <div className="mb-6 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 p-4 rounded-xl flex gap-3 items-start animate-pop-in">
                                         <i className="ph-fill ph-warning-circle text-red-600 dark:text-red-400 text-xl shrink-0 mt-0.5"></i>
                                         <p className="text-sm font-bold text-red-800 dark:text-red-200 leading-tight">{loginErrorMsg}</p>
                                     </div>
                                 )}
-                                <div><label className="block text-[10px] font-black text-gray-400 mb-2 uppercase tracking-widest">E-mail</label><div className="relative"><i className="ph-fill ph-user absolute left-5 top-4 text-gray-400 text-xl"></i><input name="email" type="email" className="w-full pl-14 pr-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-100 dark:border-slate-700 rounded-custom outline-none focus:ring-2 focus:ring-primary font-bold text-gray-900 dark:text-white transition" required /></div></div>
-                                <div><label className="block text-[10px] font-black text-gray-400 mb-2 uppercase tracking-widest">Senha</label><div className="relative"><i className="ph-fill ph-lock-key absolute left-5 top-4 text-gray-400 text-xl"></i><input name="password" type="password" className="w-full pl-14 pr-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-100 dark:border-slate-700 rounded-custom outline-none focus:ring-2 focus:ring-primary font-bold text-gray-900 dark:text-white transition" required /></div></div>
-                                <button type="submit" disabled={loading} className="w-full bg-secondary hover:opacity-90 text-white font-black py-5 rounded-custom shadow-xl shadow-secondary/30 transition transform hover:-translate-y-1">{loading ? 'Conectando...' : 'Acessar Sistema'}</button>
-                            </form>
+
+                                {loginView === 'selecao' && (
+                                    <div className="space-y-6 animate-fade-in">
+                                        <h2 className="text-2xl font-black text-gray-800 dark:text-white mb-8">Selecione seu acesso:</h2>
+                                        
+                                        <button onClick={()=>setLoginView('geral')} className="w-full bg-blue-50 hover:bg-primary dark:bg-slate-700 dark:hover:bg-primary group p-6 rounded-2xl border-2 border-blue-100 dark:border-slate-600 hover:border-primary transition flex items-center gap-6 text-left">
+                                            <div className="w-16 h-16 rounded-xl bg-white dark:bg-slate-800 text-primary flex justify-center items-center shrink-0 shadow-sm"><i className="ph-fill ph-users text-3xl"></i></div>
+                                            <div><h3 className="font-black text-xl text-gray-900 dark:text-white group-hover:text-white transition">Acesso Equipe</h3><p className="text-sm text-gray-500 dark:text-gray-400 group-hover:text-blue-100 transition mt-1">Visualização de escalas, ramais e consultas.</p></div>
+                                        </button>
+
+                                        <button onClick={()=>setLoginView('painel')} className="w-full bg-orange-50 hover:bg-secondary dark:bg-slate-700 dark:hover:bg-secondary group p-6 rounded-2xl border-2 border-orange-100 dark:border-slate-600 hover:border-secondary transition flex items-center gap-6 text-left">
+                                            <div className="w-16 h-16 rounded-xl bg-white dark:bg-slate-800 text-secondary flex justify-center items-center shrink-0 shadow-sm"><i className="ph-fill ph-shield-star text-3xl"></i></div>
+                                            <div><h3 className="font-black text-xl text-gray-900 dark:text-white group-hover:text-white transition">Acesso Supervisor</h3><p className="text-sm text-gray-500 dark:text-gray-400 group-hover:text-orange-100 transition mt-1">Edição de dados e gestão de equipe.</p></div>
+                                        </button>
+
+                                        <div className="pt-6 text-center">
+                                            <button onClick={()=>setLoginView('painel')} className="text-xs font-bold text-gray-400 hover:text-primary transition underline decoration-dashed underline-offset-4">Acesso Administrador Restrito</button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {loginView === 'geral' && (
+                                    <form onSubmit={handleSharedLogin} className="space-y-6 animate-fade-in">
+                                        <button type="button" onClick={()=>{setLoginView('selecao'); setLoginErrorMsg('');}} className="text-gray-400 hover:text-primary flex items-center gap-2 mb-6 font-bold text-sm"><i className="ph-bold ph-arrow-left"></i> Voltar</button>
+                                        <h2 className="text-2xl font-black text-gray-800 dark:text-white mb-2">Acesso da Equipe</h2>
+                                        <p className="text-sm text-gray-500 mb-8">Digite a senha geral fornecida pela coordenação.</p>
+                                        
+                                        <div><label className="block text-[10px] font-black text-gray-400 mb-2 uppercase tracking-widest">Senha de Acesso Único</label><div className="relative"><i className="ph-fill ph-lock-key absolute left-5 top-4 text-gray-400 text-xl"></i><input name="shared_password" type="password" className="w-full pl-14 pr-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-100 dark:border-slate-700 rounded-custom outline-none focus:ring-2 focus:ring-primary font-bold text-gray-900 dark:text-white transition" placeholder="Sua senha..." required /></div></div>
+                                        <button type="submit" className="w-full bg-primary hover:opacity-90 text-white font-black py-5 rounded-custom shadow-xl shadow-primary/30 transition transform hover:-translate-y-1">Entrar no Portal</button>
+                                    </form>
+                                )}
+
+                                {loginView === 'painel' && (
+                                    <form onSubmit={handleFirebaseLogin} className="space-y-6 animate-fade-in">
+                                        <button type="button" onClick={()=>{setLoginView('selecao'); setLoginErrorMsg('');}} className="text-gray-400 hover:text-primary flex items-center gap-2 mb-6 font-bold text-sm"><i className="ph-bold ph-arrow-left"></i> Voltar</button>
+                                        <h2 className="text-2xl font-black text-gray-800 dark:text-white mb-2">Acesso Gestão</h2>
+                                        <p className="text-sm text-gray-500 mb-8">Faça login com suas credenciais do painel.</p>
+
+                                        <div><label className="block text-[10px] font-black text-gray-400 mb-2 uppercase tracking-widest">E-mail</label><div className="relative"><i className="ph-fill ph-user absolute left-5 top-4 text-gray-400 text-xl"></i><input name="email" type="email" className="w-full pl-14 pr-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-100 dark:border-slate-700 rounded-custom outline-none focus:ring-2 focus:ring-primary font-bold text-gray-900 dark:text-white transition" required /></div></div>
+                                        <div><label className="block text-[10px] font-black text-gray-400 mb-2 uppercase tracking-widest">Senha</label><div className="relative"><i className="ph-fill ph-lock-key absolute left-5 top-4 text-gray-400 text-xl"></i><input name="password" type="password" className="w-full pl-14 pr-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-100 dark:border-slate-700 rounded-custom outline-none focus:ring-2 focus:ring-primary font-bold text-gray-900 dark:text-white transition" required /></div></div>
+                                        <button type="submit" disabled={loading} className="w-full bg-secondary hover:opacity-90 text-white font-black py-5 rounded-custom shadow-xl shadow-secondary/30 transition transform hover:-translate-y-1">{loading ? 'Conectando...' : 'Acessar Gestão'}</button>
+                                    </form>
+                                )}
+                            </div>
                         </div>
                     </div>
                 );
@@ -1151,6 +1236,13 @@
 
             return (
                 <div className="min-h-screen flex flex-col md:flex-row overflow-hidden relative selection:bg-primary selection:text-white">
+                    {/* AVISO OFFLINE SUPERIOR */}
+                    {isOffline && (
+                        <div className="absolute top-0 inset-x-0 z-[99999] bg-red-600 text-white text-xs font-black py-1.5 flex justify-center items-center gap-2 shadow-md animate-fade-in">
+                            <i className="ph-bold ph-wifi-slash text-base"></i> Sem Conexão: O portal está operando com dados em cache local.
+                        </div>
+                    )}
+
                     {toast.show && <div className={`fixed bottom-8 right-8 z-[9999] px-8 py-5 rounded-custom shadow-2xl text-white font-black text-lg animate-slide-up bg-green-500`}><i className="ph-bold ph-check-circle text-2xl"></i> {toast.message}</div>}
 
                     <aside className="w-80 bg-white dark:bg-slate-800 border-r border-gray-100 dark:border-slate-700 flex flex-col h-screen shrink-0 shadow-2xl z-30 transition-colors">
@@ -1162,10 +1254,10 @@
                             {userFoto ? <img src={formatImageUrl(userFoto)} className="w-14 h-14 rounded-custom object-cover shadow-md shrink-0 border-2 border-white dark:border-slate-700" alt="Avatar" /> : <div className="w-14 h-14 rounded-custom bg-gradient-to-tr from-secondary to-orange-400 flex items-center justify-center text-white font-black text-2xl shadow-md shrink-0">{safeString(userName || 'U').charAt(0).toUpperCase()}</div>}
                             <div className="flex-1 overflow-hidden">
                                 <p className="text-base font-black truncate text-gray-900 dark:text-white">{userName}</p>
-                                <p className="text-[10px] font-black text-primary bg-primary/10 px-2 py-1 rounded-md inline-block mt-1 uppercase tracking-widest">{safeString(user[nivelKey] || 'Acesso')}</p>
+                                <p className="text-[10px] font-black text-primary bg-primary/10 px-2 py-1 rounded-md inline-block mt-1 uppercase tracking-widest">{isAdmin?'Admin':'Colaborador'}</p>
                             </div>
                         </div>
-                        <div className="flex-1 overflow-y-auto p-4 space-y-1 custom-scrollbar pb-8">
+                        <div className="flex-1 overflow-y-auto p-4 space-y-1 custom-scrollbar pb-8 mt-4 md:mt-0">
                             <div className="px-4 mb-2 mt-2 text-[10px] font-black text-gray-400 uppercase">Menu</div>
                             {menus.map(m => <button key={m.id} onClick={()=>{setActiveTab(m.id); loadData(m.id);}} className={`w-full flex items-center gap-4 px-5 py-3 rounded-custom text-sm font-bold transition-all ${activeTab===m.id?'bg-primary text-white shadow-xl scale-[1.02]':'text-gray-500 hover:bg-gray-100'}`}><i className={`ph-fill ${m.icon} text-xl`}></i> {m.label}</button>)}
                             
@@ -1175,11 +1267,11 @@
                                     {adminMenus.map(m => <button key={m.id} onClick={()=>{setActiveTab(m.id); loadData(m.id);}} className={`w-full flex items-center gap-4 px-5 py-3 rounded-custom text-sm font-bold transition-all ${activeTab===m.id?'bg-gray-900 text-white shadow-xl scale-[1.02]':'text-gray-500 hover:bg-gray-100'}`}><i className={`ph-fill ${m.icon} text-xl`}></i> {m.label}</button>)}
                                 </>
                             )}
-                            <button onClick={()=>auth.signOut()} className="w-full flex items-center gap-4 px-5 py-3 rounded-custom text-sm font-bold text-red-600 hover:bg-red-50 mt-8"><i className="ph-fill ph-sign-out text-xl"></i> Sair</button>
+                            <button onClick={()=>{auth?.signOut(); localStorage.removeItem('shared_auth'); setIsSharedAuth(false); setUser(null);}} className="w-full flex items-center gap-4 px-5 py-3 rounded-custom text-sm font-bold text-red-600 hover:bg-red-50 mt-8"><i className="ph-fill ph-sign-out text-xl"></i> Sair</button>
                         </div>
                     </aside>
 
-                    <main className="flex-1 h-screen overflow-y-auto relative custom-scrollbar p-6 md:p-10">
+                    <main className="flex-1 h-screen overflow-y-auto relative custom-scrollbar p-6 md:p-10 pt-10">
                         <ErrorBoundary>
                             {loading && <div className="fixed inset-0 bg-white/70 backdrop-blur z-50 flex items-center justify-center"><div className="animate-spin h-12 w-12 border-4 border-t-primary rounded-full"></div></div>}
 
