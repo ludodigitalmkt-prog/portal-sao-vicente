@@ -2,13 +2,21 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
+    <meta name="theme-color" content="#1E40AF">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Portal SV">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/149/149071.png">
+    
+    <link rel="manifest" href='data:application/manifest+json;utf-8,{"name":"Portal São Vicente","short_name":"Portal SV","start_url":".","display":"standalone","background_color":"#F8FAFC","theme_color":"#1E40AF","icons":[{"src":"https://cdn-icons-png.flaticon.com/512/149/149071.png","sizes":"512x512","type":"image/png"}]}'>
+
     <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <script>
-        const VERSAO_ATUAL = "6.1.1";
+        const VERSAO_ATUAL = "6.2.0";
         if (window.location.search.indexOf('v=' + VERSAO_ATUAL) === -1) {
             localStorage.clear(); sessionStorage.clear();
             window.location.replace(window.location.pathname + (window.location.pathname.indexOf('?') === -1 ? '?' : '&') + 'v=' + VERSAO_ATUAL);
@@ -56,9 +64,9 @@
 
     <style>
         :root { --color-primary: #1E40AF; --color-secondary: #F97316; --color-medical: #E0F2FE; --color-bg: #F8FAFC; --font-family: 'Inter'; --border-radius: 1.5rem; --card-transition: all 0.3s ease; }
-        body { font-family: var(--font-family), sans-serif; overflow-x: hidden; transition: background-color 0.3s ease, color 0.3s ease; background-color: var(--color-bg); }
+        body { font-family: var(--font-family), sans-serif; overflow-x: hidden; transition: background-color 0.3s ease, color 0.3s ease; background-color: var(--color-bg); -webkit-tap-highlight-color: transparent; }
         body.dark { background-color: #0f172a; } 
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         .dark ::-webkit-scrollbar-thumb { background: #475569; }
@@ -71,7 +79,7 @@
         .custom-scrollbar { overflow-y: auto; }
 
         .matrix-table { width: 100%; border-collapse: separate; border-spacing: 0 12px; }
-        .matrix-table th { padding: 1.5rem 1rem; color: white; font-weight: 800; text-transform: uppercase; font-size: 0.85rem; text-align: center; border: none; }
+        .matrix-table th { padding: 1rem; color: white; font-weight: 800; text-transform: uppercase; font-size: 0.85rem; text-align: center; border: none; }
         .matrix-table th:first-child { border-radius: 1rem 0 0 1rem; background-color: #1e293b; text-align: left; position: sticky; left: 0; z-index: 30; }
         .matrix-table th:last-child { border-radius: 0 1rem 1rem 0; }
         .matrix-row { background-color: #ffffff; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); transition: transform 0.2s, box-shadow 0.2s; position: relative; }
@@ -109,7 +117,6 @@
             try {
                 if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
                 db = firebase.firestore();
-                // OFFLINE MODE
                 db.enablePersistence({ synchronizeTabs: true }).catch(function(err) { console.log("Offline mode warning:", err.code); });
                 auth = firebase.auth();
             } catch (error) { console.error("Erro Firebase:", error); }
@@ -126,7 +133,6 @@
 
         const safeString = (val) => (val === null || val === undefined) ? '' : String(val);
 
-        // Tradutor de Datas para o Formulário (Corrige o DD/MM/AAAA para o Calendário AAAA-MM-DD)
         const formatDateForInput = (val) => {
             const s = safeString(val).trim();
             if (s.includes('/')) {
@@ -156,7 +162,6 @@
             return str;
         };
 
-        // Função segura para checar expediente (Auto-Ausente)
         const isPastEnd = (horaFimStr) => {
             const str = safeString(horaFimStr);
             if(!str) return false;
@@ -246,7 +251,7 @@
                 <div className={`p-6 rounded-custom border-2 shadow-sm flex items-center justify-between transition-colors duration-1000 ${bgClass}`}>
                     <div className="flex items-center gap-5">
                         <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center shadow-inner"><i className={`ph-fill ${icon} text-4xl animate-spin-slow`}></i></div>
-                        <div><h2 className="text-4xl font-black tracking-tighter">{time.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit', second:'2-digit'})}</h2><p className="text-sm font-bold uppercase tracking-widest opacity-80 mt-1">{periodStr}</p></div>
+                        <div><h2 className="text-3xl md:text-4xl font-black tracking-tighter">{time.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit', second:'2-digit'})}</h2><p className="text-xs md:text-sm font-bold uppercase tracking-widest opacity-80 mt-1">{periodStr}</p></div>
                     </div>
                     <div className="hidden md:flex flex-col items-end max-w-xs text-right border-l-2 border-white/20 pl-6">
                         <span className="text-[10px] font-black uppercase tracking-widest opacity-60 mb-1 flex items-center gap-1"><i className="ph-fill ph-bell-ringing animate-pulse"></i> Lembrete da Hora</span>
@@ -258,13 +263,13 @@
 
         const ModalForm = ({ title, schema, formData, setFormData, onSave, onClose, loading }) => {
             return (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 glass-modal animate-fade-in" onMouseDown={onClose}>
-                    <div className="bg-white dark:bg-slate-800 rounded-custom w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl animate-pop-in overflow-hidden border border-gray-100 dark:border-slate-700" onMouseDown={e => e.stopPropagation()}>
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 glass-modal animate-fade-in overflow-y-auto" onMouseDown={onClose}>
+                    <div className="bg-white dark:bg-slate-800 rounded-custom w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl animate-pop-in overflow-hidden border border-gray-100 dark:border-slate-700 m-auto mt-4 mb-4" onMouseDown={e => e.stopPropagation()}>
                         <div className="p-6 bg-gray-50 dark:bg-slate-900 border-b border-gray-100 dark:border-slate-700 flex justify-between items-center shrink-0">
-                            <h3 className="text-2xl font-black flex items-center gap-3 text-gray-900 dark:text-white"><div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center"><i className={`ph-bold ${formData?.ID ? 'ph-pencil-simple' : 'ph-plus'}`}></i></div> {formData?.ID ? 'Editar' : 'Novo'} {title}</h3>
+                            <h3 className="text-xl md:text-2xl font-black flex items-center gap-3 text-gray-900 dark:text-white"><div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center"><i className={`ph-bold ${formData?.ID ? 'ph-pencil-simple' : 'ph-plus'}`}></i></div> {formData?.ID ? 'Editar' : 'Novo'} {title}</h3>
                             <button type="button" onClick={onClose} className="w-10 h-10 rounded-full bg-gray-200 dark:bg-slate-700 hover:bg-red-500 hover:text-white transition flex items-center justify-center"><i className="ph-bold ph-x text-lg"></i></button>
                         </div>
-                        <div className="p-8 overflow-y-auto flex-1 custom-scrollbar">
+                        <div className="p-6 md:p-8 overflow-y-auto flex-1 custom-scrollbar">
                             <form id="gen-form" onSubmit={onSave} className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 {(schema || []).filter(col => safeString(col) !== 'ID').map((col, idx) => {
                                     const colName = safeString(col); const cLower = colName.toLowerCase();
@@ -272,41 +277,41 @@
                                     
                                     return (
                                         <div key={idx} className={isLong ? 'md:col-span-2' : ''}>
-                                            <label className="block text-xs font-black text-gray-400 dark:text-slate-400 mb-2 uppercase tracking-widest">{colName}</label>
+                                            <label className="block text-[10px] md:text-xs font-black text-gray-400 dark:text-slate-400 mb-2 uppercase tracking-widest">{colName}</label>
                                             
                                             {colName === 'Layout' && title.includes('Aviso') ? (
-                                                <select className="w-full px-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-custom outline-none focus:ring-2 focus:ring-primary font-bold text-gray-800 dark:text-white" value={safeString(formData[colName])} onChange={(e) => setFormData({...formData, [colName]: e.target.value})}>
+                                                <select className="w-full px-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-primary font-bold text-gray-800 dark:text-white" value={safeString(formData[colName])} onChange={(e) => setFormData({...formData, [colName]: e.target.value})}>
                                                     <option value="Padrão">Padrão</option><option value="Imagem Grande">Imagem Grande (Banner)</option><option value="Só Texto">Só Texto</option>
                                                 </select>
                                             ) : colName === 'Tipo_Midia' ? (
-                                                <select className="w-full px-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-custom font-bold text-gray-800 dark:text-white" value={safeString(formData[colName])} onChange={e => setFormData({...formData, [colName]: e.target.value})}>
+                                                <select className="w-full px-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl font-bold text-gray-800 dark:text-white" value={safeString(formData[colName])} onChange={e => setFormData({...formData, [colName]: e.target.value})}>
                                                     <option value="Documento PDF">Documento (Drive PDF)</option><option value="Vídeo">Vídeo (YouTube/Drive)</option>
                                                 </select>
                                             ) : colName === 'Tipo' && title.includes('Contato') ? (
-                                                <select className="w-full px-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-custom outline-none focus:ring-2 focus:ring-primary font-bold text-gray-800 dark:text-white" value={safeString(formData[colName])} onChange={(e) => setFormData({...formData, [colName]: e.target.value})}>
+                                                <select className="w-full px-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-primary font-bold text-gray-800 dark:text-white" value={safeString(formData[colName])} onChange={(e) => setFormData({...formData, [colName]: e.target.value})}>
                                                     <option value="Ramal">Ramal Interno</option><option value="Email">E-mail</option><option value="Telefone">Telefone Externo</option>
                                                 </select>
                                             ) : colName.includes('?') || colName === 'Status' || colName === 'Ativo' ? (
-                                                <select className="w-full px-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-custom outline-none focus:ring-2 focus:ring-primary font-bold text-gray-800 dark:text-white" value={safeString(formData[colName])} onChange={(e) => setFormData({...formData, [colName]: e.target.value})}>
+                                                <select className="w-full px-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-primary font-bold text-gray-800 dark:text-white" value={safeString(formData[colName])} onChange={(e) => setFormData({...formData, [colName]: e.target.value})}>
                                                     <option value="">Selecione...</option><option value="Sim">Sim</option><option value="Não">Não</option><option value="Ativo">Ativo</option><option value="Inativo">Inativo</option>
                                                 </select>
                                             ) : colName === 'Nível de Acesso' ? (
-                                                <select className="w-full px-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-custom outline-none focus:ring-2 focus:ring-primary font-bold text-gray-800 dark:text-white" value={safeString(formData[colName])} onChange={(e) => setFormData({...formData, [colName]: e.target.value})}>
+                                                <select className="w-full px-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-primary font-bold text-gray-800 dark:text-white" value={safeString(formData[colName])} onChange={(e) => setFormData({...formData, [colName]: e.target.value})}>
                                                     <option value="">Selecione...</option><option value="Colaborador">Colaborador</option><option value="Supervisor">Supervisor</option><option value="Admin">Admin</option>
                                                 </select>
                                             ) : colName.includes('Cor') ? (
-                                                <div className="flex items-center gap-3 bg-gray-50 dark:bg-slate-900 p-3 rounded-custom border border-gray-200 dark:border-slate-700">
+                                                <div className="flex items-center gap-3 bg-gray-50 dark:bg-slate-900 p-3 rounded-xl border border-gray-200 dark:border-slate-700">
                                                     <input type="color" className="w-10 h-10 rounded-xl cursor-pointer border-0 bg-transparent" value={safeString(formData[colName]) || '#1E40AF'} onChange={(e) => setFormData({...formData, [colName]: e.target.value})} />
                                                     <span className="font-mono text-sm font-bold text-gray-500">{safeString(formData[colName]) || 'Cor Padrão'}</span>
                                                 </div>
                                             ) : isLong && !cLower.includes('url') && !cLower.includes('site') && !cLower.includes('link') ? (
-                                                <textarea className="w-full px-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-custom outline-none focus:ring-2 focus:ring-primary min-h-[120px] font-medium text-gray-800 dark:text-white" value={safeString(formData[colName])} onChange={(e) => setFormData({...formData, [colName]: e.target.value})} placeholder={cLower.includes('competências') ? 'Ex: Recepção, Triagem, Coleta' : `Detalhes...`}></textarea>
+                                                <textarea className="w-full px-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-primary min-h-[120px] font-medium text-gray-800 dark:text-white" value={safeString(formData[colName])} onChange={(e) => setFormData({...formData, [colName]: e.target.value})} placeholder={cLower.includes('competências') ? 'Ex: Recepção, Triagem, Coleta' : `Detalhes...`}></textarea>
                                             ) : cLower.includes('data') ? (
-                                                <input type="date" className="w-full px-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-custom outline-none focus:ring-2 focus:ring-primary font-bold text-gray-800 dark:text-white" value={formatDateForInput(formData[colName])} onChange={(e) => setFormData({...formData, [colName]: e.target.value})} />
+                                                <input type="date" className="w-full px-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-primary font-bold text-gray-800 dark:text-white" value={formatDateForInput(formData[colName])} onChange={(e) => setFormData({...formData, [colName]: e.target.value})} />
                                             ) : cLower.includes('hora') || cLower.includes('início') || cLower.includes('fim') || cLower.includes('flexíveis') ? (
-                                                <input type="time" className="w-full px-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-custom outline-none focus:ring-2 focus:ring-primary font-bold text-gray-800 dark:text-white" value={safeString(formData[colName])} onChange={(e) => setFormData({...formData, [colName]: e.target.value})} />
+                                                <input type="time" className="w-full px-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-primary font-bold text-gray-800 dark:text-white" value={safeString(formData[colName])} onChange={(e) => setFormData({...formData, [colName]: e.target.value})} />
                                             ) : (
-                                                <input type={cLower.includes('senha') ? 'password' : 'text'} className="w-full px-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-custom outline-none focus:ring-2 focus:ring-primary font-bold text-gray-800 dark:text-white" value={safeString(formData[colName])} onChange={(e) => setFormData({...formData, [colName]: e.target.value})} placeholder={`Preencha ${cLower}`} />
+                                                <input type={cLower.includes('senha') ? 'password' : 'text'} className="w-full px-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-primary font-bold text-gray-800 dark:text-white" value={safeString(formData[colName])} onChange={(e) => setFormData({...formData, [colName]: e.target.value})} placeholder={`Preencha ${cLower}`} />
                                             )}
                                         </div>
                                     )
@@ -314,8 +319,8 @@
                             </form>
                         </div>
                         <div className="p-6 border-t border-gray-100 dark:border-slate-700 flex justify-end gap-3 bg-white dark:bg-slate-800 shrink-0">
-                            <button type="button" onClick={onClose} className="font-bold text-gray-500 px-8 py-4 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-custom transition">Cancelar</button>
-                            <button type="submit" form="gen-form" disabled={loading} className="bg-primary hover:opacity-90 text-white font-black px-10 py-4 rounded-custom shadow-xl shadow-primary/30 transition transform hover:-translate-y-1 flex items-center gap-2">
+                            <button type="button" onClick={onClose} className="font-bold text-gray-500 px-6 md:px-8 py-3 md:py-4 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-xl transition">Cancelar</button>
+                            <button type="submit" form="gen-form" disabled={loading} className="bg-primary hover:opacity-90 text-white font-black px-8 md:px-10 py-3 md:py-4 rounded-xl shadow-xl shadow-primary/30 transition transform hover:-translate-y-1 flex items-center gap-2">
                                 {loading ? <i className="ph animate-spin ph-spinner text-xl"></i> : <i className="ph-bold ph-floppy-disk text-xl"></i>} {loading ? 'Salvando...' : 'Salvar'}
                             </button>
                         </div>
@@ -324,238 +329,6 @@
             )
         };
 
-        // ==========================================
-        // RESTAURAÇÃO DE TODOS OS COMPONENTES AQUI
-        // ==========================================
-
-        const MuralAvisosView = ({ data, canEdit, openModal, handleDelete }) => {
-            const safeData = Array.isArray(data) ? data : [];
-            const ativos = safeData.filter(item => item && typeof item === 'object' && safeString(item.Ativo).toLowerCase() !== 'não' && safeString(item.Ativo).toLowerCase() !== 'nao');
-
-            return (
-                <div className="space-y-8 animate-fade-in">
-                    <div className="flex justify-between items-center bg-white dark:bg-slate-800 p-5 rounded-custom shadow-sm border border-gray-100 dark:border-slate-700">
-                        <div>
-                            <h2 className="text-2xl font-black text-gray-800 dark:text-white flex items-center gap-3"><i className="ph-fill ph-presentation-chart text-primary"></i> Mural de Avisos</h2>
-                            <p className="text-sm text-gray-500 font-medium ml-9 mt-1">Quadros de avisos em destaque e comunicados oficiais.</p>
-                        </div>
-                        {canEdit && <button onClick={()=>openModal({Layout: 'Padrão'})} className="bg-primary text-white px-8 py-4 rounded-full font-black shadow-lg hover:-translate-y-1 transition flex items-center gap-2"><i className="ph-bold ph-plus text-xl"></i> Criar Anúncio</button>}
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        {ativos.map((item, i) => {
-                            const layout = safeString(item.Layout) || 'Padrão';
-                            if (layout === 'Só Texto') {
-                                return (
-                                    <div key={i} className="bg-gradient-to-br from-blue-600 to-indigo-800 rounded-custom shadow-lg p-10 card-hover flex flex-col justify-center text-white relative group overflow-hidden h-[350px]">
-                                        <i className="ph-fill ph-megaphone absolute -right-10 -bottom-10 text-[10rem] opacity-10"></i>
-                                        <h3 className="text-4xl font-black leading-tight mb-4 z-10">{safeString(item.Título) || 'Aviso Interno'}</h3>
-                                        <p className="text-xl font-medium opacity-90 z-10">{safeString(item.Subtítulo)}</p>
-                                        {canEdit && <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition z-20"><button onClick={()=>openModal(item)} className="w-10 h-10 bg-white/20 hover:bg-white text-white hover:text-blue-600 rounded-xl flex items-center justify-center transition"><i className="ph-bold ph-pencil-simple text-lg"></i></button><button onClick={()=>{if(confirm('Excluir?')) handleDelete(item.ID)}} className="w-10 h-10 bg-white/20 hover:bg-red-500 text-white rounded-xl flex items-center justify-center transition"><i className="ph-bold ph-trash text-lg"></i></button></div>}
-                                    </div>
-                                )
-                            }
-                            return (
-                                <div key={i} className={`bg-white dark:bg-slate-800 rounded-custom shadow-lg overflow-hidden relative group border border-gray-100 dark:border-slate-700 card-hover flex flex-col ${layout==='Imagem Grande'?'h-[500px]':'h-[350px]'}`}>
-                                    {item.Imagem_URL ? <div className="absolute inset-0 w-full h-full bg-cover bg-center transition-transform duration-1000 group-hover:scale-105" style={{backgroundImage: `url('${formatImageUrl(item.Imagem_URL)}')`}}></div> : <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-primary to-blue-800 opacity-90"></div>}
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent"></div>
-                                    <div className="relative z-10 p-8 mt-auto">
-                                        <h3 className="text-4xl font-black text-white leading-tight mb-2 drop-shadow-md">{safeString(item.Título)}</h3>
-                                        {item.Subtítulo && <p className="text-xl font-bold text-gray-200 drop-shadow-md">{safeString(item.Subtítulo)}</p>}
-                                        {item.Link && <a href={safeString(item.Link)} target="_blank" className="mt-4 inline-block bg-white text-gray-900 font-black px-6 py-3 rounded-xl shadow-lg hover:bg-gray-100 transition">Acessar Link</a>}
-                                        {canEdit && <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition"><button onClick={()=>openModal(item)} className="w-10 h-10 bg-white/20 hover:bg-white text-white hover:text-blue-600 rounded-xl flex items-center justify-center transition"><i className="ph-bold ph-pencil-simple text-lg"></i></button><button onClick={()=>{if(confirm('Excluir?')) handleDelete(item.ID)}} className="w-10 h-10 bg-white/20 hover:bg-red-500 text-white rounded-xl flex items-center justify-center transition"><i className="ph-bold ph-trash text-lg"></i></button></div>}
-                                    </div>
-                                </div>
-                            )
-                        })}
-                        {ativos.length === 0 && <div className="col-span-full p-20 text-center text-gray-400 font-black text-2xl border-2 border-dashed border-gray-200 dark:border-slate-700 rounded-custom">Mural vazio.</div>}
-                    </div>
-                </div>
-            );
-        };
-
-        const ConveniosMatrixView = ({ data, canEdit, openModal, handleDelete, schema }) => {
-            const safeData = Array.isArray(data) ? data : [];
-            const [search, setSearch] = useState('');
-            let allKeys = schema && schema.length > 0 ? schema : ['ID', 'Procedimento'];
-            if (safeData.length > 0 && typeof safeData[0] === 'object' && safeData[0] !== null) { const dataKeys = Object.keys(safeData[0]); allKeys = [...new Set([...allKeys, ...dataKeys])]; }
-            let procColName = 'Procedimento';
-            const specificCol = allKeys.find(k => k !== 'ID' && (safeString(k).toLowerCase().includes('procedimento') || safeString(k).toLowerCase().includes('convênio') || safeString(k).toLowerCase().includes('serviço')));
-            if (specificCol) procColName = specificCol; else procColName = allKeys.find(k => k !== 'ID') || 'Procedimento';
-
-            const insurances = allKeys.filter(k => k !== 'ID' && k !== procColName);
-            const filteredData = safeData.filter(row => row && typeof row === 'object' && safeString(row[procColName]).toLowerCase().includes(search.toLowerCase()));
-            const headerColors = ['#2563eb', '#0ea5e9', '#0d9488', '#10b981', '#8b5cf6', '#d946ef', '#f43f5e', '#f97316'];
-
-            return (
-                <div className="space-y-6 animate-fade-in">
-                    <div className="flex justify-between items-center bg-white dark:bg-slate-800 p-5 rounded-custom shadow-sm border border-gray-100 dark:border-slate-700">
-                        <div className="relative w-full sm:w-[400px]"><i className="ph-bold ph-magnifying-glass absolute left-5 top-4 text-gray-400 text-xl"></i><input type="text" placeholder="Buscar Serviço..." value={search} onChange={e=>setSearch(e.target.value)} className="w-full pl-14 pr-6 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-full outline-none focus:ring-2 focus:ring-primary font-bold text-gray-800 dark:text-white" /></div>
-                        {canEdit && <button onClick={() => { let init = {}; init[procColName] = ''; insurances.forEach(ins => init[ins] = ''); openModal(init, allKeys); }} className="bg-primary hover:opacity-90 text-white px-8 py-4 rounded-full font-black shadow-lg transition flex items-center gap-2"><i className="ph-bold ph-plus text-xl"></i> Adicionar Regra</button>}
-                    </div>
-                    <div className="bg-transparent relative overflow-hidden">
-                        <div className="overflow-x-auto custom-scrollbar pb-20 pt-4 px-2">
-                            <table className="matrix-table min-w-[1000px]">
-                                <thead><tr><th>{safeString(procColName)}</th>{insurances.map((ins, i) => <th key={`head-${i}`} style={{ backgroundColor: headerColors[i % headerColors.length] }}>{safeString(ins)}</th>)}{canEdit && <th style={{ backgroundColor: '#334155' }}>Ações</th>}</tr></thead>
-                                <tbody>
-                                    {filteredData.length === 0 ? <tr><td colSpan="100%" className="p-16 text-center text-gray-400 font-black text-xl bg-white dark:bg-slate-800 rounded-2xl shadow-sm">Matriz Vazia.</td></tr> : (
-                                        filteredData.map((row, rowIndex) => (
-                                            <tr key={`row-${rowIndex}`} className="matrix-row group">
-                                                <td>{safeString(row[procColName]) || '-'}</td>
-                                                {insurances.map((ins, i) => {
-                                                    const val = safeString(row[ins]); const valLower = val.toLowerCase();
-                                                    const isNo = valLower === 'x' || valLower === 'não' || valLower === 'nao' || valLower === 'n'; const isEmpty = val === '' || val === '-';
-                                                    return (
-                                                        <td key={`cell-${rowIndex}-${i}`}>
-                                                            {isNo ? <div className="mx-auto w-8 h-8 flex items-center justify-center rounded-full bg-red-100 text-red-600 shadow-inner" title="Não Cobre"><i className="ph-bold ph-x text-lg"></i></div> : isEmpty ? <span className="text-gray-300 dark:text-slate-600 font-bold">-</span> : <div className="flex flex-col items-center justify-center gap-1 group/tooltip relative cursor-help"><div className="w-8 h-8 flex items-center justify-center rounded-full bg-green-100 text-green-600 shadow-inner"><i className="ph-bold ph-check text-lg"></i></div><span className="text-[9px] font-bold text-gray-500 bg-gray-100 dark:bg-slate-700 px-2 py-0.5 rounded uppercase max-w-[100px] truncate">{val}</span><div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-max max-w-[200px] bg-slate-900 text-white text-xs font-bold p-3 rounded-lg shadow-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible z-50 whitespace-normal text-left transition-all border border-slate-700"><span className="block text-[10px] text-gray-400 mb-1 uppercase tracking-widest">{safeString(ins)}</span>{val}</div></div>}
-                                                        </td>
-                                                    );
-                                                })}
-                                                {canEdit && <td className="border-l border-gray-100 dark:border-slate-700"><div className="flex justify-center gap-2 opacity-30 group-hover:opacity-100 transition-opacity"><button onClick={()=>openModal(row, allKeys)} className="w-8 h-8 flex items-center justify-center bg-blue-50 dark:bg-blue-900/30 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition shadow-sm"><i className="ph-bold ph-pencil-simple"></i></button><button onClick={()=>{if(confirm('Excluir?')) handleDelete(row.ID)}} className="w-8 h-8 flex items-center justify-center bg-red-50 dark:bg-red-900/30 text-red-600 rounded-lg hover:bg-red-600 hover:text-white transition shadow-sm"><i className="ph-bold ph-trash"></i></button></div></td>}
-                                            </tr>
-                                        ))
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            );
-        };
-
-        const CorpoClinicoCards = ({ data, canEdit, openModal, handleDelete }) => {
-            const safeData = Array.isArray(data) ? data : [];
-            const [search, setSearch] = useState('');
-            const filtered = safeData.filter(m => m && typeof m === 'object' && (safeString(m.Médico).toLowerCase().includes(search.toLowerCase()) || safeString(m.Especialidade).toLowerCase().includes(search.toLowerCase())));
-
-            return (
-                <div className="space-y-6">
-                    <div className="flex justify-between items-center bg-white dark:bg-slate-800 p-5 rounded-custom shadow-sm border border-gray-100 dark:border-slate-700">
-                        <div className="relative w-full sm:w-96"><i className="ph-bold ph-magnifying-glass absolute left-5 top-4 text-gray-400 text-xl"></i><input type="text" placeholder="Buscar médico..." value={search} onChange={e=>setSearch(e.target.value)} className="w-full pl-14 pr-6 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-full outline-none focus:ring-2 focus:ring-primary font-bold transition text-gray-800 dark:text-white" /></div>
-                        {canEdit && <button onClick={()=>openModal({})} className="bg-primary text-white px-8 py-4 rounded-custom font-black shadow-lg hover:-translate-y-1 transition flex items-center gap-2"><i className="ph-bold ph-user-plus text-xl"></i> Cadastrar Médico</button>}
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                        {filtered.map((med, i) => (
-                            <div key={i} className="bg-white dark:bg-slate-800 p-6 shadow-sm border border-gray-100 dark:border-slate-700 rounded-[2.5rem] relative overflow-hidden group card-hover flex flex-col">
-                                <div className="absolute top-0 inset-x-0 h-24 bg-gray-100 dark:bg-slate-900" style={{backgroundColor: med.Cor_Selo ? `${safeString(med.Cor_Selo)}20` : ''}}></div>
-                                <div className="relative z-10 flex flex-col items-center text-center mt-4">
-                                    {med.Foto_URL ? <img src={formatImageUrl(med.Foto_URL)} className="w-24 h-24 rounded-full object-cover border-4 border-white dark:border-slate-800 shadow-lg mb-4" /> : <div className="w-24 h-24 rounded-full bg-white dark:bg-slate-700 flex items-center justify-center text-3xl font-black text-gray-400 border-4 border-gray-50 dark:border-slate-800 shadow-lg mb-4">{safeString(med.Médico || 'M').charAt(0)}</div>}
-                                    <h3 className="font-black text-xl leading-tight text-gray-900 dark:text-white">{safeString(med.Médico) || 'Sem Nome'}</h3>
-                                    <p className="text-sm font-bold text-primary mb-3 mt-1 uppercase tracking-wide" style={{color: med.Cor_Selo || 'var(--color-primary)'}}>{safeString(med.Especialidade) || 'Clínico'}</p>
-                                    <div className="w-full bg-gray-50 dark:bg-slate-900 rounded-2xl p-4 mt-auto space-y-2 text-left">
-                                        {med.CRM && <p className="text-xs font-bold text-gray-500 flex justify-between"><span>CRM</span> <span className="text-gray-800 dark:text-slate-200">{safeString(med.CRM)}</span></p>}
-                                        {med['Código UNIMED'] && <p className="text-xs font-bold text-gray-500 flex justify-between"><span>UNIMED</span> <span className="text-gray-800 dark:text-slate-200">{safeString(med['Código UNIMED'])}</span></p>}
-                                        {med.Segmento && <p className="text-xs font-bold text-gray-500 flex justify-between"><span>Segmento</span> <span className="bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-slate-200 px-2 rounded-md">{safeString(med.Segmento)}</span></p>}
-                                    </div>
-                                </div>
-                                {canEdit && (
-                                    <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition z-20">
-                                        <button onClick={()=>openModal(med)} className="w-8 h-8 bg-white dark:bg-slate-700 text-blue-600 rounded-full shadow hover:bg-blue-600 hover:text-white flex items-center justify-center"><i className="ph-bold ph-pencil-simple"></i></button>
-                                        <button onClick={()=>{if(confirm('Excluir?')) handleDelete(med.ID)}} className="w-8 h-8 bg-white dark:bg-slate-700 text-red-600 rounded-full shadow hover:bg-red-600 hover:text-white flex items-center justify-center"><i className="ph-bold ph-trash"></i></button>
-                                    </div>
-                                )}
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            );
-        };
-
-        const ContatosViewTabs = ({ data, canEdit, openModal, handleDelete, schema }) => {
-            const safeData = Array.isArray(data) ? data : [];
-            const [search, setSearch] = useState('');
-            const [activeTab, setActiveTab] = useState('Ramal'); 
-            const filtered = safeData.filter(c => c && safeString(c.Tipo) === activeTab && Object.values(c).some(v=>safeString(v).toLowerCase().includes(search.toLowerCase())));
-
-            return (
-                <div className="space-y-6 animate-fade-in">
-                    <div className="bg-white dark:bg-slate-800 rounded-custom p-4 shadow-sm border border-gray-100 dark:border-slate-700 flex justify-between items-center gap-4">
-                        <div className="flex bg-gray-50 dark:bg-slate-900 p-2 rounded-2xl gap-2 w-full md:w-auto">
-                            <button onClick={()=>setActiveTab('Ramal')} className={`px-6 py-3 rounded-xl font-black transition-all ${activeTab==='Ramal'?'bg-white dark:bg-slate-800 text-primary shadow-md':'text-gray-500'}`}>📞 Ramais</button>
-                            <button onClick={()=>setActiveTab('Email')} className={`px-6 py-3 rounded-xl font-black transition-all ${activeTab==='Email'?'bg-white dark:bg-slate-800 text-secondary shadow-md':'text-gray-500'}`}>📧 E-mails</button>
-                            <button onClick={()=>setActiveTab('Telefone')} className={`px-6 py-3 rounded-xl font-black transition-all ${activeTab==='Telefone'?'bg-white dark:bg-slate-800 text-green-600 shadow-md':'text-gray-500'}`}>📱 Externos</button>
-                        </div>
-                        {canEdit && <button onClick={()=>openModal({Tipo: activeTab}, schema)} className="bg-primary text-white font-black px-6 py-3 rounded-xl shadow-md hover:-translate-y-1 transition"><i className="ph-bold ph-plus"></i> Novo Contato</button>}
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                        {filtered.map((item, i) => (
-                            <div key={i} className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-[2rem] p-6 shadow-sm card-hover relative group">
-                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest bg-gray-50 dark:bg-slate-900 px-3 py-1 rounded-full mb-3 inline-block">{safeString(item.Local_Setor) || 'Sem Local'}</span>
-                                <h3 className="font-black text-xl text-gray-900 dark:text-white mb-1">{safeString(item.Nome_Contato) || 'Sem Nome'}</h3>
-                                <p className={`text-xl font-black mt-3 p-3 rounded-xl ${activeTab==='Ramal'?'bg-blue-50 text-blue-700':activeTab==='Email'?'bg-orange-50 text-orange-700':'bg-green-50 text-green-700'}`}>{safeString(item.Valor_Contato)}</p>
-                                {item.Anotacoes && <p className="text-xs font-medium text-gray-500 mt-4 leading-tight">{safeString(item.Anotacoes)}</p>}
-                                {canEdit && (
-                                    <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition">
-                                        <button onClick={()=>openModal(item, schema)} className="p-2 text-blue-600 bg-white shadow rounded-lg hover:bg-blue-600 hover:text-white"><i className="ph-bold ph-pencil-simple"></i></button>
-                                        <button onClick={()=>{if(confirm('Excluir?')) handleDelete(item.ID)}} className="p-2 text-red-600 bg-white shadow rounded-lg hover:bg-red-600 hover:text-white"><i className="ph-bold ph-trash"></i></button>
-                                    </div>
-                                )}
-                            </div>
-                        ))}
-                        {filtered.length === 0 && <div className="col-span-full p-20 text-center text-gray-400 font-bold border-2 border-dashed rounded-3xl">Nenhum {activeTab} cadastrado.</div>}
-                    </div>
-                </div>
-            )
-        };
-
-        const ChatModerno = ({ chatData, user, onSaveChat, onRefresh }) => {
-            const [msg, setMsg] = useState('');
-            const [activeRoom, setActiveRoom] = useState('Geral'); 
-            const isAdmin = user && ['admin', 'supervisor'].some(r => safeString(user['Nível de Acesso']).toLowerCase().includes(r));
-            const myName = safeString(user['Nome Completo']);
-            const chatLog = Array.isArray(chatData) ? chatData : [];
-            const isGeral = activeRoom === 'Geral';
-            const mensagensRoom = chatLog.filter(m => {
-                if(!m) return false;
-                if(isGeral) return m.Destinatario === 'Geral';
-                return (m.Nome === myName && m.Destinatario === activeRoom) || (m.Nome === activeRoom && m.Destinatario === myName);
-            }).sort((a,b) => new Date(a.Data_Hora) - new Date(b.Data_Hora));
-
-            const handleSend = async (e) => {
-                e.preventDefault(); if(!msg)return;
-                let dest = activeRoom;
-                if(!isAdmin && activeRoom === 'Supervisão') dest = 'Supervisão';
-                await onSaveChat('CHAT_MENSAGENS', {ID:'', Data_Hora:new Date().toISOString(), Nome:myName, Mensagem:msg, Destinatario:dest}, false);
-                setMsg(''); onRefresh();
-            };
-
-            return (
-                <div className="bg-white dark:bg-slate-800 rounded-[3rem] shadow-xl border border-gray-100 dark:border-slate-700 h-[80vh] flex overflow-hidden animate-fade-in">
-                    <div className="w-1/3 border-r border-gray-100 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-900/50 flex flex-col">
-                        <div className="p-6 border-b border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800"><h2 className="text-2xl font-black flex items-center gap-3"><i className="ph-fill ph-chats-circle text-primary"></i> Comunicação</h2></div>
-                        <div className="p-4 space-y-2 overflow-y-auto">
-                            <div onClick={()=>setActiveRoom('Geral')} className={`p-4 rounded-2xl cursor-pointer font-bold flex items-center gap-3 transition ${activeRoom==='Geral'?'bg-primary text-white shadow-md':'hover:bg-gray-100 dark:hover:bg-slate-800'}`}><div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center"><i className="ph-fill ph-users text-xl"></i></div> Fórum da Equipe</div>
-                            <div onClick={()=>setActiveRoom(isAdmin?'Caixa de Entrada':'Supervisão')} className={`p-4 rounded-2xl cursor-pointer font-bold flex items-center justify-between transition ${activeRoom!=='Geral'?'bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-md':'hover:bg-gray-100 dark:hover:bg-slate-800'}`}><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-full bg-white/20 dark:bg-black/10 flex items-center justify-center"><i className="ph-fill ph-shield-star text-xl"></i></div> {isAdmin?'Caixa de Entrada':'Falar c/ Supervisão'}</div></div>
-                        </div>
-                    </div>
-                    <div className="w-2/3 flex flex-col bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-gray-50 dark:bg-slate-900">
-                        <div className="p-6 bg-white/80 dark:bg-slate-800/80 backdrop-blur border-b border-gray-100 dark:border-slate-700 flex justify-between items-center shadow-sm z-10">
-                            <h3 className="font-black text-xl">{activeRoom}</h3>
-                            <button onClick={()=>onRefresh()} className="w-10 h-10 bg-gray-100 dark:bg-slate-700 rounded-full flex items-center justify-center hover:text-primary transition"><i className="ph-bold ph-arrows-clockwise"></i></button>
-                        </div>
-                        <div className="flex-1 overflow-y-auto p-8 space-y-6 flex flex-col custom-scrollbar">
-                            {mensagensRoom.length === 0 && <div className="m-auto text-gray-400 font-bold bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm text-center">Nenhuma mensagem neste canal.</div>}
-                            {mensagensRoom.map((m, i) => {
-                                const isMe = m.Nome === myName;
-                                return (
-                                    <div key={i} className={`flex flex-col gap-1 max-w-[80%] ${isMe ? 'self-end items-end' : 'self-start items-start'} animate-fade-in`}>
-                                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mx-2">{safeString(m.Nome)}</span>
-                                        <div className={`p-5 rounded-2xl shadow-md text-sm font-medium ${isMe ? 'bg-primary text-white rounded-br-none' : 'bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-bl-none'}`}>{safeString(m.Mensagem)}</div>
-                                    </div>
-                                )
-                            })}
-                        </div>
-                        <form onSubmit={handleSend} className="p-5 bg-white dark:bg-slate-800 border-t border-gray-100 dark:border-slate-700 flex gap-4 shrink-0 z-10">
-                            <input type="text" value={msg} onChange={e=>setMsg(e.target.value)} placeholder="Escreva a sua mensagem..." className="flex-1 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-full px-6 py-4 outline-none focus:ring-2 focus:ring-primary font-bold transition text-gray-800 dark:text-white" />
-                            <button type="submit" className="w-14 h-14 rounded-full bg-primary text-white flex items-center justify-center shadow-lg hover:scale-105 transition transform"><i className="ph-fill ph-paper-plane-tilt text-xl"></i></button>
-                        </form>
-                    </div>
-                </div>
-            )
-        };
-
-        // RESTAURAÇÃO DA ABA DE SENHAS (Ocultar/Mostrar)
         const SenhasView = ({ data, canEdit, openModal, handleDelete, schema }) => {
             const [search, setSearch] = useState('');
             const filtered = data.filter(c => c && (safeString(c['Nome do Sistema']).toLowerCase().includes(search.toLowerCase()) || safeString(c.Login).toLowerCase().includes(search.toLowerCase())));
@@ -567,7 +340,7 @@
                 <div className="space-y-6 animate-fade-in">
                     <div className="flex flex-col md:flex-row justify-between items-center bg-white dark:bg-slate-800 p-5 rounded-custom shadow-sm border border-gray-100 dark:border-slate-700 gap-4">
                         <div className="relative w-full md:w-96"><i className="ph-bold ph-magnifying-glass absolute left-5 top-4 text-gray-400 text-xl"></i><input type="text" placeholder="Buscar sistema ou login..." value={search} onChange={e=>setSearch(e.target.value)} className="w-full pl-14 pr-6 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-full outline-none focus:ring-2 focus:ring-primary font-bold transition text-gray-800 dark:text-white" /></div>
-                        {canEdit && <button onClick={()=>openModal(null, schema)} className="bg-primary text-white font-black px-8 py-4 rounded-full shadow-md hover:-translate-y-1 transition shrink-0"><i className="ph-bold ph-plus"></i> Nova Senha</button>}
+                        {canEdit && <button onClick={()=>openModal(null, schema)} className="bg-primary text-white font-black px-8 py-4 w-full md:w-auto rounded-full shadow-md hover:-translate-y-1 transition shrink-0"><i className="ph-bold ph-plus"></i> Nova Senha</button>}
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -598,7 +371,7 @@
                                 )}
                             </div>
                         ))}
-                        {filtered.length === 0 && <div className="col-span-full p-20 text-center text-gray-400 font-bold border-2 border-dashed rounded-3xl">Nenhuma senha cadastrada.</div>}
+                        {filtered.length === 0 && <div className="col-span-full p-20 text-center text-gray-400 font-bold border-2 border-dashed rounded-3xl">Nenhuma senha encontrada.</div>}
                     </div>
                 </div>
             );
@@ -610,12 +383,12 @@
 
             return (
                 <div className="space-y-6 animate-fade-in">
-                    <div className="flex justify-between items-center bg-white dark:bg-slate-800 p-5 rounded-custom shadow-sm border border-gray-100 dark:border-slate-700">
+                    <div className="flex flex-col md:flex-row justify-between items-center bg-white dark:bg-slate-800 p-5 rounded-custom shadow-sm border border-gray-100 dark:border-slate-700 gap-4">
                         <div>
                             <h2 className="text-2xl font-black text-gray-800 dark:text-white flex items-center gap-3"><i className="ph-fill ph-newspaper text-primary"></i> Boletins e Treinamentos</h2>
-                            <p className="text-sm text-gray-500 font-medium ml-9 mt-1">Materiais educativos e comunicados em mídia para a equipe.</p>
+                            <p className="text-sm text-gray-500 font-medium ml-9 mt-1">Materiais educativos e comunicados para a equipe.</p>
                         </div>
-                        {canEdit && <button onClick={()=>openModal({Tipo_Midia: 'Documento PDF'})} className="bg-primary text-white px-8 py-4 rounded-full font-black shadow-lg hover:-translate-y-1 transition flex items-center gap-2"><i className="ph-bold ph-plus text-xl"></i> Nova Mídia</button>}
+                        {canEdit && <button onClick={()=>openModal({Tipo_Midia: 'Documento PDF'})} className="bg-primary text-white px-8 py-4 w-full md:w-auto rounded-full font-black shadow-lg hover:-translate-y-1 transition flex items-center justify-center gap-2"><i className="ph-bold ph-plus text-xl"></i> Nova Mídia</button>}
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -642,16 +415,20 @@
                                 )}
                             </div>
                         ))}
+                        {ativos.length === 0 && <div className="col-span-full p-20 text-center text-gray-400 font-black text-2xl border-2 border-dashed border-gray-200 dark:border-slate-700 rounded-custom">Nenhum boletim cadastrado.</div>}
                     </div>
 
                     {selectedMedia && (
                         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 glass-modal" onClick={()=>setSelectedMedia(null)}>
-                            <div className="bg-white dark:bg-slate-800 rounded-[2rem] w-full max-w-5xl shadow-2xl relative overflow-hidden border dark:border-slate-700" onClick={e=>e.stopPropagation()}>
-                                <div className="p-6 bg-gray-900 text-white flex justify-between items-center"><h3 className="text-xl font-black">{safeString(selectedMedia.Título)}</h3><button onClick={()=>setSelectedMedia(null)} className="w-10 h-10 bg-white/20 hover:bg-red-500 rounded-full flex justify-center items-center transition"><i className="ph-bold ph-x"></i></button></div>
-                                <div className="bg-gray-100 dark:bg-slate-900 h-[70vh] w-full relative flex items-center justify-center">
+                            <div className="bg-white dark:bg-slate-800 rounded-[2rem] w-full max-w-5xl shadow-2xl relative overflow-hidden border dark:border-slate-700 flex flex-col" onClick={e=>e.stopPropagation()}>
+                                <div className="p-4 md:p-6 bg-gray-900 text-white flex justify-between items-center shrink-0">
+                                    <h3 className="text-lg md:text-xl font-black truncate pr-4">{safeString(selectedMedia.Título)}</h3>
+                                    <button onClick={()=>setSelectedMedia(null)} className="w-10 h-10 bg-white/20 hover:bg-red-500 rounded-full flex justify-center items-center transition shrink-0"><i className="ph-bold ph-x"></i></button>
+                                </div>
+                                <div className="bg-gray-100 dark:bg-slate-900 h-[60vh] md:h-[70vh] w-full relative flex items-center justify-center">
                                     {selectedMedia.Link_Arquivo ? (
                                         <iframe src={getEmbedUrl(selectedMedia.Link_Arquivo)} className="w-full h-full border-0" allow="autoplay; encrypted-media" allowFullScreen></iframe>
-                                    ) : <div className="text-gray-400 font-black">Link indisponível ou não suportado.</div>}
+                                    ) : <div className="text-gray-400 font-black p-4 text-center">Link indisponível ou não suportado.</div>}
                                 </div>
                             </div>
                         </div>
@@ -676,11 +453,11 @@
             });
             return (
                 <div className="flex gap-6 overflow-x-auto pb-8 custom-scrollbar items-start min-h-[60vh] pt-4">
-                    {Object.keys(board).length === 0 && <div className="w-full flex flex-col items-center justify-center p-20 text-gray-400 font-black text-2xl border-2 border-dashed dark:border-slate-700 rounded-[3rem] mt-10"><i className="ph-fill ph-coffee text-6xl mb-4 opacity-50"></i> Nenhum médico escalado hoje.</div>}
+                    {Object.keys(board).length === 0 && <div className="w-full flex flex-col items-center justify-center p-10 md:p-20 text-gray-400 font-black text-xl md:text-2xl border-2 border-dashed dark:border-slate-700 rounded-[3rem] mt-10 text-center"><i className="ph-fill ph-coffee text-6xl mb-4 opacity-50"></i> Nenhum médico escalado hoje.</div>}
                     {Object.keys(board).sort().map(unidade => (
-                        <div key={unidade} className="w-[400px] shrink-0 flex flex-col">
-                            <h3 className="text-2xl font-black text-gray-800 dark:text-white mb-6 flex items-center gap-3 px-2"><div className="w-10 h-10 bg-primary text-white rounded-xl flex items-center justify-center shadow-md"><i className="ph-fill ph-buildings text-xl"></i></div> {unidade}</h3>
-                            <div className="bg-gray-100/80 dark:bg-slate-800/80 p-5 rounded-[2.5rem] border border-gray-200 dark:border-slate-700 space-y-6">
+                        <div key={unidade} className="w-[300px] md:w-[400px] shrink-0 flex flex-col">
+                            <h3 className="text-xl md:text-2xl font-black text-gray-800 dark:text-white mb-6 flex items-center gap-3 px-2"><div className="w-10 h-10 bg-primary text-white rounded-xl flex items-center justify-center shadow-md"><i className="ph-fill ph-buildings text-xl"></i></div> {unidade}</h3>
+                            <div className="bg-gray-100/80 dark:bg-slate-800/80 p-4 md:p-5 rounded-[2.5rem] border border-gray-200 dark:border-slate-700 space-y-6">
                                 {Object.keys(board[unidade]).sort().map(setor => (
                                     <div key={setor} className="bg-white dark:bg-slate-900 rounded-3xl p-5 shadow-sm border border-gray-100 dark:border-slate-700 relative overflow-hidden">
                                         <div className="absolute top-0 inset-x-0 h-1 bg-primary/20"></div>
@@ -689,7 +466,7 @@
                                             {board[unidade][setor].map((med, i) => (
                                                 <div key={i} className="flex items-center gap-4 bg-gray-50 dark:bg-slate-800 p-4 rounded-2xl border border-transparent group shadow-sm">
                                                     <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-primary to-blue-500 text-white flex items-center justify-center text-xl font-black shadow-md shrink-0">{safeString(med.Nome_Profissional || 'M').charAt(0)}</div>
-                                                    <div className="flex-1 overflow-hidden"><p className="font-black text-base truncate text-gray-900 dark:text-white">{safeString(med.Nome_Profissional)}</p><p className="text-xs font-bold text-gray-500 truncate mt-0.5"><i className="ph-fill ph-clock"></i> {safeString(med.Horario)}</p></div>
+                                                    <div className="flex-1 overflow-hidden"><p className="font-black text-sm md:text-base truncate text-gray-900 dark:text-white">{safeString(med.Nome_Profissional)}</p><p className="text-xs font-bold text-gray-500 truncate mt-0.5"><i className="ph-fill ph-clock"></i> {safeString(med.Horario)}</p></div>
                                                 </div>
                                             ))}
                                         </div>
@@ -781,10 +558,10 @@
                 });
 
                 return (
-                    <div className="bg-white dark:bg-slate-800 rounded-[3rem] p-8 border border-gray-100 dark:border-slate-700 min-h-[60vh]">
+                    <div className="bg-white dark:bg-slate-800 rounded-[2rem] md:rounded-[3rem] p-4 md:p-8 border border-gray-100 dark:border-slate-700 min-h-[60vh]">
                         <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
-                            <h3 className="text-3xl font-black text-gray-800 dark:text-white flex items-center gap-3"><i className="ph-fill ph-kanban text-primary"></i> Operação de Hoje</h3>
-                            <div className="flex gap-4 text-xs font-bold uppercase tracking-widest bg-gray-50 dark:bg-slate-900 p-3 rounded-full border dark:border-slate-700">
+                            <h3 className="text-2xl md:text-3xl font-black text-gray-800 dark:text-white flex items-center gap-3"><i className="ph-fill ph-kanban text-primary"></i> Operação de Hoje</h3>
+                            <div className="flex flex-wrap justify-center gap-4 text-xs font-bold uppercase tracking-widest bg-gray-50 dark:bg-slate-900 p-3 rounded-xl md:rounded-full border dark:border-slate-700 w-full md:w-auto">
                                 <span className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-green-500"></div> Ativo</span>
                                 <span className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-orange-500"></div> Intervalo</span>
                                 <span className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-red-500"></div> Ausente</span>
@@ -793,7 +570,7 @@
 
                         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                             {Object.keys(setores).map(setor => (
-                                <div key={setor} className="bg-gray-50 dark:bg-slate-900 rounded-[2rem] p-6 shadow-inner border border-gray-100 dark:border-slate-700 flex flex-col">
+                                <div key={setor} className="bg-gray-50 dark:bg-slate-900 rounded-[2rem] p-5 md:p-6 shadow-inner border border-gray-100 dark:border-slate-700 flex flex-col">
                                     <h4 className="font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest text-sm mb-4 px-2">{setor}</h4>
                                     <div className="space-y-4">
                                         {setores[setor].map((esc, i) => {
@@ -816,9 +593,9 @@
                                             let uPulseClass = '';
                                             if (cUnimed) {
                                                 const q = Number(cUnimed.Qtd_Atual||0); const m = Number(cUnimed.Limite_Max||1);
-                                                if (m > 0 && m - q <= 5) uPulseClass = 'animate-pulse bg-red-500 text-white';
-                                                else if (m > 0 && q/m >= 0.8) uPulseClass = 'animate-pulse bg-green-500 text-white';
-                                                else uPulseClass = 'bg-blue-100 text-blue-800';
+                                                if (m > 0 && m - q <= 5) uPulseClass = 'animate-pulse bg-red-500 text-white border-red-600';
+                                                else if (m > 0 && q/m >= 0.8) uPulseClass = 'animate-pulse bg-green-500 text-white border-green-600';
+                                                else uPulseClass = 'bg-blue-100 text-blue-800 border-blue-200';
                                             }
 
                                             return (
@@ -827,7 +604,7 @@
                                                     
                                                     <div className="flex justify-between items-start">
                                                         <div>
-                                                            <span className={`font-black text-lg ${isAusente ? 'text-red-900 dark:text-red-400' : 'text-gray-900 dark:text-white'} truncate`}>{safeString(esc.Nome_Profissional)}</span>
+                                                            <span className={`font-black text-lg ${isAusente ? 'text-red-900 dark:text-red-400' : 'text-gray-900 dark:text-white'} block pr-4`}>{safeString(esc.Nome_Profissional)}</span>
                                                             <p className="text-xs font-bold text-gray-500 dark:text-slate-400 mt-1"><i className="ph-fill ph-clock"></i> {safeString(esc.Horario)}</p>
                                                         </div>
                                                         {isAusente && <span className="text-[10px] uppercase font-black tracking-widest text-red-600 bg-red-100 px-2 py-1 rounded">Ausente</span>}
@@ -836,12 +613,12 @@
                                                     {esc.Substituindo && <p className="text-[10px] font-black text-primary bg-blue-50 dark:bg-blue-900/50 px-2 py-1 rounded mt-1 uppercase w-max">Cobrindo: {safeString(esc.Substituindo)}</p>}
                                                     
                                                     {cUnimed && (
-                                                        <div className={`mt-2 flex justify-between items-center p-2 rounded-xl border ${uPulseClass || 'border-blue-200 bg-blue-50/50'}`} onClick={(e)=>e.stopPropagation()}>
-                                                            <span className="text-[10px] font-black uppercase tracking-widest px-1">Guia Unimed</span>
-                                                            <div className="flex items-center gap-3">
-                                                                <button onClick={()=>handleUnimedUpdate(cUnimed, -1)} className="w-6 h-6 bg-white/50 hover:bg-white rounded-full flex items-center justify-center font-black text-black shadow-sm">-</button>
-                                                                <span className="font-black text-sm">{cUnimed.Qtd_Atual} <span className="opacity-50 text-xs">/ {cUnimed.Limite_Max}</span></span>
-                                                                <button onClick={()=>handleUnimedUpdate(cUnimed, 1)} className="w-6 h-6 bg-white/50 hover:bg-white rounded-full flex items-center justify-center font-black text-black shadow-sm">+</button>
+                                                        <div className={`mt-2 flex flex-col md:flex-row justify-between items-center p-3 rounded-xl border gap-2 ${uPulseClass || 'border-blue-200 bg-blue-50/50 dark:bg-blue-900/20 dark:border-blue-800'}`} onClick={(e)=>e.stopPropagation()}>
+                                                            <span className="text-[10px] font-black uppercase tracking-widest">Guia Unimed</span>
+                                                            <div className="flex items-center gap-4">
+                                                                <button onClick={()=>handleUnimedUpdate(cUnimed, -1)} className="w-8 h-8 bg-white/50 hover:bg-white rounded-full flex items-center justify-center font-black text-black shadow-sm text-lg">-</button>
+                                                                <span className="font-black text-lg w-16 text-center">{cUnimed.Qtd_Atual} <span className="opacity-50 text-xs">/ {cUnimed.Limite_Max}</span></span>
+                                                                <button onClick={()=>handleUnimedUpdate(cUnimed, 1)} className="w-8 h-8 bg-white/50 hover:bg-white rounded-full flex items-center justify-center font-black text-black shadow-sm text-lg">+</button>
                                                             </div>
                                                         </div>
                                                     )}
@@ -851,7 +628,7 @@
                                     </div>
                                 </div>
                             ))}
-                            {Object.keys(setores).length === 0 && <div className="col-span-full text-center p-20 text-gray-400 font-black text-2xl border-2 border-dashed border-gray-200 dark:border-slate-700 rounded-3xl">Ninguém escalado hoje.</div>}
+                            {Object.keys(setores).length === 0 && <div className="col-span-full text-center p-10 md:p-20 text-gray-400 font-black text-xl md:text-2xl border-2 border-dashed border-gray-200 dark:border-slate-700 rounded-3xl">Ninguém escalado hoje.</div>}
                         </div>
                     </div>
                 )
@@ -859,33 +636,33 @@
 
             return (
                 <div className="space-y-8 animate-fade-in">
-                    <div className="bg-white dark:bg-slate-800 rounded-custom p-4 shadow-sm border border-gray-100 dark:border-slate-700 flex flex-wrap justify-between items-center gap-4">
-                        <div className="flex bg-gray-50 dark:bg-slate-900 p-2 rounded-2xl gap-2 overflow-x-auto hide-scroll flex-1">
-                            {['Painel Hoje', 'Calendário Médicos', 'Calendário Equipe'].map(tab => (
-                                <button key={tab} onClick={() => setActiveSubTab(tab)} className={`px-6 py-3.5 rounded-xl font-black transition-all whitespace-nowrap ${activeSubTab === tab ? 'bg-white dark:bg-slate-800 text-primary shadow-md' : 'text-gray-500 hover:bg-gray-200 dark:hover:bg-slate-800'}`}>{tab}</button>
+                    <div className="bg-white dark:bg-slate-800 rounded-custom p-4 shadow-sm border border-gray-100 dark:border-slate-700 flex flex-col md:flex-row justify-between items-center gap-4">
+                        <div className="flex bg-gray-50 dark:bg-slate-900 p-2 rounded-2xl gap-2 overflow-x-auto hide-scroll w-full md:w-auto">
+                            {['Painel Hoje', 'Calendário Médicos', 'Calendário Equipe', 'Mapa'].map(tab => (
+                                <button key={tab} onClick={() => setActiveSubTab(tab)} className={`px-4 md:px-6 py-3 rounded-xl font-black text-sm md:text-base transition-all whitespace-nowrap ${activeSubTab === tab ? 'bg-white dark:bg-slate-800 text-primary shadow-md' : 'text-gray-500 hover:bg-gray-200 dark:hover:bg-slate-800'}`}>{tab}</button>
                             ))}
                         </div>
-                        {canEdit && <button onClick={() => { setFormData({ ID: '', Tipo_Profissional: activeSubTab === 'Calendário Médicos' ? 'Médico' : 'Colaborador', Nome_Profissional: '', Turno: 'Manhã', Horario: '', Unidade: '', Setor_Consultorio: '', Status_Turno: 'Trabalhando', Substituindo: '' }); setDatesToSave([]); setIsModalOpen(true); }} className="bg-primary text-white font-black px-8 py-4 rounded-custom shadow-lg hover:-translate-y-1 transition shrink-0"><i className="ph-bold ph-calendar-plus"></i> Lançar Horário</button>}
+                        {canEdit && activeSubTab !== 'Mapa' && <button onClick={() => { setFormData({ ID: '', Tipo_Profissional: activeSubTab === 'Calendário Médicos' ? 'Médico' : 'Colaborador', Nome_Profissional: '', Turno: 'Manhã', Horario: '', Unidade: '', Setor_Consultorio: '', Status_Turno: 'Trabalhando', Substituindo: '' }); setDatesToSave([]); setIsModalOpen(true); }} className="bg-primary text-white w-full md:w-auto font-black px-8 py-4 rounded-custom shadow-lg hover:-translate-y-1 transition shrink-0 flex justify-center items-center gap-2"><i className="ph-bold ph-calendar-plus text-xl"></i> Lançar</button>}
                     </div>
 
-                    {activeSubTab === 'Painel Hoje' ? <PainelDoDia /> : (
-                        <div className="bg-white dark:bg-slate-800 rounded-[3rem] shadow-sm border border-gray-100 dark:border-slate-700 p-8 relative overflow-hidden">
-                            <div className="flex justify-between items-center mb-10">
-                                <button onClick={()=>setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth()-1, 1))} className="w-14 h-14 bg-gray-50 dark:bg-slate-900 rounded-2xl"><i className="ph-bold ph-caret-left"></i></button>
-                                <h2 className="text-4xl font-black capitalize text-gray-900 dark:text-white">{currentMonth.toLocaleString('pt-BR', { month: 'long', year: 'numeric' })}</h2>
-                                <button onClick={()=>setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth()+1, 1))} className="w-14 h-14 bg-gray-50 dark:bg-slate-900 rounded-2xl"><i className="ph-bold ph-caret-right"></i></button>
+                    {activeSubTab === 'Painel Hoje' ? <PainelDoDia /> : activeSubTab === 'Mapa' ? <MapaSalasView escalas={escalas} /> : (
+                        <div className="bg-white dark:bg-slate-800 rounded-[2rem] md:rounded-[3rem] shadow-sm border border-gray-100 dark:border-slate-700 p-4 md:p-8 relative overflow-hidden">
+                            <div className="flex justify-between items-center mb-6 md:mb-10">
+                                <button onClick={()=>setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth()-1, 1))} className="w-10 h-10 md:w-14 md:h-14 bg-gray-50 dark:bg-slate-900 rounded-xl md:rounded-2xl"><i className="ph-bold ph-caret-left"></i></button>
+                                <h2 className="text-2xl md:text-4xl font-black capitalize text-gray-900 dark:text-white text-center">{currentMonth.toLocaleString('pt-BR', { month: 'long', year: 'numeric' })}</h2>
+                                <button onClick={()=>setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth()+1, 1))} className="w-10 h-10 md:w-14 md:h-14 bg-gray-50 dark:bg-slate-900 rounded-xl md:rounded-2xl"><i className="ph-bold ph-caret-right"></i></button>
                             </div>
-                            <div className="grid grid-cols-7 gap-4 mb-4 text-center"><div className="font-black text-gray-400">D</div><div className="font-black text-gray-400">S</div><div className="font-black text-gray-400">T</div><div className="font-black text-gray-400">Q</div><div className="font-black text-gray-400">Q</div><div className="font-black text-gray-400">S</div><div className="font-black text-gray-400">S</div></div>
-                            <div className="grid grid-cols-7 gap-4 relative z-10">
-                                {Array(firstDayOfMonth).fill(null).map((_, i) => <div key={`e-${i}`} className="aspect-square opacity-20 bg-gray-50 dark:bg-slate-900 rounded-3xl" />)}
+                            <div className="grid grid-cols-7 gap-2 md:gap-4 mb-4 text-center"><div className="font-black text-gray-400 text-xs md:text-base">D</div><div className="font-black text-gray-400 text-xs md:text-base">S</div><div className="font-black text-gray-400 text-xs md:text-base">T</div><div className="font-black text-gray-400 text-xs md:text-base">Q</div><div className="font-black text-gray-400 text-xs md:text-base">Q</div><div className="font-black text-gray-400 text-xs md:text-base">S</div><div className="font-black text-gray-400 text-xs md:text-base">S</div></div>
+                            <div className="grid grid-cols-7 gap-2 md:gap-4 relative z-10">
+                                {Array(firstDayOfMonth).fill(null).map((_, i) => <div key={`e-${i}`} className="aspect-square opacity-20 bg-gray-50 dark:bg-slate-900 rounded-xl md:rounded-3xl" />)}
                                 {Array(daysInMonth).fill(null).map((_, i) => {
                                     const day = i + 1; const dateStrCompleto = `${String(day).padStart(2, '0')}/${String(currentMonth.getMonth() + 1).padStart(2, '0')}/${currentMonth.getFullYear()}`;
                                     const pessoasNoDia = filteredEscalas.filter(e => e && (safeString(e.Data).includes(dateStrCompleto) || safeString(e.Data).includes(`${String(day).padStart(2, '0')}/${String(currentMonth.getMonth() + 1).padStart(2, '0')}/${String(currentMonth.getFullYear()).slice(2)}`)));
                                     const isToday = dateStrCompleto === todayStr;
                                     return (
-                                        <div key={day} onClick={() => setSelectedDate(dateStrCompleto)} className={`aspect-square rounded-[2rem] border-2 p-4 flex flex-col cursor-pointer transition-all ${isToday ? 'border-primary bg-blue-50/50 dark:bg-blue-900/20 shadow-md' : 'border-gray-100 dark:border-slate-700 hover:border-primary/50 bg-white dark:bg-slate-800'}`}>
-                                            <span className={`text-2xl font-black ${isToday ? 'text-primary' : 'text-gray-900 dark:text-white'}`}>{day}</span>
-                                            <div className="mt-auto w-full space-y-1.5">{pessoasNoDia.length > 0 && <div className={`w-full text-center text-xs font-black py-2 rounded-xl shadow-sm ${activeSubTab.includes('Médicos') ? 'bg-primary text-white' : 'bg-secondary text-white'}`}>{pessoasNoDia.length} Plantão</div>}</div>
+                                        <div key={day} onClick={() => setSelectedDate(dateStrCompleto)} className={`aspect-square rounded-xl md:rounded-[2rem] border-2 p-2 md:p-4 flex flex-col cursor-pointer transition-all ${isToday ? 'border-primary bg-blue-50/50 dark:bg-blue-900/20 shadow-md' : 'border-gray-100 dark:border-slate-700 hover:border-primary/50 bg-white dark:bg-slate-800'}`}>
+                                            <span className={`text-base md:text-2xl font-black ${isToday ? 'text-primary' : 'text-gray-900 dark:text-white'}`}>{day}</span>
+                                            <div className="mt-auto w-full space-y-1">{pessoasNoDia.length > 0 && <div className={`w-full text-center text-[8px] md:text-xs font-black py-1 md:py-2 rounded-lg md:rounded-xl shadow-sm ${activeSubTab.includes('Médicos') ? 'bg-primary text-white' : 'bg-secondary text-white'}`}>{pessoasNoDia.length} <span className="hidden md:inline">Plantão</span></div>}</div>
                                         </div>
                                     )
                                 })}
@@ -893,68 +670,70 @@
                         </div>
                     )}
                     
+                    {/* Popups de Edição/Visualização do Calendário (Mês) */}
                     {selectedDate && !selectedPerson && (
                         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 glass-modal" onClick={() => setSelectedDate(null)}>
-                            <div className="bg-white dark:bg-slate-800 rounded-[3rem] w-full max-w-5xl p-10 shadow-2xl animate-pop-in relative border border-gray-100 dark:border-slate-700" onClick={e => e.stopPropagation()}>
-                                <button onClick={()=>setSelectedDate(null)} className="absolute top-8 right-8 w-12 h-12 bg-gray-100 dark:bg-slate-700 hover:bg-red-500 hover:text-white rounded-full"><i className="ph-bold ph-x"></i></button>
-                                <h3 className="text-4xl font-black mb-10 flex items-center gap-4 text-gray-900 dark:text-white">Plantão dia {selectedDate}</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-h-[60vh] overflow-y-auto hide-scroll pb-4">
+                            <div className="bg-white dark:bg-slate-800 rounded-[2rem] md:rounded-[3rem] w-full max-w-5xl p-6 md:p-10 shadow-2xl animate-pop-in relative border border-gray-100 dark:border-slate-700 flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
+                                <button onClick={()=>setSelectedDate(null)} className="absolute top-4 right-4 md:top-8 md:right-8 w-10 h-10 md:w-12 md:h-12 bg-gray-100 dark:bg-slate-700 hover:bg-red-500 hover:text-white rounded-full transition"><i className="ph-bold ph-x"></i></button>
+                                <h3 className="text-2xl md:text-4xl font-black mb-6 md:mb-10 flex items-center gap-4 text-gray-900 dark:text-white">Plantão {selectedDate}</h3>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 overflow-y-auto custom-scrollbar flex-1 pb-4 pr-2">
                                     {filteredEscalas.filter(e => e && (safeString(e.Data).includes(selectedDate) || safeString(e.Data).includes(selectedDate.substring(0,6) + selectedDate.substring(8,10)))).map((esc, i) => (
-                                        <div key={i} onClick={() => (canEdit || isColab) && setSelectedPerson(esc)} className="bg-white dark:bg-slate-900 border-2 border-gray-100 dark:border-slate-700 rounded-3xl p-6 cursor-pointer card-hover hover:border-primary flex flex-col">
-                                            <h4 className="font-black text-xl mb-3 text-gray-900 dark:text-white">{safeString(esc.Nome_Profissional)}</h4>
-                                            <p className="text-sm font-black bg-gray-50 dark:bg-slate-800 px-3 py-1.5 rounded-xl mb-4 text-gray-600 dark:text-slate-300">{safeString(esc.Turno)} • {safeString(esc.Horario)}</p>
-                                            <div className="mt-auto flex justify-between"><span className="text-[10px] font-black uppercase px-4 py-1.5 rounded-full bg-green-100 text-green-800">{safeString(esc.Status_Turno)||'Ativo'}</span><span className="text-primary text-xs font-black">Abrir</span></div>
+                                        <div key={i} onClick={() => (canEdit || isColab) && setSelectedPerson(esc)} className="bg-white dark:bg-slate-900 border-2 border-gray-100 dark:border-slate-700 rounded-2xl md:rounded-3xl p-5 md:p-6 cursor-pointer card-hover hover:border-primary flex flex-col">
+                                            <h4 className="font-black text-lg md:text-xl mb-2 md:mb-3 text-gray-900 dark:text-white">{safeString(esc.Nome_Profissional)}</h4>
+                                            <p className="text-xs md:text-sm font-black bg-gray-50 dark:bg-slate-800 px-3 py-1.5 rounded-xl mb-4 text-gray-600 dark:text-slate-300 w-max">{safeString(esc.Turno)} • {safeString(esc.Horario)}</p>
+                                            <div className="mt-auto flex justify-between items-center"><span className="text-[10px] font-black uppercase px-3 py-1.5 rounded-full bg-green-100 text-green-800">{safeString(esc.Status_Turno)||'Ativo'}</span><span className="text-primary text-xs font-black bg-blue-50 dark:bg-blue-900/30 px-3 py-1.5 rounded-lg">Abrir Card</span></div>
                                         </div>
                                     ))}
-                                    {filteredEscalas.filter(e => e && safeString(e.Data).includes(selectedDate)).length === 0 && <div className="col-span-full text-center text-gray-400 font-black text-2xl p-12">Ninguém escalado.</div>}
+                                    {filteredEscalas.filter(e => e && safeString(e.Data).includes(selectedDate)).length === 0 && <div className="col-span-full text-center text-gray-400 font-black text-xl p-10">Ninguém escalado.</div>}
                                 </div>
                             </div>
                         </div>
                     )}
                     
+                    {/* Popup de Ação Específica (Status, Troca, Exclusão) */}
                     {selectedPerson && (
                         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 backdrop-blur-xl bg-gray-900/60 animate-fade-in" onClick={() => {setSelectedPerson(null); setShowSwapSugg(false)}}>
-                            <div className="bg-white dark:bg-slate-800 rounded-[3rem] w-full max-w-lg p-8 shadow-2xl relative border border-white dark:border-slate-700" onClick={e => e.stopPropagation()}>
-                                <button onClick={()=>{setSelectedPerson(null); setShowSwapSugg(false)}} className="absolute top-6 right-6 w-10 h-10 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 rounded-full flex justify-center items-center"><i className="ph-bold ph-x"></i></button>
+                            <div className="bg-white dark:bg-slate-800 rounded-[2rem] md:rounded-[3rem] w-full max-w-lg p-6 md:p-8 shadow-2xl relative border border-white dark:border-slate-700 max-h-[90vh] overflow-y-auto custom-scrollbar" onClick={e => e.stopPropagation()}>
+                                <button onClick={()=>{setSelectedPerson(null); setShowSwapSugg(false)}} className="absolute top-4 right-4 md:top-6 md:right-6 w-10 h-10 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 rounded-full flex justify-center items-center transition"><i className="ph-bold ph-x"></i></button>
                                 
-                                <h2 className="text-2xl font-black mb-1 text-gray-900 dark:text-white">{safeString(selectedPerson.Nome_Profissional)}</h2>
-                                <p className="text-sm font-bold text-gray-400 mb-8">{safeString(selectedPerson.Setor_Consultorio)} • {safeString(selectedPerson.Horario)}</p>
+                                <h2 className="text-2xl font-black mb-1 text-gray-900 dark:text-white pr-8">{safeString(selectedPerson.Nome_Profissional)}</h2>
+                                <p className="text-sm font-bold text-gray-400 mb-6 md:mb-8">{safeString(selectedPerson.Setor_Consultorio)} • {safeString(selectedPerson.Horario)}</p>
 
-                                <div className="space-y-4 mb-8">
-                                    <h4 className="text-xs font-black uppercase text-gray-400 tracking-widest">Avisar Sistema:</h4>
+                                <div className="space-y-4 mb-6 md:mb-8">
+                                    <h4 className="text-[10px] md:text-xs font-black uppercase text-gray-400 tracking-widest">Avisar Sistema:</h4>
                                     <div className="grid grid-cols-2 gap-3">
-                                        <button onClick={()=>{handleStatusChange(selectedPerson, 'Trabalhando'); setSelectedPerson(null);}} className="p-4 rounded-xl border-2 hover:border-green-500 bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 font-black flex items-center justify-center gap-2 transition"><i className="ph-fill ph-check-circle text-2xl"></i> Voltei</button>
-                                        <button onClick={()=>{handleStatusChange(selectedPerson, 'Intervalo'); setSelectedPerson(null);}} className="p-4 rounded-xl border-2 hover:border-orange-500 bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800 text-orange-700 dark:text-orange-400 font-black flex items-center justify-center gap-2 transition"><i className="ph-fill ph-coffee text-2xl"></i> Fui Lanchar</button>
+                                        <button onClick={()=>{handleStatusChange(selectedPerson, 'Trabalhando'); setSelectedPerson(null);}} className="p-3 md:p-4 rounded-xl md:rounded-2xl border-2 hover:border-green-500 bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 font-black flex items-center justify-center gap-2 transition text-sm md:text-base"><i className="ph-fill ph-check-circle text-xl md:text-2xl"></i> Voltei</button>
+                                        <button onClick={()=>{handleStatusChange(selectedPerson, 'Intervalo'); setSelectedPerson(null);}} className="p-3 md:p-4 rounded-xl md:rounded-2xl border-2 hover:border-orange-500 bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800 text-orange-700 dark:text-orange-400 font-black flex items-center justify-center gap-2 transition text-sm md:text-base"><i className="ph-fill ph-coffee text-xl md:text-2xl"></i> Fui Lanchar</button>
                                     </div>
                                 </div>
 
                                 {canEdit && (
-                                    <div className="border-t dark:border-slate-700 pt-6 space-y-3">
-                                        <h4 className="text-xs font-black uppercase text-gray-400 tracking-widest mb-2">Ações Administrativas:</h4>
-                                        <button onClick={()=>setShowSwapSugg(!showSwapSugg)} className="w-full py-4 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl font-black shadow flex justify-center items-center gap-2 hover:scale-[1.02] transition"><i className="ph-bold ph-arrows-left-right"></i> Sugerir Substituto (Trocar)</button>
-                                        <button onClick={async()=>{if(confirm('Excluir plantão?')){ await api.deleteRecord('ESCALAS', selectedPerson.ID); onRefresh('ESCALAS'); setSelectedPerson(null); setSelectedDate(null); }}} className="w-full py-4 bg-red-50 dark:bg-red-900/20 text-red-600 rounded-xl font-black transition flex justify-center items-center gap-2"><i className="ph-bold ph-trash"></i> Excluir Plantão</button>
+                                    <div className="border-t border-gray-100 dark:border-slate-700 pt-6 space-y-3">
+                                        <h4 className="text-[10px] md:text-xs font-black uppercase text-gray-400 tracking-widest mb-2">Ações Administrativas:</h4>
+                                        <button onClick={()=>setShowSwapSugg(!showSwapSugg)} className="w-full py-3 md:py-4 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl md:rounded-2xl font-black shadow flex justify-center items-center gap-2 hover:scale-[1.02] transition"><i className="ph-bold ph-arrows-left-right"></i> Sugerir Substituto (Trocar)</button>
+                                        <button onClick={async()=>{if(confirm('Excluir plantão permanentemente?')){ await api.deleteRecord('ESCALAS', selectedPerson.ID); onRefresh('ESCALAS'); setSelectedPerson(null); setSelectedDate(null); }}} className="w-full py-3 md:py-4 bg-red-50 dark:bg-red-900/20 text-red-600 border border-red-100 dark:border-red-900 rounded-xl md:rounded-2xl font-black transition flex justify-center items-center gap-2 hover:bg-red-600 hover:text-white"><i className="ph-bold ph-trash"></i> Excluir Plantão</button>
                                     </div>
                                 )}
 
                                 {showSwapSugg && canEdit && (
-                                    <div className="mt-4 bg-gray-50 dark:bg-slate-900 rounded-2xl p-4 border dark:border-slate-700 animate-fade-in">
-                                        <h4 className="text-xs font-black uppercase text-gray-500 mb-3">Colaboradores com as mesmas Competências:</h4>
-                                        <div className="space-y-2 max-h-40 overflow-y-auto custom-scrollbar pr-2">
+                                    <div className="mt-4 bg-gray-50 dark:bg-slate-900 rounded-2xl p-4 border border-gray-100 dark:border-slate-700 animate-fade-in">
+                                        <h4 className="text-[10px] md:text-xs font-black uppercase text-gray-500 mb-3">Colaboradores com as mesmas Competências:</h4>
+                                        <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-2">
                                             {findSubstitutes(selectedPerson.Nome_Profissional).map((sub, idx) => (
-                                                <div key={idx} className="bg-white dark:bg-slate-800 p-3 rounded-xl border dark:border-slate-600 flex justify-between items-center">
+                                                <div key={idx} className="bg-white dark:bg-slate-800 p-3 md:p-4 rounded-xl border border-gray-100 dark:border-slate-600 flex justify-between items-center shadow-sm">
                                                     <div>
                                                         <p className="font-black text-sm text-gray-900 dark:text-white">{safeString(sub['Nome Completo'])}</p>
-                                                        <p className="text-[10px] font-bold text-gray-400 mt-0.5" title={safeString(sub['Horários Flexíveis'])}>Disponível • {safeString(sub['Horários Flexíveis']).substring(0,25)}...</p>
+                                                        <p className="text-[10px] font-bold text-gray-400 mt-0.5" title={safeString(sub['Horários Flexíveis'])}>Disponível • {safeString(sub['Horários Flexíveis']).substring(0,25)}</p>
                                                     </div>
                                                     <button onClick={async()=>{ 
                                                         await api.saveRecord('ESCALAS', { ...selectedPerson, ID: '', Nome_Profissional: safeString(sub['Nome Completo']), Substituindo: safeString(selectedPerson.Nome_Profissional) }, false);
                                                         showToast(`Substituto acionado: ${sub['Nome Completo']}.`); 
                                                         setSelectedPerson(null); setShowSwapSugg(false); 
                                                         onRefresh('ESCALAS');
-                                                    }} className="bg-primary text-white text-xs font-black px-3 py-2 rounded-lg hover:bg-blue-700 transition">Acionar</button>
+                                                    }} className="bg-primary text-white text-[10px] md:text-xs font-black px-3 py-2 md:px-4 md:py-2.5 rounded-lg hover:bg-blue-700 transition shadow-md">Acionar</button>
                                                 </div>
                                             ))}
-                                            {findSubstitutes(selectedPerson.Nome_Profissional).length === 0 && <p className="text-sm font-bold text-gray-400 text-center py-4">Nenhum compatível livre.</p>}
+                                            {findSubstitutes(selectedPerson.Nome_Profissional).length === 0 && <p className="text-sm font-bold text-gray-400 text-center py-6 border-2 border-dashed rounded-xl border-gray-200 dark:border-slate-700">Nenhum compatível livre hoje.</p>}
                                         </div>
                                     </div>
                                 )}
@@ -962,43 +741,50 @@
                         </div>
                     )}
                     
+                    {/* Modal de Lançamento em Lote */}
                     {isModalOpen && (
                         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 glass-modal" onMouseDown={()=>setIsModalOpen(false)}>
-                            <div className="bg-white dark:bg-slate-800 rounded-[3rem] w-full max-w-6xl max-h-[90vh] flex flex-col shadow-2xl animate-pop-in border border-gray-100 dark:border-slate-700" onMouseDown={e=>e.stopPropagation()}>
-                                <div className="p-8 border-b border-gray-100 dark:border-slate-700 flex justify-between items-center bg-gray-50/50 dark:bg-slate-900"><h3 className="text-3xl font-black text-gray-900 dark:text-white">Lançamento em Lote</h3><button onClick={() => setIsModalOpen(false)} className="w-12 h-12 bg-white dark:bg-slate-700 rounded-full hover:bg-red-500 hover:text-white shadow-sm text-xl transition"><i className="ph-bold ph-x"></i></button></div>
-                                <div className="p-8 flex flex-col lg:flex-row gap-12 overflow-y-auto custom-scrollbar">
+                            <div className="bg-white dark:bg-slate-800 rounded-[2rem] md:rounded-[3rem] w-full max-w-6xl max-h-[90vh] flex flex-col shadow-2xl animate-pop-in border border-gray-100 dark:border-slate-700" onMouseDown={e=>e.stopPropagation()}>
+                                <div className="p-6 md:p-8 border-b border-gray-100 dark:border-slate-700 flex justify-between items-center bg-gray-50/50 dark:bg-slate-900 shrink-0">
+                                    <h3 className="text-xl md:text-3xl font-black text-gray-900 dark:text-white">Lançamento em Lote</h3>
+                                    <button onClick={() => setIsModalOpen(false)} className="w-10 h-10 md:w-12 md:h-12 bg-white dark:bg-slate-700 rounded-full hover:bg-red-500 hover:text-white shadow-sm text-xl transition flex justify-center items-center"><i className="ph-bold ph-x"></i></button>
+                                </div>
+                                <div className="p-6 md:p-8 flex flex-col lg:flex-row gap-8 md:gap-12 overflow-y-auto custom-scrollbar">
                                     <div className="lg:w-1/2">
-                                        <h4 className="font-black mb-6 text-xl text-gray-900 dark:text-white">1. Selecione as Datas</h4>
+                                        <h4 className="font-black mb-4 md:mb-6 text-lg md:text-xl text-gray-900 dark:text-white">1. Selecione as Datas</h4>
                                         <div className="grid grid-cols-7 gap-2">
                                             {Array(firstDayOfMonth).fill(null).map((_, i) => <div key={`empty-${i}`} />)}
                                             {Array(daysInMonth).fill(null).map((_, i) => {
                                                 const day = i + 1; const dStr = `${String(day).padStart(2, '0')}/${String(currentMonth.getMonth() + 1).padStart(2, '0')}/${currentMonth.getFullYear()}`; const sel = datesToSave.includes(dStr);
-                                                return <button type="button" key={day} onClick={() => { if(sel) setDatesToSave(datesToSave.filter(x => x !== dStr)); else setDatesToSave([...datesToSave, dStr]); }} className={`w-full aspect-square rounded-2xl font-black text-lg transition-all ${sel ? 'bg-primary text-white shadow-xl scale-110' : 'bg-white dark:bg-slate-800 border-2 border-gray-100 dark:border-slate-700 hover:border-primary shadow-sm text-gray-800 dark:text-white'}`}>{day}</button>
+                                                return <button type="button" key={day} onClick={() => { if(sel) setDatesToSave(datesToSave.filter(x => x !== dStr)); else setDatesToSave([...datesToSave, dStr]); }} className={`w-full aspect-square rounded-xl md:rounded-2xl font-black text-sm md:text-lg transition-all ${sel ? 'bg-primary text-white shadow-xl scale-110' : 'bg-white dark:bg-slate-800 border-2 border-gray-100 dark:border-slate-700 hover:border-primary shadow-sm text-gray-800 dark:text-white'}`}>{day}</button>
                                             })}
                                         </div>
                                     </div>
                                     <div className="lg:w-1/2">
-                                        <h4 className="font-black mb-6 text-xl text-gray-900 dark:text-white">2. Dados do Plantão</h4>
-                                        <form id="esc-form" onSubmit={handleSaveBatch} className="space-y-6">
-                                            <div><label className="block text-xs font-black text-gray-400 mb-2 uppercase">Profissional</label><select className="w-full px-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-custom outline-none focus:ring-2 focus:ring-primary font-black text-gray-900 dark:text-white" value={safeString(formData.Nome_Profissional)} onChange={e => {
+                                        <h4 className="font-black mb-4 md:mb-6 text-lg md:text-xl text-gray-900 dark:text-white">2. Dados do Plantão</h4>
+                                        <form id="esc-form" onSubmit={handleSaveBatch} className="space-y-4 md:space-y-6">
+                                            <div><label className="block text-[10px] md:text-xs font-black text-gray-400 mb-2 uppercase tracking-widest">Profissional</label><select className="w-full px-4 md:px-5 py-3 md:py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl md:rounded-custom outline-none focus:ring-2 focus:ring-primary font-black text-gray-900 dark:text-white" value={safeString(formData.Nome_Profissional)} onChange={e => {
                                                 const nome = e.target.value;
                                                 const refObj = activeSubTab.includes('Médicos') ? corpoClinico.find(c => c && c.Médico === nome) : usuarios.find(u => u && u['Nome Completo'] === nome);
                                                 const hInicio = refObj ? safeString(refObj['Hora Início']) : ''; const hFim = refObj ? safeString(refObj['Hora Fim']) : '';
                                                 const autoHorario = hInicio && hFim ? `${hInicio} às ${hFim}` : formData.Horario;
                                                 setFormData({...formData, Nome_Profissional: nome, Horario: autoHorario});
-                                            }} required><option value="">Selecione...</option>{activeSubTab.includes('Médicos') ? corpoClinico.map((m,i) => <option key={i} value={safeString(m?.Médico)}>{safeString(m?.Médico)}</option>) : usuarios.map((u,i) => <option key={i} value={safeString(u?.['Nome Completo'])}>{safeString(u?.['Nome Completo'])}</option>)}</select></div>
-                                            <div className="grid grid-cols-2 gap-6">
-                                                <div><label className="block text-xs font-black text-gray-400 mb-2 uppercase">Turno</label><select className="w-full px-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-custom outline-none font-bold text-gray-900 dark:text-white" value={safeString(formData.Turno)} onChange={e => setFormData({...formData, Turno: e.target.value})}><option value="Manhã">Manhã</option><option value="Tarde">Tarde</option><option value="Noite">Noite</option></select></div>
-                                                <div><label className="block text-xs font-black text-gray-400 mb-2 uppercase">Horário</label><input type="text" className="w-full px-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-custom outline-none font-bold text-gray-900 dark:text-white" value={safeString(formData.Horario)} onChange={e => setFormData({...formData, Horario: e.target.value})} placeholder="Ex: 08:00 às 18:00" /></div>
+                                            }} required><option value="">Selecione...</option>{activeSubTab.includes('Médicos') ? corpoClinico.map((m,i) => m && <option key={i} value={safeString(m.Médico)}>{safeString(m.Médico)}</option>) : usuarios.map((u,i) => u && <option key={i} value={safeString(u['Nome Completo'])}>{safeString(u['Nome Completo'])}</option>)}</select></div>
+                                            <div className="grid grid-cols-2 gap-4 md:gap-6">
+                                                <div><label className="block text-[10px] md:text-xs font-black text-gray-400 mb-2 uppercase tracking-widest">Turno</label><select className="w-full px-4 md:px-5 py-3 md:py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl md:rounded-custom outline-none font-bold text-gray-900 dark:text-white" value={safeString(formData.Turno)} onChange={e => setFormData({...formData, Turno: e.target.value})}><option value="Manhã">Manhã</option><option value="Tarde">Tarde</option><option value="Noite">Noite</option></select></div>
+                                                <div><label className="block text-[10px] md:text-xs font-black text-gray-400 mb-2 uppercase tracking-widest">Horário</label><input type="text" className="w-full px-4 md:px-5 py-3 md:py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl md:rounded-custom outline-none font-bold text-gray-900 dark:text-white" value={safeString(formData.Horario)} onChange={e => setFormData({...formData, Horario: e.target.value})} placeholder="Ex: 08:00 às 18:00" /></div>
                                             </div>
-                                            <div className="grid grid-cols-2 gap-6">
-                                                <div><label className="block text-xs font-black text-gray-400 mb-2 uppercase">Unidade</label><input type="text" className="w-full px-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-custom outline-none font-bold text-gray-900 dark:text-white" value={safeString(formData.Unidade)} onChange={e => setFormData({...formData, Unidade: e.target.value})} placeholder="Sede" /></div>
-                                                <div><label className="block text-xs font-black text-gray-400 mb-2 uppercase">Setor / Consultório</label><input type="text" className="w-full px-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-custom outline-none font-bold text-gray-900 dark:text-white" value={safeString(formData.Setor_Consultorio)} onChange={e => setFormData({...formData, Setor_Consultorio: e.target.value})} placeholder="Recepção 1" /></div>
+                                            <div className="grid grid-cols-2 gap-4 md:gap-6">
+                                                <div><label className="block text-[10px] md:text-xs font-black text-gray-400 mb-2 uppercase tracking-widest">Unidade</label><input type="text" className="w-full px-4 md:px-5 py-3 md:py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl md:rounded-custom outline-none font-bold text-gray-900 dark:text-white" value={safeString(formData.Unidade)} onChange={e => setFormData({...formData, Unidade: e.target.value})} placeholder="Sede" /></div>
+                                                <div><label className="block text-[10px] md:text-xs font-black text-gray-400 mb-2 uppercase tracking-widest">Setor / Consultório</label><input type="text" className="w-full px-4 md:px-5 py-3 md:py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl md:rounded-custom outline-none font-bold text-gray-900 dark:text-white" value={safeString(formData.Setor_Consultorio)} onChange={e => setFormData({...formData, Setor_Consultorio: e.target.value})} placeholder="Recepção 1" /></div>
                                             </div>
                                         </form>
                                     </div>
                                 </div>
-                                <div className="p-6 border-t border-gray-100 dark:border-slate-700 flex justify-end gap-4 bg-gray-50/50 dark:bg-slate-900"><button onClick={() => setIsModalOpen(false)} className="px-10 py-4 font-black text-gray-500 hover:text-gray-800 dark:hover:text-white transition">Cancelar</button><button type="submit" form="esc-form" disabled={loadingAction} className="px-12 py-4 bg-primary text-white font-black rounded-custom shadow-xl hover:-translate-y-1 transition">{loadingAction?'Gravando...':'Gravar Múltiplos'}</button></div>
+                                <div className="p-6 border-t border-gray-100 dark:border-slate-700 flex justify-end gap-3 md:gap-4 bg-gray-50/50 dark:bg-slate-900 shrink-0">
+                                    <button onClick={() => setIsModalOpen(false)} className="px-6 md:px-10 py-3 md:py-4 font-black text-gray-500 hover:bg-gray-200 dark:hover:bg-slate-800 rounded-xl transition text-sm md:text-base">Cancelar</button>
+                                    <button type="submit" form="esc-form" disabled={loadingAction} className="px-8 md:px-12 py-3 md:py-4 bg-primary text-white font-black rounded-xl md:rounded-custom shadow-xl hover:-translate-y-1 transition text-sm md:text-base flex items-center gap-2">{loadingAction?<i className="ph animate-spin ph-spinner"></i>:<i className="ph-bold ph-floppy-disk"></i>} {loadingAction?'Gravando...':'Salvar'}</button>
+                                </div>
                             </div>
                         </div>
                     )}
@@ -1029,27 +815,31 @@
             };
 
             return (
-                <div className="bg-white dark:bg-slate-800 rounded-custom shadow-sm border border-gray-100 dark:border-slate-700 p-8 max-w-5xl mx-auto animate-fade-in">
-                    <h2 className="text-3xl font-black mb-8"><i className="ph-fill ph-magic-wand text-primary"></i> Estilo do Portal</h2>
-                    <form onSubmit={handleSaveDesign} className="space-y-8">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                            <div className="bg-gray-50 dark:bg-slate-900 p-6 rounded-custom border border-gray-100 dark:border-slate-700 space-y-4">
-                                <h3 className="font-black text-gray-800 dark:text-white">Cores</h3>
-                                <div><label className="block text-xs font-bold text-gray-500 mb-1">Primária</label><input type="color" value={primary} onChange={(e) => setPrimary(e.target.value)} className="w-full h-10 rounded-lg cursor-pointer" /></div>
-                                <div><label className="block text-xs font-bold text-gray-500 mb-1">Secundária</label><input type="color" value={secondary} onChange={(e) => setSecondary(e.target.value)} className="w-full h-10 rounded-lg cursor-pointer" /></div>
-                                <div><label className="block text-xs font-bold text-gray-500 mb-1">Fundo Claro</label><input type="color" value={bg} onChange={(e) => setBg(e.target.value)} className="w-full h-10 rounded-lg cursor-pointer" /></div>
+                <div className="bg-white dark:bg-slate-800 rounded-[2rem] md:rounded-custom shadow-sm border border-gray-100 dark:border-slate-700 p-6 md:p-8 max-w-5xl mx-auto animate-fade-in">
+                    <h2 className="text-2xl md:text-3xl font-black mb-6 md:mb-8 flex items-center gap-3"><i className="ph-fill ph-magic-wand text-primary"></i> Estilo do Portal</h2>
+                    <form onSubmit={handleSaveDesign} className="space-y-6 md:space-y-8">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+                            <div className="bg-gray-50 dark:bg-slate-900 p-5 md:p-6 rounded-xl md:rounded-custom border border-gray-100 dark:border-slate-700 space-y-4 shadow-inner">
+                                <h3 className="font-black text-gray-800 dark:text-white flex items-center gap-2"><i className="ph-fill ph-palette text-gray-400"></i> Cores</h3>
+                                <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Primária</label><input type="color" value={primary} onChange={(e) => setPrimary(e.target.value)} className="w-full h-12 rounded-lg cursor-pointer border-0 bg-transparent" /></div>
+                                <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Secundária</label><input type="color" value={secondary} onChange={(e) => setSecondary(e.target.value)} className="w-full h-12 rounded-lg cursor-pointer border-0 bg-transparent" /></div>
+                                <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Fundo Claro</label><input type="color" value={bg} onChange={(e) => setBg(e.target.value)} className="w-full h-12 rounded-lg cursor-pointer border-0 bg-transparent" /></div>
                             </div>
-                            <div className="bg-gray-50 dark:bg-slate-900 p-6 rounded-custom border border-gray-100 dark:border-slate-700 space-y-4">
-                                <h3 className="font-black text-gray-800 dark:text-white">Formatos</h3>
-                                <div><label className="block text-xs font-bold text-gray-500 mb-1">Bordas</label><select className="w-full p-3 rounded-xl border border-gray-200 dark:bg-slate-800" value={borderRadius} onChange={e=>setBorderRadius(e.target.value)}><option value="0px">Reto</option><option value="0.5rem">Suave</option><option value="1.5rem">Moderno</option></select></div>
-                                <div><label className="block text-xs font-bold text-gray-500 mb-1">Fonte</label><select className="w-full p-3 rounded-xl border border-gray-200 dark:bg-slate-800" value={fontFamily} onChange={e=>setFontFamily(e.target.value)}><option value="Inter">Inter</option><option value="Roboto">Roboto</option></select></div>
+                            <div className="bg-gray-50 dark:bg-slate-900 p-5 md:p-6 rounded-xl md:rounded-custom border border-gray-100 dark:border-slate-700 space-y-4 shadow-inner">
+                                <h3 className="font-black text-gray-800 dark:text-white flex items-center gap-2"><i className="ph-fill ph-shapes text-gray-400"></i> Formatos</h3>
+                                <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Bordas</label><select className="w-full p-4 rounded-xl border border-gray-200 dark:border-slate-600 dark:bg-slate-800 font-bold outline-none focus:ring-2 focus:ring-primary" value={borderRadius} onChange={e=>setBorderRadius(e.target.value)}><option value="0px">Reto (Clássico)</option><option value="0.5rem">Suave</option><option value="1.5rem">Moderno (Redondo)</option></select></div>
+                                <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Fonte</label><select className="w-full p-4 rounded-xl border border-gray-200 dark:border-slate-600 dark:bg-slate-800 font-bold outline-none focus:ring-2 focus:ring-primary" value={fontFamily} onChange={e=>setFontFamily(e.target.value)}><option value="Inter">Inter (Limpa)</option><option value="Roboto">Roboto</option></select></div>
                             </div>
-                            <div className="bg-gray-50 dark:bg-slate-900 p-6 rounded-custom border border-gray-100 dark:border-slate-700 space-y-4">
-                                <h3 className="font-black text-gray-800 dark:text-white">Logo do Portal</h3>
-                                <div><label className="block text-xs font-bold text-gray-500 mb-1">URL (Drive ou Site)</label><input type="url" value={logo} onChange={e=>setLogo(e.target.value)} className="w-full p-3 rounded-xl border border-gray-200 dark:bg-slate-800 text-xs font-medium" placeholder="https://..." /></div>
+                            <div className="bg-gray-50 dark:bg-slate-900 p-5 md:p-6 rounded-xl md:rounded-custom border border-gray-100 dark:border-slate-700 space-y-4 shadow-inner">
+                                <h3 className="font-black text-gray-800 dark:text-white flex items-center gap-2"><i className="ph-fill ph-image text-gray-400"></i> Logo do Portal</h3>
+                                <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">URL (Drive ou Site)</label><input type="url" value={logo} onChange={e=>setLogo(e.target.value)} className="w-full p-4 rounded-xl border border-gray-200 dark:border-slate-600 dark:bg-slate-800 text-xs font-bold outline-none focus:ring-2 focus:ring-primary" placeholder="https://..." /></div>
                             </div>
                         </div>
-                        <div className="flex justify-end"><button type="submit" disabled={saving} className="bg-primary text-white font-black py-4 px-10 rounded-custom shadow-xl">{saving?'Salvando...':'Salvar Design'}</button></div>
+                        <div className="flex justify-end border-t border-gray-100 dark:border-slate-700 pt-6">
+                            <button type="submit" disabled={saving} className="bg-primary hover:opacity-90 text-white font-black py-4 px-12 rounded-xl md:rounded-full shadow-xl hover:-translate-y-1 transition w-full md:w-auto flex items-center justify-center gap-2">
+                                {saving ? <i className="ph animate-spin ph-spinner text-xl"></i> : <i className="ph-bold ph-floppy-disk text-xl"></i>} {saving ? 'Salvando...' : 'Aplicar Design'}
+                            </button>
+                        </div>
                     </form>
                 </div>
             )
@@ -1057,39 +847,42 @@
 
         const DefaultTableView = ({ title, schema, filteredData, canEdit, openModal, handleDelete, search, setSearch }) => {
             return (
-                <div className="bg-white dark:bg-slate-800 rounded-custom shadow-sm border border-gray-100 dark:border-slate-700 overflow-hidden animate-fade-in">
-                    <div className="p-8 border-b border-gray-50 dark:border-slate-700 flex flex-col md:flex-row justify-between items-center gap-6 bg-gray-50/50 dark:bg-slate-900/50">
-                        <h2 className="text-3xl font-black tracking-tight flex items-center gap-3 text-gray-900 dark:text-white"><div className="w-3 h-8 bg-primary rounded-full"></div> {title}</h2>
-                        <div className="flex gap-4 w-full md:w-auto">
-                            <div className="relative flex-1 md:w-96"><i className="ph-bold ph-magnifying-glass absolute left-5 top-4 text-gray-400 text-xl"></i><input type="text" placeholder="Pesquisar em tudo..." value={search} onChange={e=>setSearch(e.target.value)} className="w-full pl-14 pr-6 py-4 bg-white dark:bg-slate-900 shadow-sm border border-gray-200 dark:border-slate-700 rounded-full outline-none focus:ring-2 focus:ring-primary font-bold transition text-gray-800 dark:text-white" /></div>
-                            {canEdit && <button onClick={() => openModal(null, schema)} className="bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-black px-10 py-4 rounded-full shadow-xl hover:-translate-y-1 transition flex items-center gap-2 shrink-0"><i className="ph-bold ph-plus text-xl"></i> Novo</button>}
+                <div className="bg-white dark:bg-slate-800 rounded-[2rem] md:rounded-custom shadow-sm border border-gray-100 dark:border-slate-700 overflow-hidden animate-fade-in">
+                    <div className="p-6 md:p-8 border-b border-gray-50 dark:border-slate-700 flex flex-col md:flex-row justify-between items-center gap-6 bg-gray-50/50 dark:bg-slate-900/50">
+                        <h2 className="text-2xl md:text-3xl font-black tracking-tight flex items-center gap-3 text-gray-900 dark:text-white w-full md:w-auto"><div className="w-2 md:w-3 h-6 md:h-8 bg-primary rounded-full"></div> {title}</h2>
+                        <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+                            <div className="relative flex-1 sm:w-80 md:w-96"><i className="ph-bold ph-magnifying-glass absolute left-5 top-4 text-gray-400 text-xl"></i><input type="text" placeholder="Pesquisar..." value={search} onChange={e=>setSearch(e.target.value)} className="w-full pl-14 pr-6 py-4 bg-white dark:bg-slate-900 shadow-sm border border-gray-200 dark:border-slate-700 rounded-xl md:rounded-full outline-none focus:ring-2 focus:ring-primary font-bold transition text-gray-800 dark:text-white" /></div>
+                            {canEdit && <button onClick={() => openModal(null, schema)} className="bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-black px-8 py-4 rounded-xl md:rounded-full shadow-xl hover:-translate-y-1 transition flex items-center justify-center gap-2 shrink-0"><i className="ph-bold ph-plus text-xl"></i> Novo</button>}
                         </div>
                     </div>
-                    <div className="overflow-x-auto p-4 custom-scrollbar">
+                    <div className="overflow-x-auto p-2 md:p-4 custom-scrollbar">
                         <table className="w-full text-left border-collapse min-w-[800px]">
                             <thead>
                                 <tr className="text-gray-400 text-[10px] uppercase tracking-widest border-b-2 border-gray-100 dark:border-slate-700">
-                                    {schema.filter(c=>safeString(c)!=='ID').map((col, i) => <th key={`th-${i}`} className="p-6 font-black">{safeString(col)}</th>)}
-                                    {canEdit && <th className="p-6 font-black text-right">Ações</th>}
+                                    {schema.filter(c=>safeString(c)!=='ID').map((col, i) => <th key={`th-${i}`} className="p-4 md:p-6 font-black">{safeString(col)}</th>)}
+                                    {canEdit && <th className="p-4 md:p-6 font-black text-right">Ações</th>}
                                 </tr>
                             </thead>
-                            <tbody className="text-sm font-bold text-gray-800 dark:text-slate-200">
-                                {filteredData.length === 0 ? <tr><td colSpan="100%" className="text-center p-20 text-gray-400 font-black text-xl border-2 border-dashed border-gray-200 dark:border-slate-700 rounded-custom m-4">Nenhum dado cadastrado.</td></tr> : 
+                            <tbody className="text-xs md:text-sm font-bold text-gray-800 dark:text-slate-200">
+                                {filteredData.length === 0 ? <tr><td colSpan="100%" className="text-center p-10 md:p-20 text-gray-400 font-black text-lg md:text-xl border-2 border-dashed border-gray-200 dark:border-slate-700 rounded-3xl m-4 block">Nenhum dado cadastrado.</td></tr> : 
                                 filteredData.map((row, i) => (
                                     <tr key={`tr-${i}`} className="hover:bg-blue-50/30 dark:hover:bg-slate-700/30 border-b border-gray-50 dark:border-slate-700 transition group">
-                                        {schema.filter(c=>safeString(c)!=='ID').map((col, j) => (
-                                            <td key={`td-${i}-${j}`} className="p-6 whitespace-nowrap">
-                                                {safeString(col).toLowerCase().includes('url') || safeString(col).toLowerCase().includes('foto') || safeString(col).toLowerCase().includes('imagem') ? (row[col] ? <img src={formatImageUrl(row[col])} className="h-14 w-14 object-cover rounded-2xl shadow-sm border border-gray-200 dark:border-slate-600" /> : <div className="h-14 w-14 bg-gray-100 dark:bg-slate-700 rounded-2xl flex items-center justify-center text-gray-300"><i className="ph-fill ph-image text-xl"></i></div>) :
-                                                 safeString(col).toLowerCase().includes('senha') ? '••••••••' :
-                                                 safeString(row[col]) === 'Sim' || safeString(row[col]) === 'Ativo' ? <span className="bg-green-100 dark:bg-green-900/30 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-300 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider">{safeString(row[col])}</span> :
-                                                 safeString(row[col]) === 'Não' || safeString(row[col]) === 'Inativo' ? <span className="bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-300 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider">{safeString(row[col])}</span> :
-                                                 safeString(row[col]) || '-'}
+                                        {schema.filter(c=>safeString(c)!=='ID').map((col, j) => {
+                                            const val = safeString(row[col]);
+                                            const cLower = safeString(col).toLowerCase();
+                                            return (
+                                            <td key={`td-${i}-${j}`} className="p-4 md:p-6 whitespace-nowrap">
+                                                {cLower.includes('url') || cLower.includes('foto') || cLower.includes('imagem') ? (val ? <img src={formatImageUrl(val)} className="h-10 w-10 md:h-14 md:w-14 object-cover rounded-xl md:rounded-2xl shadow-sm border border-gray-200 dark:border-slate-600" /> : <div className="h-10 w-10 md:h-14 md:w-14 bg-gray-100 dark:bg-slate-700 rounded-xl md:rounded-2xl flex items-center justify-center text-gray-300"><i className="ph-fill ph-image text-lg md:text-xl"></i></div>) :
+                                                 cLower.includes('senha') ? '••••••••' :
+                                                 val === 'Sim' || val === 'Ativo' ? <span className="bg-green-100 dark:bg-green-900/30 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-300 px-3 py-1.5 md:px-4 md:py-2 rounded-lg md:rounded-xl text-[10px] md:text-xs font-black uppercase tracking-wider">{val}</span> :
+                                                 val === 'Não' || val === 'Inativo' ? <span className="bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-300 px-3 py-1.5 md:px-4 md:py-2 rounded-lg md:rounded-xl text-[10px] md:text-xs font-black uppercase tracking-wider">{val}</span> :
+                                                 val || '-'}
                                             </td>
-                                        ))}
+                                        )})}
                                         {canEdit && (
-                                            <td className="p-6 flex justify-end gap-2 opacity-50 group-hover:opacity-100 transition">
-                                                <button onClick={()=>openModal(row, schema)} className="text-blue-600 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-600 hover:text-white p-3 rounded-xl transition shadow-sm"><i className="ph-bold ph-pencil-simple text-xl"></i></button>
-                                                <button onClick={()=>handleDelete(row.ID)} className="text-red-600 bg-red-50 dark:bg-red-900/30 hover:bg-red-600 hover:text-white p-3 rounded-xl transition shadow-sm"><i className="ph-bold ph-trash text-xl"></i></button>
+                                            <td className="p-4 md:p-6 flex justify-end gap-2 md:opacity-50 md:group-hover:opacity-100 transition">
+                                                <button onClick={()=>openModal(row, schema)} className="text-blue-600 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-600 hover:text-white p-2.5 md:p-3 rounded-lg md:rounded-xl transition shadow-sm"><i className="ph-bold ph-pencil-simple text-lg md:text-xl"></i></button>
+                                                <button onClick={()=>handleDelete(row.ID)} className="text-red-600 bg-red-50 dark:bg-red-900/30 hover:bg-red-600 hover:text-white p-2.5 md:p-3 rounded-lg md:rounded-xl transition shadow-sm"><i className="ph-bold ph-trash text-lg md:text-xl"></i></button>
                                             </td>
                                         )}
                                     </tr>
@@ -1161,14 +954,15 @@
             const [darkMode, setDarkMode] = useState(false);
             const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
             
-            // Lógica de Login Misto (Equipe vs Firebase)
+            // Lógica de Login e Mobile
             const [loginView, setLoginView] = useState('selecao'); // selecao | geral | painel
             const [loginErrorMsg, setLoginErrorMsg] = useState('');
             const [isOffline, setIsOffline] = useState(!navigator.onLine);
             const [isSharedAuth, setIsSharedAuth] = useState(localStorage.getItem('shared_auth') === 'true');
+            const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
             // ⚠️ SENHA DE ACESSO GERAL PARA COLABORADORES DA CLÍNICA
-            const SENHA_ACESSO_GERAL = "Csv@123";
+            const SENHA_ACESSO_GERAL = "Csv@123"; 
 
             const userFoto = user?.Foto_Perfil_URL || 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
             const userName = user?.['Nome Completo'] || (isSharedAuth ? 'Equipe São Vicente' : 'Usuário');
@@ -1218,6 +1012,7 @@
                         setSheetData(allData);
                         const conf = allData['CONFIGURACOES'] || [];
                         conf.forEach(c => {
+                            if(!c) return;
                             if(c.Chave === 'cor_primaria') document.documentElement.style.setProperty('--color-primary', c.Valor);
                             if(c.Chave === 'cor_secundaria') document.documentElement.style.setProperty('--color-secondary', c.Valor);
                             if(c.Chave === 'cor_fundo') document.documentElement.style.setProperty('--color-bg', c.Valor);
@@ -1249,61 +1044,74 @@
                     setLoading(false);
                 };
 
-                const handleSharedLogin = (e) => {
-                    e.preventDefault(); setLoginErrorMsg('');
+                // Acesso Automático por E-mail "Fantasma" do Firebase (Segurança extra + Funcionamento Offline)
+                const handleSharedLogin = async (e) => {
+                    e.preventDefault(); setLoginErrorMsg(''); setLoading(true);
                     if (e.target.shared_password.value === SENHA_ACESSO_GERAL) {
-                        localStorage.setItem('shared_auth', 'true');
-                        setIsSharedAuth(true);
-                        setUser({ 'Nome Completo': 'Equipe São Vicente', 'Nível de Acesso': 'Colaborador' });
-                        loadData('Home');
+                        try {
+                            const res = await api.login('equipe@portal.com', SENHA_ACESSO_GERAL);
+                            if(res && res.success) {
+                                localStorage.setItem('shared_auth', 'true');
+                                setIsSharedAuth(true);
+                            } else {
+                                // Fallback se não criou o email equipe@portal.com no Firebase Auth ainda
+                                localStorage.setItem('shared_auth', 'true');
+                                setIsSharedAuth(true);
+                                setUser({ 'Nome Completo': 'Equipe São Vicente', 'Nível de Acesso': 'Colaborador' });
+                                loadData('Home');
+                            }
+                        } catch(err) {
+                            localStorage.setItem('shared_auth', 'true');
+                            setIsSharedAuth(true);
+                        }
                     } else { setLoginErrorMsg('Senha de acesso geral incorreta.'); }
+                    setLoading(false);
                 };
 
                 return (
                     <div className="min-h-screen bg-medical dark:bg-slate-900 flex flex-col items-center justify-center p-4">
-                        {isOffline && <div className="mb-6 bg-red-600 text-white px-6 py-2 rounded-full font-bold shadow-lg animate-pulse flex items-center gap-2"><i className="ph-bold ph-wifi-slash"></i> Sem Internet. O login pode falhar se não estiver em cache.</div>}
-                        <div className="bg-white dark:bg-slate-800 rounded-[3rem] shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col md:flex-row animate-fade-in border border-gray-100 dark:border-slate-700">
-                            <div className="md:w-5/12 bg-gradient-to-br from-primary to-blue-800 text-white p-12 flex flex-col justify-center relative">
+                        {isOffline && <div className="mb-6 bg-red-600 text-white px-6 py-2 rounded-full font-bold shadow-lg animate-pulse flex items-center gap-2 text-sm"><i className="ph-bold ph-wifi-slash"></i> Sem Internet. O login pode falhar se não estiver em cache.</div>}
+                        <div className="bg-white dark:bg-slate-800 rounded-[2rem] md:rounded-[3rem] shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col md:flex-row animate-fade-in border border-gray-100 dark:border-slate-700">
+                            <div className="md:w-5/12 bg-gradient-to-br from-primary to-blue-800 text-white p-10 md:p-12 flex flex-col justify-center relative">
                                 <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
                                 <div className="relative z-10 text-center">
-                                    <div className="w-28 h-28 mx-auto bg-white/10 rounded-[2rem] flex items-center justify-center mb-6 backdrop-blur-sm shadow-xl"><i className="ph-fill ph-heartbeat text-7xl"></i></div>
-                                    <h1 className="text-4xl font-black mb-4">São Vicente</h1>
-                                    <p className="text-blue-100 font-medium text-sm">Portal interno de comunicação, escalas e processos da clínica.</p>
+                                    <div className="w-24 h-24 md:w-28 md:h-28 mx-auto bg-white/10 rounded-[2rem] flex items-center justify-center mb-6 backdrop-blur-sm shadow-xl"><i className="ph-fill ph-heartbeat text-6xl md:text-7xl"></i></div>
+                                    <h1 className="text-3xl md:text-4xl font-black mb-4">São Vicente</h1>
+                                    <p className="text-blue-100 font-medium text-xs md:text-sm">Portal interno de comunicação, escalas e processos da clínica.</p>
                                 </div>
                             </div>
-                            <div className="md:w-7/12 p-12 bg-white dark:bg-slate-800 flex flex-col justify-center">
+                            <div className="md:w-7/12 p-8 md:p-12 bg-white dark:bg-slate-800 flex flex-col justify-center">
                                 {loginErrorMsg && <div className="mb-6 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 p-4 rounded-xl flex gap-3 items-start animate-pop-in"><i className="ph-fill ph-warning-circle text-red-600 dark:text-red-400 text-xl shrink-0 mt-0.5"></i><p className="text-sm font-bold text-red-800 dark:text-red-200 leading-tight">{loginErrorMsg}</p></div>}
                                 {loginView === 'selecao' && (
-                                    <div className="space-y-6 animate-fade-in">
-                                        <h2 className="text-2xl font-black text-gray-800 dark:text-white mb-8">Selecione seu acesso:</h2>
-                                        <button onClick={()=>setLoginView('geral')} className="w-full bg-blue-50 hover:bg-primary dark:bg-slate-700 dark:hover:bg-primary group p-6 rounded-2xl border-2 border-blue-100 dark:border-slate-600 hover:border-primary transition flex items-center gap-6 text-left">
-                                            <div className="w-16 h-16 rounded-xl bg-white dark:bg-slate-800 text-primary flex justify-center items-center shrink-0 shadow-sm"><i className="ph-fill ph-users text-3xl"></i></div>
-                                            <div><h3 className="font-black text-xl text-gray-900 dark:text-white group-hover:text-white transition">Acesso Equipe</h3><p className="text-sm text-gray-500 dark:text-gray-400 group-hover:text-blue-100 transition mt-1">Visualização de escalas, ramais e consultas.</p></div>
+                                    <div className="space-y-4 md:space-y-6 animate-fade-in">
+                                        <h2 className="text-xl md:text-2xl font-black text-gray-800 dark:text-white mb-6 md:mb-8 text-center md:text-left">Selecione seu acesso:</h2>
+                                        <button onClick={()=>setLoginView('geral')} className="w-full bg-blue-50 hover:bg-primary dark:bg-slate-700 dark:hover:bg-primary group p-5 md:p-6 rounded-[1.5rem] md:rounded-2xl border-2 border-blue-100 dark:border-slate-600 hover:border-primary transition flex items-center gap-4 md:gap-6 text-left">
+                                            <div className="w-14 h-14 md:w-16 md:h-16 rounded-xl bg-white dark:bg-slate-800 text-primary flex justify-center items-center shrink-0 shadow-sm"><i className="ph-fill ph-users text-2xl md:text-3xl"></i></div>
+                                            <div><h3 className="font-black text-lg md:text-xl text-gray-900 dark:text-white group-hover:text-white transition">Acesso Equipe</h3><p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 group-hover:text-blue-100 transition mt-1">Visualização de escalas, ramais e consultas.</p></div>
                                         </button>
-                                        <button onClick={()=>setLoginView('painel')} className="w-full bg-orange-50 hover:bg-secondary dark:bg-slate-700 dark:hover:bg-secondary group p-6 rounded-2xl border-2 border-orange-100 dark:border-slate-600 hover:border-secondary transition flex items-center gap-6 text-left">
-                                            <div className="w-16 h-16 rounded-xl bg-white dark:bg-slate-800 text-secondary flex justify-center items-center shrink-0 shadow-sm"><i className="ph-fill ph-shield-star text-3xl"></i></div>
-                                            <div><h3 className="font-black text-xl text-gray-900 dark:text-white group-hover:text-white transition">Acesso Supervisor</h3><p className="text-sm text-gray-500 dark:text-gray-400 group-hover:text-orange-100 transition mt-1">Edição de dados e gestão de equipe.</p></div>
+                                        <button onClick={()=>setLoginView('painel')} className="w-full bg-orange-50 hover:bg-secondary dark:bg-slate-700 dark:hover:bg-secondary group p-5 md:p-6 rounded-[1.5rem] md:rounded-2xl border-2 border-orange-100 dark:border-slate-600 hover:border-secondary transition flex items-center gap-4 md:gap-6 text-left">
+                                            <div className="w-14 h-14 md:w-16 md:h-16 rounded-xl bg-white dark:bg-slate-800 text-secondary flex justify-center items-center shrink-0 shadow-sm"><i className="ph-fill ph-shield-star text-2xl md:text-3xl"></i></div>
+                                            <div><h3 className="font-black text-lg md:text-xl text-gray-900 dark:text-white group-hover:text-white transition">Acesso Gestão</h3><p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 group-hover:text-orange-100 transition mt-1">Edição de dados e controle da clínica.</p></div>
                                         </button>
-                                        <div className="pt-6 text-center"><button onClick={()=>setLoginView('painel')} className="text-xs font-bold text-gray-400 hover:text-primary transition underline decoration-dashed underline-offset-4">Acesso Administrador Restrito</button></div>
                                     </div>
                                 )}
                                 {loginView === 'geral' && (
                                     <form onSubmit={handleSharedLogin} className="space-y-6 animate-fade-in">
-                                        <button type="button" onClick={()=>{setLoginView('selecao'); setLoginErrorMsg('');}} className="text-gray-400 hover:text-primary flex items-center gap-2 mb-6 font-bold text-sm"><i className="ph-bold ph-arrow-left"></i> Voltar</button>
-                                        <h2 className="text-2xl font-black text-gray-800 dark:text-white mb-2">Acesso da Equipe</h2>
-                                        <p className="text-sm text-gray-500 mb-8">Digite a senha geral fornecida pela coordenação.</p>
-                                        <div><label className="block text-[10px] font-black text-gray-400 mb-2 uppercase tracking-widest">Senha de Acesso Único</label><div className="relative"><i className="ph-fill ph-lock-key absolute left-5 top-4 text-gray-400 text-xl"></i><input name="shared_password" type="password" className="w-full pl-14 pr-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-100 dark:border-slate-700 rounded-custom outline-none focus:ring-2 focus:ring-primary font-bold text-gray-900 dark:text-white transition" placeholder="Sua senha..." required /></div></div>
-                                        <button type="submit" className="w-full bg-primary hover:opacity-90 text-white font-black py-5 rounded-custom shadow-xl shadow-primary/30 transition transform hover:-translate-y-1">Entrar no Portal</button>
+                                        <button type="button" onClick={()=>{setLoginView('selecao'); setLoginErrorMsg('');}} className="text-gray-400 hover:text-primary flex items-center gap-2 mb-4 md:mb-6 font-bold text-sm"><i className="ph-bold ph-arrow-left"></i> Voltar</button>
+                                        <h2 className="text-xl md:text-2xl font-black text-gray-800 dark:text-white mb-1 md:mb-2">Acesso da Equipe</h2>
+                                        <p className="text-xs md:text-sm text-gray-500 mb-6 md:mb-8">Digite a senha geral fornecida pela coordenação.</p>
+                                        <div><label className="block text-[10px] font-black text-gray-400 mb-2 uppercase tracking-widest">Senha de Acesso Único</label><div className="relative"><i className="ph-fill ph-lock-key absolute left-5 top-4 text-gray-400 text-xl"></i><input name="shared_password" type="password" className="w-full pl-14 pr-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-100 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-primary font-bold text-gray-900 dark:text-white transition" placeholder="Sua senha..." required /></div></div>
+                                        <button type="submit" disabled={loading} className="w-full bg-primary hover:opacity-90 text-white font-black py-4 md:py-5 rounded-xl shadow-xl shadow-primary/30 transition transform hover:-translate-y-1">{loading?'Entrando...':'Entrar no Portal'}</button>
                                     </form>
                                 )}
                                 {loginView === 'painel' && (
                                     <form onSubmit={handleFirebaseLogin} className="space-y-6 animate-fade-in">
-                                        <button type="button" onClick={()=>{setLoginView('selecao'); setLoginErrorMsg('');}} className="text-gray-400 hover:text-primary flex items-center gap-2 mb-6 font-bold text-sm"><i className="ph-bold ph-arrow-left"></i> Voltar</button>
-                                        <h2 className="text-2xl font-black text-gray-800 dark:text-white mb-2">Acesso Gestão</h2>
-                                        <p className="text-sm text-gray-500 mb-8">Faça login com suas credenciais do painel.</p>
-                                        <div><label className="block text-[10px] font-black text-gray-400 mb-2 uppercase tracking-widest">E-mail</label><div className="relative"><i className="ph-fill ph-user absolute left-5 top-4 text-gray-400 text-xl"></i><input name="email" type="email" className="w-full pl-14 pr-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-100 dark:border-slate-700 rounded-custom outline-none focus:ring-2 focus:ring-primary font-bold text-gray-900 dark:text-white transition" required /></div></div>
-                                        <div><label className="block text-[10px] font-black text-gray-400 mb-2 uppercase tracking-widest">Senha</label><div className="relative"><i className="ph-fill ph-lock-key absolute left-5 top-4 text-gray-400 text-xl"></i><input name="password" type="password" className="w-full pl-14 pr-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-100 dark:border-slate-700 rounded-custom outline-none focus:ring-2 focus:ring-primary font-bold text-gray-900 dark:text-white transition" required /></div></div>
-                                        <button type="submit" disabled={loading} className="w-full bg-secondary hover:opacity-90 text-white font-black py-5 rounded-custom shadow-xl shadow-secondary/30 transition transform hover:-translate-y-1">{loading ? 'Conectando...' : 'Acessar Gestão'}</button>
+                                        <button type="button" onClick={()=>{setLoginView('selecao'); setLoginErrorMsg('');}} className="text-gray-400 hover:text-primary flex items-center gap-2 mb-4 md:mb-6 font-bold text-sm"><i className="ph-bold ph-arrow-left"></i> Voltar</button>
+                                        <h2 className="text-xl md:text-2xl font-black text-gray-800 dark:text-white mb-1 md:mb-2">Acesso Gestão</h2>
+                                        <p className="text-xs md:text-sm text-gray-500 mb-6 md:mb-8">Faça login com e-mail e senha do painel.</p>
+                                        <div><label className="block text-[10px] font-black text-gray-400 mb-2 uppercase tracking-widest">E-mail</label><div className="relative"><i className="ph-fill ph-user absolute left-5 top-4 text-gray-400 text-xl"></i><input name="email" type="email" className="w-full pl-14 pr-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-100 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-primary font-bold text-gray-900 dark:text-white transition" required /></div></div>
+                                        <div><label className="block text-[10px] font-black text-gray-400 mb-2 uppercase tracking-widest">Senha</label><div className="relative"><i className="ph-fill ph-lock-key absolute left-5 top-4 text-gray-400 text-xl"></i><input name="password" type="password" className="w-full pl-14 pr-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-100 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-primary font-bold text-gray-900 dark:text-white transition" required /></div></div>
+                                        <button type="submit" disabled={loading} className="w-full bg-secondary hover:opacity-90 text-white font-black py-4 md:py-5 rounded-xl shadow-xl shadow-secondary/30 transition transform hover:-translate-y-1">{loading ? 'Conectando...' : 'Acessar Gestão'}</button>
                                     </form>
                                 )}
                             </div>
@@ -1335,51 +1143,62 @@
             const titleTab = foundMenu ? foundMenu.label : activeTab;
 
             return (
-                <div className="min-h-screen flex flex-col md:flex-row overflow-hidden relative selection:bg-primary selection:text-white">
-                    {/* AVISO OFFLINE SUPERIOR */}
-                    {isOffline && <div className="absolute top-0 inset-x-0 z-[99999] bg-red-600 text-white text-xs font-black py-1.5 flex justify-center items-center gap-2 shadow-md animate-fade-in"><i className="ph-bold ph-wifi-slash text-base"></i> Sem Conexão: O portal está operando com dados em cache local.</div>}
+                <div className="min-h-screen flex flex-col md:flex-row overflow-hidden relative selection:bg-primary selection:text-white bg-medical dark:bg-slate-900">
+                    
+                    {/* AVISO OFFLINE */}
+                    {isOffline && <div className="absolute top-0 inset-x-0 z-[99999] bg-red-600 text-white text-[10px] md:text-xs font-black py-2 md:py-1.5 flex justify-center items-center gap-2 shadow-md animate-fade-in"><i className="ph-bold ph-wifi-slash text-sm md:text-base"></i> Sem Conexão: Operando com dados salvos. Alterações serão enviadas ao voltar a rede.</div>}
+                    
+                    {toast.show && <div className={`fixed bottom-4 md:bottom-8 right-4 md:right-8 z-[9999] px-6 md:px-8 py-4 md:py-5 rounded-xl md:rounded-custom shadow-2xl text-white font-black text-sm md:text-lg animate-slide-up bg-green-500`}><i className="ph-bold ph-check-circle text-xl md:text-2xl"></i> {toast.message}</div>}
 
-                    {toast.show && <div className={`fixed bottom-8 right-8 z-[9999] px-8 py-5 rounded-custom shadow-2xl text-white font-black text-lg animate-slide-up bg-green-500`}><i className="ph-bold ph-check-circle text-2xl"></i> {toast.message}</div>}
+                    {/* HEADER MOBILE (Navegação Celular) */}
+                    <div className="md:hidden bg-primary text-white p-4 flex justify-between items-center z-40 shadow-lg relative">
+                        <div className="flex items-center gap-2 font-black text-xl"><i className="ph-fill ph-heartbeat"></i> Portal SV</div>
+                        <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="text-3xl p-1 bg-white/10 rounded-lg"><i className={`ph-bold ${isMobileMenuOpen ? 'ph-x' : 'ph-list'}`}></i></button>
+                    </div>
 
-                    <aside className="w-80 bg-white dark:bg-slate-800 border-r border-gray-100 dark:border-slate-700 flex flex-col h-screen shrink-0 shadow-2xl z-30 transition-colors">
-                        <div className="p-8 flex items-center border-b bg-gray-50/50 cursor-pointer" onClick={()=>{setActiveTab('Home'); loadData('Home');}}>
-                            <div className="bg-primary text-white p-3 rounded-2xl mr-3"><i className="ph-fill ph-heartbeat text-3xl"></i></div>
-                            <div><h1 className="text-2xl font-black leading-none">Portal</h1><span className="text-[10px] font-black text-primary uppercase">São Vicente</span></div>
+                    {/* OVERLAY ESCURO MOBILE */}
+                    {isMobileMenuOpen && <div className="fixed inset-0 bg-black/60 z-40 md:hidden backdrop-blur-sm" onClick={() => setIsMobileMenuOpen(false)}></div>}
+
+                    {/* MENU LATERAL (Sidebar) */}
+                    <aside className={`fixed inset-y-0 left-0 w-72 md:w-80 bg-white dark:bg-slate-800 border-r border-gray-100 dark:border-slate-700 flex flex-col h-screen shrink-0 shadow-2xl z-50 transform ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 transition-transform duration-300 ease-in-out`}>
+                        <div className="p-6 md:p-8 flex items-center border-b border-gray-100 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-900/50 cursor-pointer" onClick={()=>{setActiveTab('Home'); loadData('Home'); setIsMobileMenuOpen(false);}}>
+                            <div className="bg-primary text-white p-2 md:p-3 rounded-xl md:rounded-2xl mr-3 shadow-md"><i className="ph-fill ph-heartbeat text-2xl md:text-3xl"></i></div>
+                            <div><h1 className="text-xl md:text-2xl font-black leading-none text-gray-900 dark:text-white">Portal</h1><span className="text-[10px] font-black text-primary uppercase tracking-widest">São Vicente</span></div>
                         </div>
-                        <div className="p-6 border-b border-gray-50 dark:border-slate-700 flex items-center gap-4">
-                            {userFoto ? <img src={formatImageUrl(userFoto)} className="w-14 h-14 rounded-custom object-cover shadow-md shrink-0 border-2 border-white dark:border-slate-700" alt="Avatar" /> : <div className="w-14 h-14 rounded-custom bg-gradient-to-tr from-secondary to-orange-400 flex items-center justify-center text-white font-black text-2xl shadow-md shrink-0">{safeString(userName || 'U').charAt(0).toUpperCase()}</div>}
+                        <div className="p-5 md:p-6 border-b border-gray-50 dark:border-slate-700 flex items-center gap-4">
+                            {userFoto ? <img src={formatImageUrl(userFoto)} className="w-12 h-12 md:w-14 md:h-14 rounded-xl md:rounded-custom object-cover shadow-md shrink-0 border-2 border-white dark:border-slate-700" alt="Avatar" /> : <div className="w-12 h-12 md:w-14 md:h-14 rounded-xl md:rounded-custom bg-gradient-to-tr from-secondary to-orange-400 flex items-center justify-center text-white font-black text-xl md:text-2xl shadow-md shrink-0">{safeString(userName || 'U').charAt(0).toUpperCase()}</div>}
                             <div className="flex-1 overflow-hidden">
-                                <p className="text-base font-black truncate text-gray-900 dark:text-white">{userName}</p>
-                                <p className="text-[10px] font-black text-primary bg-primary/10 px-2 py-1 rounded-md inline-block mt-1 uppercase tracking-widest">{isAdmin?'Admin':'Colaborador'}</p>
+                                <p className="text-sm md:text-base font-black truncate text-gray-900 dark:text-white">{userName}</p>
+                                <p className="text-[9px] md:text-[10px] font-black text-primary bg-primary/10 px-2 py-1 rounded-md inline-block mt-1 uppercase tracking-widest">{isAdmin?'Admin':'Colaborador'}</p>
                             </div>
                         </div>
-                        <div className="flex-1 overflow-y-auto p-4 space-y-1 custom-scrollbar pb-8 mt-4 md:mt-0">
-                            <div className="px-4 mb-2 mt-2 text-[10px] font-black text-gray-400 uppercase">Menu</div>
-                            {menus.map(m => <button key={m.id} onClick={()=>{setActiveTab(m.id); loadData(m.id);}} className={`w-full flex items-center gap-4 px-5 py-3 rounded-custom text-sm font-bold transition-all ${activeTab===m.id?'bg-primary text-white shadow-xl scale-[1.02]':'text-gray-500 hover:bg-gray-100'}`}><i className={`ph-fill ${m.icon} text-xl`}></i> {m.label}</button>)}
+                        <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-1 custom-scrollbar pb-8">
+                            <div className="px-3 md:px-4 mb-2 mt-2 text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest">Menu Principal</div>
+                            {menus.map(m => <button key={m.id} onClick={()=>{setActiveTab(m.id); loadData(m.id); setIsMobileMenuOpen(false);}} className={`w-full flex items-center gap-3 md:gap-4 px-4 md:px-5 py-3 rounded-xl md:rounded-custom text-xs md:text-sm font-bold transition-all ${activeTab===m.id?'bg-primary text-white shadow-xl md:scale-[1.02]':'text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-700'}`}><i className={`ph-fill ${m.icon} text-lg md:text-xl`}></i> {m.label}</button>)}
                             
                             {isAdmin && (
                                 <>
-                                    <div className="px-4 mt-6 mb-2 text-[10px] font-black text-gray-400 uppercase">Admin</div>
-                                    {adminMenus.map(m => <button key={m.id} onClick={()=>{setActiveTab(m.id); loadData(m.id);}} className={`w-full flex items-center gap-4 px-5 py-3 rounded-custom text-sm font-bold transition-all ${activeTab===m.id?'bg-gray-900 text-white shadow-xl scale-[1.02]':'text-gray-500 hover:bg-gray-100'}`}><i className={`ph-fill ${m.icon} text-xl`}></i> {m.label}</button>)}
+                                    <div className="px-3 md:px-4 mt-6 mb-2 text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest">Gestão Avançada</div>
+                                    {adminMenus.map(m => <button key={m.id} onClick={()=>{setActiveTab(m.id); loadData(m.id); setIsMobileMenuOpen(false);}} className={`w-full flex items-center gap-3 md:gap-4 px-4 md:px-5 py-3 rounded-xl md:rounded-custom text-xs md:text-sm font-bold transition-all ${activeTab===m.id?'bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-xl md:scale-[1.02]':'text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-700'}`}><i className={`ph-fill ${m.icon} text-lg md:text-xl`}></i> {m.label}</button>)}
                                 </>
                             )}
-                            <button onClick={()=>{auth?.signOut(); localStorage.removeItem('shared_auth'); setIsSharedAuth(false); setUser(null);}} className="w-full flex items-center gap-4 px-5 py-3 rounded-custom text-sm font-bold text-red-600 hover:bg-red-50 mt-8"><i className="ph-fill ph-sign-out text-xl"></i> Sair</button>
+                            <button onClick={()=>{auth?.signOut(); localStorage.removeItem('shared_auth'); setIsSharedAuth(false); setUser(null);}} className="w-full flex items-center gap-3 md:gap-4 px-4 md:px-5 py-3 rounded-xl md:rounded-custom text-xs md:text-sm font-bold text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 mt-8 transition"><i className="ph-fill ph-sign-out text-lg md:text-xl"></i> Sair do Sistema</button>
                         </div>
                     </aside>
 
-                    <main className="flex-1 h-screen overflow-y-auto relative custom-scrollbar p-6 md:p-10 pt-10">
+                    <main className="flex-1 h-[calc(100vh-76px)] md:h-screen overflow-y-auto relative custom-scrollbar p-4 md:p-10 pt-6 md:pt-10">
                         <ErrorBoundary>
-                            {loading && <div className="fixed inset-0 bg-white/70 backdrop-blur z-50 flex items-center justify-center"><div className="animate-spin h-12 w-12 border-4 border-t-primary rounded-full"></div></div>}
+                            {loading && <div className="fixed inset-0 bg-white/70 dark:bg-slate-900/70 backdrop-blur z-40 flex items-center justify-center"><div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin shadow-lg"></div></div>}
 
                             {activeTab === 'Home' && !loading && (
-                                <div className="space-y-12 animate-fade-in max-w-[1400px] mx-auto">
+                                <div className="space-y-8 md:space-y-12 animate-fade-in max-w-[1400px] mx-auto">
                                     <ClockWidget lembretesData={sheetData['LEMBRETES_HORA']} />
                                     <div>
-                                        <h3 className="text-3xl font-black mb-8">Acesso Rápido</h3>
-                                        <div className="grid grid-cols-2 md:grid-cols-6 gap-6">
-                                            {[ { l: 'Mural', i: 'ph-presentation-chart', bg:'bg-blue-50', c:'text-blue-600', t: 'MURAL_AVISOS' }, { l: 'Painel', i: 'ph-kanban', bg:'bg-orange-50', c:'text-orange-600', t: 'ESCALAS' }, { l: 'Boletins', i: 'ph-newspaper', bg:'bg-purple-50', c:'text-purple-600', t: 'BOLETINS_INFORMATIVOS' }, { l: 'Consultas', i: 'ph-stethoscope', bg:'bg-blue-50', c:'text-blue-600', t: 'CONSULTA E PROCEDIMENTOS' }, { l: 'Imagem', i: 'ph-bone', bg:'bg-green-50', c:'text-green-600', t: 'EXAMES DE IMAGEM' }, { l: 'Senhas', i: 'ph-lock-key', bg:'bg-red-50', c:'text-red-600', t: 'SENHAS E LOGINS GERAIS' } ].map((d, i) => (
-                                                <button key={i} onClick={()=>{setActiveTab(d.t);loadData(d.t)}} className={`${d.bg} ${d.c} p-6 rounded-[2rem] flex flex-col items-center justify-center gap-4 card-hover shadow-sm`}>
-                                                    <i className={`ph-fill ${d.i} text-4xl`}></i><span className="font-black text-xs text-center uppercase tracking-widest">{d.l}</span>
+                                        <h3 className="text-xl md:text-3xl font-black mb-6 md:mb-8 text-gray-900 dark:text-white px-2">Acesso Rápido</h3>
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 md:gap-6">
+                                            {[ { l: 'Mural', i: 'ph-presentation-chart', bg:'bg-blue-50 dark:bg-blue-900/30', c:'text-blue-600 dark:text-blue-400', t: 'MURAL_AVISOS' }, { l: 'Painel', i: 'ph-kanban', bg:'bg-orange-50 dark:bg-orange-900/30', c:'text-orange-600 dark:text-orange-400', t: 'ESCALAS' }, { l: 'Boletins', i: 'ph-newspaper', bg:'bg-purple-50 dark:bg-purple-900/30', c:'text-purple-600 dark:text-purple-400', t: 'BOLETINS_INFORMATIVOS' }, { l: 'Consultas', i: 'ph-stethoscope', bg:'bg-blue-50 dark:bg-blue-900/30', c:'text-blue-600 dark:text-blue-400', t: 'CONSULTA E PROCEDIMENTOS' }, { l: 'Imagem', i: 'ph-bone', bg:'bg-green-50 dark:bg-green-900/30', c:'text-green-600 dark:text-green-400', t: 'EXAMES DE IMAGEM' }, { l: 'Senhas', i: 'ph-lock-key', bg:'bg-red-50 dark:bg-red-900/30', c:'text-red-600 dark:text-red-400', t: 'SENHAS E LOGINS GERAIS' } ].map((d, i) => (
+                                                <button key={i} onClick={()=>{setActiveTab(d.t);loadData(d.t)}} className={`${d.bg} ${d.c} p-4 md:p-6 rounded-[1.5rem] md:rounded-[2rem] flex flex-col items-center justify-center gap-3 md:gap-4 card-hover shadow-sm border border-transparent dark:border-slate-700`}>
+                                                    <i className={`ph-fill ${d.i} text-3xl md:text-4xl`}></i><span className="font-black text-[10px] md:text-xs text-center uppercase tracking-widest">{d.l}</span>
                                                 </button>
                                             ))}
                                         </div>
