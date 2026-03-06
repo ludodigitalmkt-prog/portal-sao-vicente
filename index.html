@@ -59,7 +59,7 @@
             constructor(props) { super(props); this.state = { hasError: false, errStr: '' }; }
             static getDerivedStateFromError(error) { return { hasError: true, errStr: String(error) }; }
             render() {
-                if (this.state.hasError) return <div className="p-10 text-center flex flex-col items-center justify-center min-h-screen bg-gray-50"><i className="ph-fill ph-warning-circle text-6xl text-red-500 mb-4"></i><h2 className="text-2xl font-black mb-2">Aviso do Sistema</h2><p className="text-xs text-gray-400 mb-6">{this.state.errStr}</p><button onClick={()=>window.location.reload()} className="bg-primary text-white px-8 py-3 rounded-xl font-bold">Recarregar Painel</button></div>;
+                if (this.state.hasError) return <div className="p-10 text-center flex flex-col items-center justify-center min-h-screen bg-gray-50"><i className="ph-fill ph-warning-circle text-6xl text-red-500 mb-4"></i><h2 className="text-2xl font-black mb-2">Erro de Renderização</h2><p className="text-xs text-gray-400 mb-6">{this.state.errStr}</p><button onClick={()=>window.location.reload()} className="bg-primary text-white px-8 py-3 rounded-xl font-bold">Recarregar</button></div>;
                 return this.props.children; 
             }
         }
@@ -107,7 +107,7 @@
             else if (h >= 18 || h < 6) { period = 'Boa noite'; ic = 'ph-moon-stars'; bg = 'bg-indigo-900 text-indigo-100 dark:bg-slate-800 dark:text-indigo-200'; }
             const lembretes = Array.isArray(lembretesData) ? lembretesData : [];
             const lembreteAtual = lembretes.find(l => l && parseInt(safeString(l.Hora)||-1) === h);
-            const msg = lembreteAtual ? safeString(lembreteAtual.Mensagem) : 'Excelente turno!';
+            const msg = lembreteAtual ? safeString(lembreteAtual.Mensagem) : 'Tenha um excelente turno de trabalho!';
             return (
                 <div className={`p-6 rounded-[1.5rem] shadow-sm flex items-center justify-between ${bg}`}>
                     <div className="flex items-center gap-4"><div className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center"><i className={`ph-fill ${ic} text-3xl animate-spin-slow`}></i></div><div><h2 className="text-3xl font-black">{time.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit',second:'2-digit'})}</h2><p className="text-xs font-bold uppercase">{period}</p></div></div>
@@ -129,7 +129,8 @@
                                     <div key={idx} className={isLong ? 'md:col-span-2' : ''}>
                                         <label className="block text-[10px] font-black text-gray-400 mb-1 uppercase tracking-widest">{col}</label>
                                         {col === 'Layout' ? <select className="w-full p-3 bg-gray-50 dark:bg-slate-900 border rounded-xl font-bold" value={safeString(formData[col])} onChange={e=>setFormData({...formData, [col]:e.target.value})}><option>Padrão</option><option>Imagem Grande</option><option>Só Texto</option></select>
-                                        : col === 'Tipo_Midia' ? <select className="w-full p-3 bg-gray-50 dark:bg-slate-900 border rounded-xl font-bold" value={safeString(formData[col])} onChange={e=>setFormData({...formData, [col]:e.target.value})}><option>Documento PDF</option><option>Apresentação</option><option>Vídeo</option><option>Imagem</option></select>
+                                        : col === 'Tipo_Midia' ? <select className="w-full p-3 bg-gray-50 dark:bg-slate-900 border rounded-xl font-bold" value={safeString(formData[col])} onChange={e=>setFormData({...formData, [col]:e.target.value})}><option>Documento PDF</option><option>Apresentação</option><option>Vídeo</option><option>Imagem</option><option>Outro</option></select>
+                                        : col === 'Tipo' && title.includes('Contato') ? <select className="w-full p-3 bg-gray-50 dark:bg-slate-900 border rounded-xl font-bold" value={safeString(formData[col])} onChange={e=>setFormData({...formData, [col]:e.target.value})}><option>Ramal</option><option>Email</option><option>Telefone</option></select>
                                         : cLower.includes('status') || cLower.includes('ativo') ? <select className="w-full p-3 bg-gray-50 dark:bg-slate-900 border rounded-xl font-bold" value={safeString(formData[col])} onChange={e=>setFormData({...formData, [col]:e.target.value})}><option value="">Selecione...</option><option>Sim</option><option>Não</option><option>Ativo</option><option>Inativo</option></select>
                                         : col === 'Nível de Acesso' ? <select className="w-full p-3 bg-gray-50 dark:bg-slate-900 border rounded-xl font-bold" value={safeString(formData[col])} onChange={e=>setFormData({...formData, [col]:e.target.value})}><option value="">Selecione...</option><option>Colaborador</option><option>Supervisor</option><option>Admin</option></select>
                                         : isLong ? <textarea className="w-full p-3 bg-gray-50 dark:bg-slate-900 border rounded-xl font-bold min-h-[80px]" value={safeString(formData[col])} onChange={e=>setFormData({...formData, [col]:e.target.value})} />
@@ -197,7 +198,7 @@
             return (
                 <div className="space-y-6">
                     <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border flex flex-col md:flex-row gap-4">
-                        <div className="flex bg-gray-50 p-1 rounded-lg w-full md:w-auto"><button onClick={()=>setViewMode('Tabela')} className={`px-4 py-2 rounded font-bold text-sm ${viewMode==='Tabela'?'bg-white shadow text-primary':'text-gray-500'}`}>Tabela</button><button onClick={()=>setViewMode('Profissional')} className={`px-4 py-2 rounded font-bold text-sm ${viewMode==='Profissional'?'bg-white shadow text-primary':'text-gray-500'}`}>Profissional</button></div>
+                        <div className="flex bg-gray-50 p-1 rounded-lg w-full md:w-auto"><button onClick={()=>setViewMode('Tabela')} className={`flex-1 px-4 py-2 rounded font-bold text-sm ${viewMode==='Tabela'?'bg-white shadow text-primary':'text-gray-500'}`}>Tabela</button><button onClick={()=>setViewMode('Profissional')} className={`flex-1 px-4 py-2 rounded font-bold text-sm ${viewMode==='Profissional'?'bg-white shadow text-primary':'text-gray-500'}`}>Profissional</button></div>
                         <input type="text" placeholder="Buscar..." value={search} onChange={e=>setSearch(e.target.value)} className="w-full md:w-64 p-2.5 bg-gray-50 border rounded-lg font-bold" />
                         {canEdit && <button onClick={()=>openModal(null, schema)} className="bg-primary text-white font-black px-4 py-2.5 rounded-lg w-full md:w-auto">Novo Vínculo</button>}
                     </div>
@@ -249,6 +250,48 @@
                             <div className="w-full bg-gray-50 rounded-lg p-3 text-left space-y-1 mb-3">{med.CRM&&<p className="text-[10px] font-bold text-gray-500 flex justify-between"><span>CRM</span><span>{safeString(med.CRM)}</span></p>}{med.CBO&&<p className="text-[10px] font-bold text-gray-500 flex justify-between"><span>CBO</span><span>{safeString(med.CBO)}</span></p>}</div>
                             {canEdit && <button onClick={()=>openLancarEscala(safeString(med.Médico), true)} className="w-full bg-gray-900 text-white font-bold py-2 rounded-lg text-xs mt-auto">Agendar Plantão</button>}
                             {canEdit && <div className="absolute top-2 right-2 flex gap-1"><button onClick={()=>openModal(med)} className="p-2 bg-white shadow rounded hover:text-blue-600"><i className="ph-bold ph-pencil-simple"></i></button><button onClick={()=>{if(confirm('Excluir?')) handleDelete(med.ID)}} className="p-2 bg-white shadow rounded hover:text-red-600"><i className="ph-bold ph-trash"></i></button></div>}
+                        </div>
+                    ))}</div>
+                </div>
+            );
+        };
+
+        const ContatosViewTabs = ({ data, canEdit, openModal, handleDelete, schema }) => {
+            const [search, setSearch] = useState(''); const [activeTab, setActiveTab] = useState('Ramal'); 
+            const filtered = (Array.isArray(data)?data:[]).filter(c => c && safeString(c.Tipo) === activeTab && Object.values(c).some(v=>safeString(v).toLowerCase().includes(search.toLowerCase()))).sort((a,b)=>safeString(a.Nome_Contato).localeCompare(safeString(b.Nome_Contato)));
+            return (
+                <div className="space-y-6">
+                    <div className="bg-white rounded-xl p-4 shadow-sm border flex flex-col md:flex-row justify-between gap-4">
+                        <div className="flex bg-gray-50 p-1 rounded-lg w-full md:w-auto"><button onClick={()=>setActiveTab('Ramal')} className={`flex-1 px-4 py-2 rounded text-sm font-bold ${activeTab==='Ramal'?'bg-white shadow text-primary':'text-gray-500'}`}>Ramais</button><button onClick={()=>setActiveTab('Email')} className={`flex-1 px-4 py-2 rounded text-sm font-bold ${activeTab==='Email'?'bg-white shadow text-secondary':'text-gray-500'}`}>E-mails</button><button onClick={()=>setActiveTab('Telefone')} className={`flex-1 px-4 py-2 rounded text-sm font-bold ${activeTab==='Telefone'?'bg-white shadow text-green-600':'text-gray-500'}`}>Externos</button></div>
+                        <div className="flex gap-2 w-full md:w-auto"><input type="text" placeholder="Buscar..." value={search} onChange={e=>setSearch(e.target.value)} className="w-full md:w-64 p-3 bg-gray-50 border rounded-xl font-bold text-sm" />{canEdit && <button onClick={()=>openModal({Tipo: activeTab}, schema)} className="bg-primary text-white px-4 rounded-xl font-bold"><i className="ph-bold ph-plus"></i></button>}</div>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">{filtered.map((item, i) => (
+                        <div key={i} className="bg-white border rounded-2xl p-5 shadow-sm relative group">
+                            <span className="text-[9px] font-black text-gray-400 uppercase bg-gray-50 px-2 py-1 rounded w-max">{safeString(item.Local_Setor) || 'Geral'}</span>
+                            <h3 className="font-black text-lg mt-2">{safeString(item.Nome_Contato) || 'Sem Nome'}</h3>
+                            <p className="text-base font-black text-primary mt-1 break-all">{safeString(item.Valor_Contato)}</p>
+                            {canEdit && <div className="absolute top-2 right-2 flex gap-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition"><button onClick={()=>openModal(item, schema)} className="p-2 bg-white shadow rounded hover:text-blue-600"><i className="ph-bold ph-pencil-simple"></i></button><button onClick={()=>{if(confirm('Excluir?')) handleDelete(item.ID)}} className="p-2 bg-white shadow rounded hover:text-red-600"><i className="ph-bold ph-trash"></i></button></div>}
+                        </div>
+                    ))}</div>
+                </div>
+            )
+        };
+
+        const SenhasView = ({ data, canEdit, openModal, handleDelete, schema }) => {
+            const [search, setSearch] = useState(''); const [visiblePwd, setVisiblePwd] = useState({});
+            const filtered = (Array.isArray(data)?data:[]).filter(c => c && (safeString(c['Nome do Sistema']).toLowerCase().includes(search.toLowerCase()) || safeString(c.Login).toLowerCase().includes(search.toLowerCase()))).sort((a,b)=>safeString(a['Nome do Sistema']).localeCompare(safeString(b['Nome do Sistema'])));
+            return (
+                <div className="space-y-6">
+                    <div className="flex bg-white p-4 rounded-2xl border gap-4"><input type="text" placeholder="Buscar sistema..." value={search} onChange={e=>setSearch(e.target.value)} className="w-full md:w-80 p-3 bg-gray-50 border rounded-xl font-bold" />{canEdit && <button onClick={()=>openModal(null, schema)} className="bg-primary text-white font-bold px-6 py-2 rounded-xl">Nova Senha</button>}</div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">{filtered.map((item, i) => (
+                        <div key={i} className="bg-white border rounded-2xl p-6 shadow-sm relative group flex flex-col">
+                            <div className="flex justify-between items-start mb-3"><h3 className="font-black text-lg truncate flex items-center gap-2"><i className="ph-fill ph-lock-key text-primary"></i> {safeString(item['Nome do Sistema'])}</h3>{item['Link do Sistema'] && <a href={safeString(item['Link do Sistema'])} target="_blank" className="text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded font-bold">Acessar</a>}</div>
+                            <div className="bg-gray-50 rounded-xl p-4 mb-2">
+                                <p className="text-[10px] font-black text-gray-400 uppercase">Login</p><p className="font-bold text-sm mb-2 break-all">{safeString(item.Login)}</p>
+                                <p className="text-[10px] font-black text-gray-400 uppercase flex justify-between">Senha <button onClick={()=>setVisiblePwd(p=>({...p, [item.ID]: !p[item.ID]}))} className="text-primary hover:underline">{visiblePwd[item.ID]?'Ocultar':'Mostrar'}</button></p>
+                                <div className="flex justify-between items-center bg-white px-3 py-2 rounded-lg border mt-1"><span className="font-mono text-sm font-bold">{visiblePwd[item.ID]?safeString(item.Senha):'••••••••'}</span><button onClick={()=>navigator.clipboard.writeText(safeString(item.Senha))} className="text-gray-400 hover:text-primary"><i className="ph-bold ph-copy"></i></button></div>
+                            </div>
+                            {canEdit && <div className="absolute top-2 right-2 flex gap-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition"><button onClick={()=>openModal(item, schema)} className="p-2 bg-white shadow rounded hover:text-blue-600"><i className="ph-bold ph-pencil-simple"></i></button><button onClick={()=>{if(confirm('Excluir?')) handleDelete(item.ID)}} className="p-2 bg-white shadow rounded hover:text-red-600"><i className="ph-bold ph-trash"></i></button></div>}
                         </div>
                     ))}</div>
                 </div>
@@ -312,48 +355,6 @@
             )
         };
 
-        const ContatosViewTabs = ({ data, canEdit, openModal, handleDelete, schema }) => {
-            const [search, setSearch] = useState(''); const [activeTab, setActiveTab] = useState('Ramal'); 
-            const filtered = (Array.isArray(data)?data:[]).filter(c => c && safeString(c.Tipo) === activeTab && Object.values(c).some(v=>safeString(v).toLowerCase().includes(search.toLowerCase()))).sort((a,b)=>safeString(a.Nome_Contato).localeCompare(safeString(b.Nome_Contato)));
-            return (
-                <div className="space-y-6">
-                    <div className="bg-white rounded-xl p-4 shadow-sm border flex flex-col md:flex-row justify-between gap-4">
-                        <div className="flex bg-gray-50 p-1 rounded-lg w-full md:w-auto"><button onClick={()=>setActiveTab('Ramal')} className={`flex-1 px-4 py-2 rounded text-sm font-bold ${activeTab==='Ramal'?'bg-white shadow text-primary':'text-gray-500'}`}>Ramais</button><button onClick={()=>setActiveTab('Email')} className={`flex-1 px-4 py-2 rounded text-sm font-bold ${activeTab==='Email'?'bg-white shadow text-secondary':'text-gray-500'}`}>E-mails</button><button onClick={()=>setActiveTab('Telefone')} className={`flex-1 px-4 py-2 rounded text-sm font-bold ${activeTab==='Telefone'?'bg-white shadow text-green-600':'text-gray-500'}`}>Externos</button></div>
-                        <div className="flex gap-2 w-full md:w-auto"><input type="text" placeholder="Buscar..." value={search} onChange={e=>setSearch(e.target.value)} className="w-full md:w-64 p-2 bg-gray-50 border rounded-lg font-bold text-sm" />{canEdit && <button onClick={()=>openModal({Tipo: activeTab}, schema)} className="bg-primary text-white px-4 rounded-lg font-bold"><i className="ph-bold ph-plus"></i></button>}</div>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">{filtered.map((item, i) => (
-                        <div key={i} className="bg-white border rounded-xl p-4 shadow-sm relative group">
-                            <span className="text-[9px] font-black text-gray-400 uppercase bg-gray-50 px-2 py-1 rounded">{safeString(item.Local_Setor) || 'Geral'}</span>
-                            <h3 className="font-black text-lg mt-2">{safeString(item.Nome_Contato) || 'Sem Nome'}</h3>
-                            <p className="text-base font-black text-primary mt-1">{safeString(item.Valor_Contato)}</p>
-                            {canEdit && <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100"><button onClick={()=>openModal(item, schema)} className="p-1.5 bg-white shadow rounded text-blue-600"><i className="ph-bold ph-pencil-simple"></i></button><button onClick={()=>{if(confirm('Excluir?')) handleDelete(item.ID)}} className="p-1.5 bg-white shadow rounded text-red-600"><i className="ph-bold ph-trash"></i></button></div>}
-                        </div>
-                    ))}</div>
-                </div>
-            )
-        };
-
-        const SenhasView = ({ data, canEdit, openModal, handleDelete, schema }) => {
-            const [search, setSearch] = useState(''); const [visiblePwd, setVisiblePwd] = useState({});
-            const filtered = (Array.isArray(data)?data:[]).filter(c => c && (safeString(c['Nome do Sistema']).toLowerCase().includes(search.toLowerCase()) || safeString(c.Login).toLowerCase().includes(search.toLowerCase()))).sort((a,b)=>safeString(a['Nome do Sistema']).localeCompare(safeString(b['Nome do Sistema'])));
-            return (
-                <div className="space-y-6">
-                    <div className="flex bg-white p-4 rounded-xl border gap-4"><input type="text" placeholder="Buscar sistema..." value={search} onChange={e=>setSearch(e.target.value)} className="w-full md:w-80 p-2 bg-gray-50 border rounded-lg font-bold" />{canEdit && <button onClick={()=>openModal(null, schema)} className="bg-primary text-white font-bold px-4 py-2 rounded-lg">Nova Senha</button>}</div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">{filtered.map((item, i) => (
-                        <div key={i} className="bg-white border rounded-xl p-5 shadow-sm relative group flex flex-col">
-                            <div className="flex justify-between items-start mb-3"><h3 className="font-black text-lg truncate flex items-center gap-2"><i className="ph-fill ph-lock-key text-primary"></i> {safeString(item['Nome do Sistema'])}</h3>{item['Link do Sistema'] && <a href={safeString(item['Link do Sistema'])} target="_blank" className="text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded font-bold">Acessar</a>}</div>
-                            <div className="bg-gray-50 rounded-lg p-3 mb-2">
-                                <p className="text-[10px] font-black text-gray-400 uppercase">Login</p><p className="font-bold text-sm mb-2">{safeString(item.Login)}</p>
-                                <p className="text-[10px] font-black text-gray-400 uppercase flex justify-between">Senha <button onClick={()=>setVisiblePwd(p=>({...p, [item.ID]: !p[item.ID]}))} className="text-primary hover:underline">{visiblePwd[item.ID]?'Ocultar':'Mostrar'}</button></p>
-                                <div className="flex justify-between items-center bg-white px-2 py-1.5 rounded border mt-1"><span className="font-mono text-sm">{visiblePwd[item.ID]?safeString(item.Senha):'••••••••'}</span><button onClick={()=>navigator.clipboard.writeText(safeString(item.Senha))} className="text-gray-400"><i className="ph-bold ph-copy"></i></button></div>
-                            </div>
-                            {canEdit && <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100"><button onClick={()=>openModal(item, schema)} className="p-1.5 bg-white shadow rounded text-blue-600"><i className="ph-bold ph-pencil-simple"></i></button><button onClick={()=>{if(confirm('Excluir?')) handleDelete(item.ID)}} className="p-1.5 bg-white shadow rounded text-red-600"><i className="ph-bold ph-trash"></i></button></div>}
-                        </div>
-                    ))}</div>
-                </div>
-            );
-        };
-
         const ChatModerno = ({ chatData, user, onSaveChat, onRefresh }) => {
             const [msg, setMsg] = useState(''); const [activeRoom, setActiveRoom] = useState('Geral'); 
             const isAdmin = user && typeof user === 'object' && ['admin', 'supervisor'].some(r => { const nk = Object.keys(user).find(k => safeString(k).toLowerCase().includes('acesso')); return nk ? safeString(user[nk]).toLowerCase().includes(r) : false; });
@@ -362,9 +363,9 @@
             const mensagensRoom = chatLog.filter(m => m && (activeRoom==='Geral' ? safeString(m.Destinatario)==='Geral' : ((safeString(m.Nome)===myName && safeString(m.Destinatario)===activeRoom) || (safeString(m.Nome)===activeRoom && safeString(m.Destinatario)===myName)))).sort((a,b) => new Date(a.Data_Hora) - new Date(b.Data_Hora));
             const handleSend = async (e) => { e.preventDefault(); if(!msg)return; let dest = activeRoom; if(!isAdmin && activeRoom === 'Supervisão') dest = 'Supervisão'; await onSaveChat('CHAT_MENSAGENS', {ID:'', Data_Hora:new Date().toISOString(), Nome:myName, Mensagem:msg, Destinatario:dest}, false); setMsg(''); onRefresh(); };
             return (
-                <div className="bg-white rounded-2xl shadow-sm border h-[75vh] flex flex-col md:flex-row overflow-hidden">
-                    <div className="md:w-1/3 border-b md:border-r bg-gray-50 flex flex-col shrink-0"><div className="p-4 border-b bg-white"><h2 className="text-xl font-black text-primary">Chat Interno</h2></div><div className="p-3 space-y-2"><div onClick={()=>setActiveRoom('Geral')} className={`p-3 rounded-xl cursor-pointer font-bold flex items-center gap-3 ${activeRoom==='Geral'?'bg-primary text-white':'hover:bg-gray-100'}`}><i className="ph-fill ph-users"></i> Fórum Geral</div><div onClick={()=>setActiveRoom(isAdmin?'Caixa de Entrada':'Supervisão')} className={`p-3 rounded-xl cursor-pointer font-bold flex items-center gap-3 ${activeRoom!=='Geral'?'bg-gray-900 text-white':'hover:bg-gray-100'}`}><i className="ph-fill ph-shield-star"></i> {isAdmin?'Caixa Inbox':'Falar c/ Supervisão'}</div></div></div>
-                    <div className="w-full flex flex-col bg-gray-50 flex-1"><div className="p-4 bg-white border-b flex justify-between items-center shadow-sm"><h3 className="font-black text-lg">{activeRoom}</h3><button onClick={onRefresh} className="text-primary text-xl"><i className="ph-bold ph-arrows-clockwise"></i></button></div><div className="flex-1 overflow-y-auto p-4 space-y-4 flex flex-col custom-scrollbar">{mensagensRoom.length===0 && <p className="m-auto text-gray-400 font-bold text-sm">Vazio.</p>}{mensagensRoom.map((m, i) => { const isMe = safeString(m.Nome) === myName; return (<div key={i} className={`flex flex-col gap-1 max-w-[85%] md:max-w-[70%] ${isMe ? 'self-end items-end' : 'self-start items-start'}`}><span className="text-[9px] font-black text-gray-400 mx-2">{safeString(m.Nome)}</span><div className={`p-3 rounded-2xl shadow-sm text-sm ${isMe ? 'bg-primary text-white rounded-tr-none' : 'bg-white border rounded-tl-none'}`}>{safeString(m.Mensagem)}</div></div>) })}</div><form onSubmit={handleSend} className="p-3 bg-white border-t flex gap-2"><input type="text" value={msg} onChange={e=>setMsg(e.target.value)} placeholder="Mensagem..." className="flex-1 bg-gray-50 border rounded-full px-4 text-sm font-bold outline-none focus:border-primary" /><button type="submit" className="w-10 h-10 rounded-full bg-primary text-white flex justify-center items-center"><i className="ph-fill ph-paper-plane-tilt"></i></button></form></div>
+                <div className="bg-white rounded-3xl shadow-sm border h-[80vh] flex flex-col md:flex-row overflow-hidden">
+                    <div className="md:w-1/3 border-b md:border-r bg-gray-50 flex flex-col shrink-0"><div className="p-6 border-b bg-white"><h2 className="text-xl font-black text-primary">Chat Interno</h2></div><div className="p-4 space-y-2"><div onClick={()=>setActiveRoom('Geral')} className={`p-4 rounded-2xl cursor-pointer font-bold flex items-center gap-3 ${activeRoom==='Geral'?'bg-primary text-white':'hover:bg-gray-100'}`}><i className="ph-fill ph-users"></i> Fórum Geral</div><div onClick={()=>setActiveRoom(isAdmin?'Caixa de Entrada':'Supervisão')} className={`p-4 rounded-2xl cursor-pointer font-bold flex items-center gap-3 ${activeRoom!=='Geral'?'bg-gray-900 text-white':'hover:bg-gray-100'}`}><i className="ph-fill ph-shield-star"></i> {isAdmin?'Caixa Inbox':'Falar c/ Supervisão'}</div></div></div>
+                    <div className="w-full flex flex-col bg-gray-50 flex-1"><div className="p-6 bg-white border-b flex justify-between items-center shadow-sm"><h3 className="font-black text-lg">{activeRoom}</h3><button onClick={onRefresh} className="text-primary text-2xl hover:rotate-180 transition"><i className="ph-bold ph-arrows-clockwise"></i></button></div><div className="flex-1 overflow-y-auto p-6 space-y-4 flex flex-col custom-scrollbar">{mensagensRoom.length===0 && <p className="m-auto text-gray-400 font-bold text-sm">Vazio.</p>}{mensagensRoom.map((m, i) => { const isMe = safeString(m.Nome) === myName; return (<div key={i} className={`flex flex-col gap-1 max-w-[85%] md:max-w-[70%] ${isMe ? 'self-end items-end' : 'self-start items-start'}`}><span className="text-[10px] font-black text-gray-400 mx-2">{safeString(m.Nome)}</span><div className={`p-4 rounded-2xl shadow-sm text-sm ${isMe ? 'bg-primary text-white rounded-tr-none' : 'bg-white border rounded-tl-none'}`}>{safeString(m.Mensagem)}</div></div>) })}</div><form onSubmit={handleSend} className="p-4 bg-white border-t flex gap-3"><input type="text" value={msg} onChange={e=>setMsg(e.target.value)} placeholder="Mensagem..." className="flex-1 bg-gray-50 border rounded-full px-6 text-sm font-bold outline-none focus:border-primary" /><button type="submit" className="w-12 h-12 rounded-full bg-primary text-white flex justify-center items-center shadow-lg"><i className="ph-fill ph-paper-plane-tilt"></i></button></form></div>
                 </div>
             )
         };
@@ -493,7 +494,7 @@
                                 <p className="text-xs font-bold text-gray-500 mb-6">{safeString(selectedPerson.Setor_Consultorio)} • {safeString(selectedPerson.Horario)}</p>
                                 <div className="space-y-4 mb-6">
                                     <h4 className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Sinalizar Status:</h4>
-                                    <div className="grid grid-cols-2 gap-2"><button onClick={()=>{handleStatusChange(selectedPerson, 'Trabalhando'); setSelectedPerson(null);}} className="p-3 rounded-xl border border-green-200 bg-green-50 text-green-700 font-black text-xs flex flex-col items-center gap-1"><i className="ph-fill ph-check-circle text-xl"></i> Voltei</button><button onClick={()=>{handleStatusChange(selectedPerson, 'Intervalo'); setSelectedPerson(null);}} className="p-3 rounded-xl border border-orange-200 bg-orange-50 text-orange-700 font-black text-xs flex flex-col items-center gap-1"><i className="ph-fill ph-coffee text-xl"></i> Fui Lanchar</button></div>
+                                    <div className="grid grid-cols-2 gap-2"><button onClick={()=>{handleStatusChange(selectedPerson, 'Trabalhando'); setSelectedPerson(null);}} className="p-3 rounded-xl border border-green-200 bg-green-50 text-green-700 font-black text-xs flex flex-col items-center gap-1"><i className="ph-fill ph-check-circle text-xl"></i> Voltei</button><button onClick={()=>{handleStatusChange(selectedPerson, 'Intervalo'); setSelectedPerson(null);}} className="p-3 rounded-xl border border-orange-200 bg-orange-50 text-orange-700 font-black text-xs flex flex-col items-center gap-1"><i className="ph-fill ph-coffee text-xl"></i> Lanchar</button></div>
                                 </div>
                                 {canEdit && (
                                     <div className="border-t pt-4 space-y-2">
@@ -598,7 +599,7 @@
                                     <tr key={i} className="hover:bg-blue-50/50 border-b group transition">
                                         {schema.filter(c=>c!=='ID').map((col, j) => {
                                             const val = safeString(row[col]); const cl = col.toLowerCase();
-                                            return <td key={j} className="p-4 whitespace-nowrap">{cl.includes('url')||cl.includes('foto')||cl.includes('imagem')?(val?<img src={formatImageUrl(val)} className="h-10 w-10 object-cover rounded-lg border shadow-sm"/>:<div className="h-10 w-10 bg-gray-100 rounded-lg flex items-center justify-center text-gray-300"><i className="ph-fill ph-image text-xl"></i></div>):cl.includes('senha')?'••••••••':val==='Sim'||val==='Ativo'?<span className="bg-green-100 text-green-800 px-2 py-1 rounded text-[9px] font-black uppercase">{val}</span>:val==='Não'||val==='Inativo'?<span className="bg-red-100 text-red-800 px-2 py-1 rounded text-[9px] font-black uppercase">{val}</span>:val||'-'}</td>
+                                            return <td key={j} className="p-4 whitespace-nowrap">{cl.includes('url')||cl.includes('foto')||cl.includes('imagem')?(val?<img src={formatImageUrl(val)} className="h-10 w-10 object-cover rounded-lg border shadow-sm"/>:<div className="h-10 w-10 bg-gray-100 rounded-lg flex items-center justify-center text-gray-300"><i className="ph-fill ph-image text-xl"></i></div>):cl.includes('senha')?'••••••••':val==='Sim'||val==='Ativo'?<span className="bg-green-100 text-green-800 px-3 py-1 rounded text-[9px] font-black uppercase">{val}</span>:val==='Não'||val==='Inativo'?<span className="bg-red-100 text-red-800 px-3 py-1 rounded text-[9px] font-black uppercase">{val}</span>:val||'-'}</td>
                                         })}
                                         {canEdit && <td className="p-4 flex justify-end gap-2 opacity-50 group-hover:opacity-100 transition"><button onClick={()=>openModal(row, schema)} className="text-blue-600 bg-blue-50 p-2 rounded hover:bg-blue-600 hover:text-white shadow-sm"><i className="ph-bold ph-pencil-simple text-lg"></i></button><button onClick={()=>handleDelete(row.ID)} className="text-red-600 bg-red-50 p-2 rounded hover:bg-red-600 hover:text-white shadow-sm"><i className="ph-bold ph-trash text-lg"></i></button></td>}
                                     </tr>
@@ -606,7 +607,6 @@
                             </tbody>
                         </table>
                     </div>
-                    {isModalOpen && <ModalForm title={title} schema={currentSchema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}
                 </div>
             );
         };
@@ -666,67 +666,64 @@
                     localStorage.setItem('shared_auth', 'false'); setIsSharedAuth(false);
                     const res = await api.login(e.target.email.value, e.target.password.value);
                     if (res && res.success) { setUser(res.user); loadData('Home'); } 
-                    else { setLoginErrorMsg(res?.message || 'Erro ao conectar.'); }
+                    else { setLoginErrorMsg(res?.message || 'Erro ao conectar com o servidor.'); }
                     setLoading(false);
                 };
 
                 const handleSharedLogin = async (e) => {
                     e.preventDefault(); setLoginErrorMsg(''); setLoading(true);
                     if (e.target.shared_password.value === SENHA_ACESSO_GERAL) {
-                        const res = await api.login('tabela@csv.com', 'csv@123'); // Bypass invisível!
+                        const res = await api.login('tabela@csv.com', 'csv@123'); // Bypass invisível via banco de dados
                         if (res && res.success) {
                             localStorage.setItem('shared_auth', 'true'); setIsSharedAuth(true); setUser(res.user); loadData('Home');
                         } else {
                             localStorage.setItem('shared_auth', 'true'); setIsSharedAuth(true); setUser({ 'Nome Completo': 'Equipe São Vicente', 'Nível de Acesso': 'Colaborador' }); loadData('Home');
                         }
-                    } else { setLoginErrorMsg('Senha incorreta.'); }
+                    } else { setLoginErrorMsg('Senha de acesso geral incorreta.'); }
                     setLoading(false);
                 };
 
                 return (
-                    <div className="min-h-screen bg-medical flex flex-col items-center justify-center p-4">
-                        <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col md:flex-row animate-fade-in border">
-                            <div className="md:w-5/12 bg-gradient-to-br from-primary to-blue-800 text-white p-10 flex flex-col justify-center relative">
+                    <div className="min-h-screen bg-blue-50 flex flex-col items-center justify-center p-4">
+                        <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col md:flex-row border border-gray-100">
+                            <div className="md:w-5/12 bg-primary text-white p-10 flex flex-col justify-center relative">
                                 <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
                                 <div className="relative z-10 text-center">
                                     <div className="w-24 h-24 mx-auto bg-white/10 rounded-2xl flex items-center justify-center mb-6 shadow-xl border border-white/20"><i className="ph-fill ph-heartbeat text-6xl animate-pulse-fast"></i></div>
-                                    <h1 className="text-3xl font-black mb-4">São Vicente</h1><p className="text-blue-100 font-bold text-sm">Portal Interno Inteligente</p>
+                                    <h1 className="text-3xl font-black mb-2 tracking-tight">São Vicente</h1><p className="text-blue-200 text-sm font-bold">Portal Interno Inteligente</p>
                                 </div>
                             </div>
                             <div className="md:w-7/12 p-8 md:p-12 bg-white flex flex-col justify-center">
                                 {loginErrorMsg && <div className="mb-6 bg-red-50 border border-red-200 p-4 rounded-xl flex gap-3 animate-pop-in"><i className="ph-fill ph-warning-circle text-red-600 text-xl"></i><p className="text-sm font-bold text-red-800">{loginErrorMsg}</p></div>}
-                                
                                 {loginView === 'selecao' && (
                                     <div className="space-y-4 animate-fade-in">
                                         <h2 className="text-xl font-black text-gray-800 mb-6 text-center md:text-left">Selecione seu acesso:</h2>
-                                        <button onClick={()=>setLoginView('geral')} className="w-full bg-blue-50 hover:bg-primary group p-5 rounded-2xl border-2 border-blue-100 hover:border-primary transition-all flex items-center gap-4 text-left shadow-sm hover:shadow-xl hover:-translate-y-1">
+                                        <button onClick={()=>setLoginView('geral')} className="w-full bg-blue-50 hover:bg-primary group p-5 rounded-2xl border border-blue-100 hover:border-primary transition-all flex items-center gap-4 text-left shadow-sm hover:shadow-xl hover:-translate-y-1">
                                             <div className="w-14 h-14 rounded-xl bg-white text-primary flex justify-center items-center shrink-0 shadow-sm group-hover:scale-110 transition"><i className="ph-fill ph-users text-3xl"></i></div>
-                                            <div><h3 className="font-black text-lg text-gray-900 group-hover:text-white">Acesso Equipe</h3><p className="text-xs text-gray-500 group-hover:text-blue-100 mt-1 font-bold">Escalas, ramais, guias e consultas.</p></div>
+                                            <div><h3 className="font-black text-lg text-gray-900 group-hover:text-white transition">Equipe / Colaboradores</h3><p className="text-xs text-gray-500 group-hover:text-blue-100 mt-1 font-bold">Escalas, ramais, guias e consultas.</p></div>
                                         </button>
-                                        <button onClick={()=>setLoginView('supervisor')} className="w-full bg-orange-50 hover:bg-secondary group p-5 rounded-2xl border-2 border-orange-100 hover:border-secondary transition-all flex items-center gap-4 text-left shadow-sm hover:shadow-xl hover:-translate-y-1">
+                                        <button onClick={()=>setLoginView('supervisor')} className="w-full bg-orange-50 hover:bg-secondary group p-5 rounded-2xl border border-orange-100 hover:border-secondary transition-all flex items-center gap-4 text-left shadow-sm hover:shadow-xl hover:-translate-y-1">
                                             <div className="w-14 h-14 rounded-xl bg-white text-secondary flex justify-center items-center shrink-0 shadow-sm group-hover:scale-110 transition"><i className="ph-fill ph-shield-star text-3xl"></i></div>
-                                            <div><h3 className="font-black text-lg text-gray-900 group-hover:text-white">Acesso Gestão</h3><p className="text-xs text-gray-500 group-hover:text-orange-100 mt-1 font-bold">Edição de dados e controle de equipe.</p></div>
+                                            <div><h3 className="font-black text-lg text-gray-900 group-hover:text-white transition">Supervisão / Gestão</h3><p className="text-xs text-gray-500 group-hover:text-orange-100 mt-1 font-bold">Edição de dados e controle da clínica.</p></div>
                                         </button>
-                                        <div className="pt-4 text-center"><button onClick={()=>setLoginView('admin')} className="text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-primary transition underline decoration-dashed">Acesso Admin</button></div>
+                                        <div className="pt-4 text-center"><button onClick={()=>setLoginView('admin')} className="text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-primary transition underline decoration-dashed">Acesso Administrativo</button></div>
                                     </div>
                                 )}
-                                
                                 {loginView === 'geral' && (
                                     <form onSubmit={handleSharedLogin} className="space-y-6 animate-fade-in">
                                         <button type="button" onClick={()=>{setLoginView('selecao'); setLoginErrorMsg('');}} className="text-gray-400 hover:text-primary flex items-center gap-2 mb-4 font-bold text-sm bg-gray-50 px-4 py-2 rounded-full w-max transition"><i className="ph-bold ph-arrow-left"></i> Voltar</button>
                                         <h2 className="text-2xl font-black text-gray-800 mb-1">Acesso da Equipe</h2><p className="text-sm text-gray-500 font-bold mb-8">Digite a senha geral fornecida.</p>
-                                        <div><label className="block text-[10px] font-black text-gray-400 mb-2 uppercase tracking-widest">Senha Única</label><div className="relative"><i className="ph-fill ph-lock-key absolute left-6 top-4.5 text-gray-400 text-xl"></i><input name="shared_password" type="password" className="w-full pl-16 pr-6 py-4 bg-gray-50 border rounded-full outline-none focus:border-primary font-black text-gray-900 transition" placeholder="Sua senha..." required /></div></div>
-                                        <button type="submit" disabled={loading} className="w-full bg-primary hover:opacity-90 text-white font-black py-4 rounded-full shadow-lg hover:-translate-y-1 transition transform">{loading?'Entrando...':'Entrar no Portal'}</button>
+                                        <div><label className="block text-[10px] font-black text-gray-400 mb-2 uppercase tracking-widest">Senha Única</label><div className="relative"><i className="ph-fill ph-lock-key absolute left-6 top-4.5 text-gray-400 text-xl"></i><input name="shared_password" type="password" className="w-full pl-16 pr-6 py-4 bg-gray-50 border border-gray-200 rounded-full outline-none focus:border-primary font-black text-gray-900 transition shadow-inner" placeholder="Sua senha..." required /></div></div>
+                                        <button type="submit" disabled={loading} className="w-full bg-primary text-white font-black py-4 rounded-full shadow-xl shadow-blue-900/30 hover:-translate-y-1 transition transform flex justify-center items-center gap-2 text-lg">{loading?<i className="ph animate-spin ph-spinner"></i>:<i className="ph-bold ph-sign-in"></i>} {loading?'Entrando...':'Entrar no Portal'}</button>
                                     </form>
                                 )}
-
                                 {(loginView === 'supervisor' || loginView === 'admin') && (
                                     <form onSubmit={handleFirebaseLogin} className="space-y-6 animate-fade-in">
                                         <button type="button" onClick={()=>{setLoginView('selecao'); setLoginErrorMsg('');}} className="text-gray-400 hover:text-primary flex items-center gap-2 mb-4 font-bold text-sm bg-gray-50 px-4 py-2 rounded-full w-max transition"><i className="ph-bold ph-arrow-left"></i> Voltar</button>
                                         <h2 className="text-2xl font-black text-gray-800 mb-1">Acesso {loginView === 'admin' ? 'Admin' : 'Gestão'}</h2><p className="text-sm text-gray-500 font-bold mb-8">Faça login com suas credenciais.</p>
-                                        <div><label className="block text-[10px] font-black text-gray-400 mb-2 uppercase tracking-widest">E-mail</label><div className="relative"><i className="ph-fill ph-user absolute left-6 top-4.5 text-gray-400 text-xl"></i><input name="email" type="email" className="w-full pl-16 pr-6 py-4 bg-gray-50 border rounded-full outline-none focus:border-primary font-bold text-gray-900 transition" required /></div></div>
-                                        <div><label className="block text-[10px] font-black text-gray-400 mb-2 uppercase tracking-widest">Senha</label><div className="relative"><i className="ph-fill ph-lock-key absolute left-6 top-4.5 text-gray-400 text-xl"></i><input name="password" type="password" className="w-full pl-16 pr-6 py-4 bg-gray-50 border rounded-full outline-none focus:border-primary font-bold text-gray-900 transition" required /></div></div>
-                                        <button type="submit" disabled={loading} className={`w-full ${loginView === 'admin' ? 'bg-gray-900' : 'bg-secondary'} text-white font-black py-4 rounded-full shadow-lg hover:-translate-y-1 transition transform`}>{loading ? 'Conectando...' : 'Acessar Painel'}</button>
+                                        <div><label className="block text-[10px] font-black text-gray-400 mb-2 uppercase tracking-widest">E-mail</label><div className="relative"><i className="ph-fill ph-user absolute left-6 top-4.5 text-gray-400 text-xl"></i><input name="email" type="email" className="w-full pl-16 pr-6 py-4 bg-gray-50 border border-gray-200 rounded-full outline-none focus:border-primary font-bold text-gray-900 transition shadow-inner" required /></div></div>
+                                        <div><label className="block text-[10px] font-black text-gray-400 mb-2 uppercase tracking-widest">Senha</label><div className="relative"><i className="ph-fill ph-lock-key absolute left-6 top-4.5 text-gray-400 text-xl"></i><input name="password" type="password" className="w-full pl-16 pr-6 py-4 bg-gray-50 border border-gray-200 rounded-full outline-none focus:border-primary font-bold text-gray-900 transition shadow-inner" required /></div></div>
+                                        <button type="submit" disabled={loading} className={`w-full ${loginView === 'admin' ? 'bg-gray-900' : 'bg-secondary'} text-white font-black py-4 rounded-full shadow-xl hover:-translate-y-1 transition transform flex justify-center items-center gap-2 text-lg`}>{loading?<i className="ph animate-spin ph-spinner"></i>:<i className="ph-bold ph-shield-check"></i>} {loading ? 'Conectando...' : 'Acessar Painel'}</button>
                                     </form>
                                 )}
                             </div>
@@ -752,7 +749,7 @@
                 { id: 'REMOÇÕES', icon: 'ph-car', label: 'Remoções' },
                 { id: 'SENHAS E LOGINS GERAIS', icon: 'ph-lock-key', label: 'Senhas de Sistemas' }
             ];
-            const adminMenus = [ { id: 'CONTROLE_ATENDIMENTOS', icon: 'ph-chart-line-up', label: 'Metas Unimed' }, { id: 'USUARIOS', icon: 'ph-users', label: 'Colaboradores' } ];
+            const adminMenus = [ { id: 'CONTROLE_ATENDIMENTOS', icon: 'ph-chart-line-up', label: 'Metas Unimed' }, { id: 'USUARIOS', icon: 'ph-users', label: 'Equipe e Cadastros' }, { id: 'LEMBRETES_HORA', icon: 'ph-clock', label: 'Avisos do Relógio' } ];
 
             const foundMenu = menus.concat(adminMenus).find(m => m.id === activeTab);
             const titleTab = foundMenu ? foundMenu.label : activeTab;
@@ -770,24 +767,24 @@
 
                     <aside className={`fixed inset-y-0 left-0 w-72 md:w-80 bg-white border-r flex flex-col h-screen shrink-0 shadow-2xl z-50 transform ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 transition-transform duration-300 ease-in-out`}>
                         <div className="p-8 flex items-center border-b bg-gray-50/50 cursor-pointer" onClick={()=>{setActiveTab('Home'); setIsMobileMenuOpen(false);}}>
-                            <div className="bg-primary text-white p-3 rounded-2xl mr-4 shadow-md"><i className="ph-fill ph-heartbeat text-3xl"></i></div>
+                            <div className="bg-primary text-white p-3 rounded-2xl mr-4 shadow-md"><i className="ph-fill ph-heartbeat text-3xl animate-pulse-fast"></i></div>
                             <div><h1 className="text-2xl font-black leading-none">Portal</h1><span className="text-[10px] font-black text-primary uppercase tracking-widest">São Vicente</span></div>
                         </div>
                         <div className="p-6 border-b flex items-center gap-4 bg-white relative">
                             <div className="w-14 h-14 rounded-[1rem] bg-gradient-to-tr from-secondary to-orange-400 flex items-center justify-center text-white font-black text-2xl shadow-lg shrink-0 relative z-10">{safeString(userName || 'U').charAt(0).toUpperCase()}</div>
                             <div className="flex-1 overflow-hidden relative z-10">
                                 <p className="text-base font-black truncate text-gray-900">{userName}</p>
-                                <p className="text-[9px] font-black text-primary bg-primary/10 px-2.5 py-1 rounded-md inline-block mt-1 uppercase tracking-widest">{isAdmin?'Gestão Admin':'Colaborador'}</p>
+                                <p className="text-[9px] font-black text-primary bg-primary/10 px-2.5 py-1 rounded-md inline-block mt-1 uppercase tracking-widest">{isAdmin?'Gestão/Admin':'Colaborador'}</p>
                             </div>
                         </div>
-                        <div className="flex-1 overflow-y-auto p-4 space-y-1.5 custom-scrollbar pb-8">
+                        <div className="flex-1 overflow-y-auto p-4 space-y-1.5 custom-scrollbar pb-8 mt-4 md:mt-0">
                             <div className="px-4 mb-3 mt-2 text-[9px] font-black text-gray-400 uppercase tracking-widest">Menu Principal</div>
-                            {menus.map(m => <button key={m.id} onClick={()=>{setActiveTab(m.id); loadData(m.id); setIsMobileMenuOpen(false);}} className={`w-full flex items-center gap-4 px-5 py-3.5 rounded-2xl text-sm font-black transition-all ${activeTab===m.id?'bg-primary text-white shadow-xl shadow-blue-900/20 translate-x-1':'text-gray-500 hover:text-gray-900 hover:bg-gray-100'}`}><i className={`ph-fill ${m.icon} text-xl`}></i> {m.label}</button>)}
+                            {menus.map(m => <button key={m.id} onClick={()=>{setActiveTab(m.id); loadData(m.id); setIsMobileMenuOpen(false);}} className={`w-full flex items-center gap-4 px-5 py-3.5 rounded-2xl text-sm font-black transition-all ${activeTab===m.id?'bg-primary text-white shadow-lg shadow-blue-900/20 md:scale-[1.02] translate-x-1':'text-gray-500 hover:text-gray-900 hover:bg-gray-50'}`}><i className={`ph-fill ${m.icon} text-xl`}></i> {m.label}</button>)}
                             
                             {isAdmin && (
                                 <>
                                     <div className="px-4 mt-8 mb-3 text-[9px] font-black text-gray-400 uppercase tracking-widest">Avançado</div>
-                                    {adminMenus.map(m => <button key={m.id} onClick={()=>{setActiveTab(m.id); loadData(m.id); setIsMobileMenuOpen(false);}} className={`w-full flex items-center gap-4 px-5 py-3.5 rounded-2xl text-sm font-black transition-all ${activeTab===m.id?'bg-gray-900 text-white shadow-xl translate-x-1':'text-gray-500 hover:text-gray-900 hover:bg-gray-100'}`}><i className={`ph-fill ${m.icon} text-xl`}></i> {m.label}</button>)}
+                                    {adminMenus.map(m => <button key={m.id} onClick={()=>{setActiveTab(m.id); loadData(m.id); setIsMobileMenuOpen(false);}} className={`w-full flex items-center gap-4 px-5 py-3.5 rounded-2xl text-sm font-black transition-all ${activeTab===m.id?'bg-gray-900 text-white shadow-lg md:scale-[1.02] translate-x-1':'text-gray-500 hover:text-gray-900 hover:bg-gray-50'}`}><i className={`ph-fill ${m.icon} text-xl`}></i> {m.label}</button>)}
                                 </>
                             )}
                             <button onClick={()=>{auth?.signOut(); localStorage.removeItem('shared_auth'); setIsSharedAuth(false); setUser(null);}} className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-sm font-black text-red-500 hover:bg-red-50 mt-10 transition"><i className="ph-fill ph-sign-out text-xl"></i> Encerrar Sessão</button>
@@ -798,9 +795,8 @@
                         <ErrorBoundary>
                             {loading && <div className="fixed inset-0 bg-white/70 backdrop-blur z-40 flex items-center justify-center"><div className="w-14 h-14 border-4 border-primary border-t-transparent rounded-full animate-spin shadow-2xl"></div></div>}
 
-                            {/* POPUP UNIMED EXCLUSIVO DA TELA HOME */}
                             {activeTab === 'Home' && !loading && Array.isArray(sheetData['CONTROLE_ATENDIMENTOS']) && sheetData['CONTROLE_ATENDIMENTOS'].filter(a => Number(a.Limite_Max||0) > 0 && (Number(a.Qtd_Atual||0)/Number(a.Limite_Max||1)) >= 0.9).length > 0 && (
-                                <div className="bg-red-600 rounded-[2rem] p-6 md:p-8 text-white shadow-2xl shadow-red-900/30 mb-8 animate-pop-in relative overflow-hidden border-4 border-red-700">
+                                <div className="max-w-[1400px] mx-auto bg-red-600 rounded-[2rem] p-6 md:p-8 text-white shadow-2xl shadow-red-900/30 mb-8 animate-pop-in relative overflow-hidden border-4 border-red-700">
                                     <i className="ph-fill ph-warning-circle absolute -right-10 -bottom-10 text-[10rem] opacity-20"></i>
                                     <div className="relative z-10">
                                         <h3 className="text-2xl md:text-3xl font-black mb-6 flex items-center gap-3"><i className="ph-fill ph-bell-ringing animate-pulse"></i> Alerta Crítico: Limites Unimed</h3>
@@ -826,8 +822,8 @@
                                     <div>
                                         <h3 className="text-xl md:text-2xl font-black mb-6 text-gray-900 px-2">Acesso Rápido</h3>
                                         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 md:gap-6">
-                                            {[ { l: 'Mural', i: 'ph-presentation-chart', bg:'bg-blue-50 border-blue-100', c:'text-blue-600', t: 'MURAL_AVISOS' }, { l: 'Painel', i: 'ph-kanban', bg:'bg-orange-50 border-orange-100', c:'text-orange-600', t: 'ESCALAS' }, { l: 'Boletins', i: 'ph-newspaper', bg:'bg-purple-50 border-purple-100', c:'text-purple-600', t: 'BOLETINS_INFORMATIVOS' }, { l: 'Consultas', i: 'ph-stethoscope', bg:'bg-indigo-50 border-indigo-100', c:'text-indigo-600', t: 'CONSULTA E PROCEDIMENTOS' }, { l: 'Imagem', i: 'ph-bone', bg:'bg-green-50 border-green-100', c:'text-green-600', t: 'EXAMES DE IMAGEM' }, { l: 'Senhas', i: 'ph-lock-key', bg:'bg-red-50 border-red-100', c:'text-red-600', t: 'SENHAS E LOGINS GERAIS' } ].map((d, i) => (
-                                                <button key={i} onClick={()=>{setActiveTab(d.t);loadData(d.t)}} className={`${d.bg} ${d.c} p-5 md:p-8 rounded-[1.5rem] md:rounded-[2rem] flex flex-col items-center justify-center gap-4 card-hover shadow-sm border-2`}>
+                                            {[ { l: 'Mural', i: 'ph-presentation-chart', bg:'bg-blue-50', c:'text-blue-600', t: 'MURAL_AVISOS' }, { l: 'Painel', i: 'ph-kanban', bg:'bg-orange-50', c:'text-orange-600', t: 'ESCALAS' }, { l: 'Boletins', i: 'ph-newspaper', bg:'bg-purple-50', c:'text-purple-600', t: 'BOLETINS_INFORMATIVOS' }, { l: 'Consultas', i: 'ph-stethoscope', bg:'bg-indigo-50', c:'text-indigo-600', t: 'CONSULTA E PROCEDIMENTOS' }, { l: 'Imagem', i: 'ph-bone', bg:'bg-green-50', c:'text-green-600', t: 'EXAMES DE IMAGEM' }, { l: 'Senhas', i: 'ph-lock-key', bg:'bg-red-50', c:'text-red-600', t: 'SENHAS E LOGINS GERAIS' } ].map((d, i) => (
+                                                <button key={i} onClick={()=>{setActiveTab(d.t);loadData(d.t)}} className={`${d.bg} ${d.c} p-5 md:p-8 rounded-[1.5rem] md:rounded-[2rem] flex flex-col items-center justify-center gap-4 card-hover shadow-sm border border-transparent`}>
                                                     <i className={`ph-fill ${d.i} text-4xl md:text-5xl drop-shadow-sm`}></i><span className="font-black text-[10px] md:text-xs text-center uppercase tracking-widest">{d.l}</span>
                                                 </button>
                                             ))}
@@ -850,7 +846,7 @@
                             )}
 
                             {sheetData.__modal && (
-                                <ModalForm title={sheetData.__modal.tab} schema={sheetData.__modal.sch || tabSchemas[sheetData.__modal.tab]} formData={sheetData.__modal.row || {}} setFormData={(nd)=>setSheetData(p=>({...p, __modal: {...p.__modal, row: nd}}))} onSave={async (e)=>{e.preventDefault(); setLoading(true); await api.saveRecord(sheetData.__modal.tab, sheetData.__modal.row, !!sheetData.__modal.row.ID); setSheetData(p=>({...p, __modal: null})); loadData(sheetData.__modal.tab); showToast('Salvo!');}} onClose={()=>setSheetData(p=>({...p, __modal: null}))} loading={loading} />
+                                <ModalForm title={sheetData.__modal.tab} schema={sheetData.__modal.sch || tabSchemas[sheetData.__modal.tab]} formData={sheetData.__modal.row || {}} setFormData={(nd)=>setSheetData(p=>({...p, __modal: {...p.__modal, row: nd}}))} onSave={async (e)=>{e.preventDefault(); setLoading(true); await api.saveRecord(sheetData.__modal.tab, sheetData.__modal.row, !!sheetData.__modal.row.ID); setSheetData(p=>({...p, __modal: null})); loadData(sheetData.__modal.tab); showToast('Salvo com sucesso!');}} onClose={()=>setSheetData(p=>({...p, __modal: null}))} loading={loading} />
                             )}
                         </ErrorBoundary>
                     </main>
