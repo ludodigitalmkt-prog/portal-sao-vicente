@@ -4,21 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    <!-- ========================================== -->
-    <!-- BLINDAGEM ANTI-CACHE (FORÇA O NAVEGADOR A ATUALIZAR) -->
     <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <script>
-        const VERSAO_ATUAL = "4.0.0"; // Cache buster atualizado
+        const VERSAO_ATUAL = "4.0.1"; // Versão atualizada
         if (window.location.search.indexOf('v=' + VERSAO_ATUAL) === -1) {
             localStorage.clear();
             sessionStorage.clear();
             window.location.replace(window.location.pathname + (window.location.pathname.indexOf('?') === -1 ? '?' : '&') + 'v=' + VERSAO_ATUAL);
         }
     </script>
-    <!-- ========================================== -->
-
     <title>Portal São Vicente</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
@@ -51,13 +47,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Roboto:wght@300;400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     
-    <!-- Scripts do React -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <!-- Babel para traduzir o React -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-    <!-- FIREBASE SDK (V8) -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
@@ -152,15 +145,15 @@
         const safeString = (val) => (val === null || val === undefined) ? '' : String(val);
 
         const formatImageUrl = (url) => {
-    const strUrl = safeString(url).trim();
-    if (!strUrl) return '';
-    // Se for link do Google Drive, converte para um formato que o navegador entenda como imagem
-    if (strUrl.includes('drive.google.com')) {
-        const match = strUrl.match(/\/d\/([a-zA-Z0-9_-]+)/) || strUrl.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-        if (match && match[1]) return `https://drive.google.com/uc?id=${match[1]}`;
-    }
-    return strUrl;
-};
+            const strUrl = safeString(url).trim();
+            if (!strUrl) return '';
+            // Se for link do Google Drive, converte para um formato que o navegador entenda como imagem
+            if (strUrl.includes('drive.google.com')) {
+                const match = strUrl.match(/\/d\/([a-zA-Z0-9_-]+)/) || strUrl.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+                if (match && match[1]) return `https://drive.google.com/uc?id=${match[1]}`;
+            }
+            return strUrl;
+        };
         const tabSchemas = {
             'CORPO CLINICO': ['ID', 'Médico', 'Especialidade', 'Segmento', 'Código UNIMED', 'CRM', 'Cor_Selo', 'Foto_URL'],
             'EXAMES DE IMAGEM': ['ID', 'Categoria', 'Código', 'Nome do Exame', 'Profissionais', 'Idade Permitida', 'Observações', 'Imagem_URL'],
@@ -203,7 +196,6 @@
             login: async (rawEmail, password) => {
                 if(!isFirebaseConfigured || !auth) return { success: false, message: 'As chaves do Firebase não estão configuradas corretamente na Linha 80 do arquivo.' };
                 try {
-                    // LIMPEZA DE ESPAÇOS NO E-MAIL (MUITO IMPORTANTE PARA EVITAR ERROS)
                     const email = rawEmail.trim(); 
                     
                     await auth.signInWithEmailAndPassword(email, password);
@@ -325,8 +317,10 @@
                                                 </div>
                                             ) : isLong && !cLower.includes('url') && !cLower.includes('site') ? (
                                                 <textarea className="w-full px-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-custom outline-none focus:ring-2 focus:ring-primary min-h-[120px] font-medium text-gray-800 dark:text-white" value={safeString(formData[colName])} onChange={(e) => setFormData({...formData, [colName]: e.target.value})} placeholder={`Detalhes...`}></textarea>
+                                            ) : cLower.includes('data') ? (
+                                                <input type="date" className="w-full px-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-custom outline-none focus:ring-2 focus:ring-primary font-bold text-gray-800 dark:text-white" value={safeString(formData[colName])} onChange={(e) => setFormData({...formData, [colName]: e.target.value})} />
                                             ) : (
-                                                <input type={cLower.includes('senha') ? 'text' : 'text'} className="w-full px-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-custom outline-none focus:ring-2 focus:ring-primary font-bold text-gray-800 dark:text-white" value={safeString(formData[colName])} onChange={(e) => setFormData({...formData, [colName]: e.target.value})} placeholder={`Preencha ${cLower}`} />
+                                                <input type={cLower.includes('senha') ? 'password' : 'text'} className="w-full px-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-custom outline-none focus:ring-2 focus:ring-primary font-bold text-gray-800 dark:text-white" value={safeString(formData[colName])} onChange={(e) => setFormData({...formData, [colName]: e.target.value})} placeholder={`Preencha ${cLower}`} />
                                             )}
                                         </div>
                                     )
@@ -956,14 +950,9 @@
             if(tabName === 'CONVÊNIOS') return <><ConveniosMatrixView data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} schema={schema} /> {isModalOpen && <ModalForm title="Regra de Convênio" schema={currentSchema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
             if(tabName === 'CORPO CLINICO') return <><CorpoClinicoCards data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} /> {isModalOpen && <ModalForm title="Médico" schema={schema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
             if(tabName === 'CONTATOS') return <><ContatosViewTabs data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} schema={schema} /> {isModalOpen && <ModalForm title="Contato" schema={schema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
-            if(tabName === 'SENHAS E LOGINS GERAIS') return <><SenhasView data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} showToast={showToast} /> {isModalOpen && <ModalForm title="Acesso" schema={schema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
-            if(tabName === 'CONSULTA E PROCEDIMENTOS') return <><SplitView data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} schema={schema} titleLabel="Consulta/Procedimento" fieldsLeft={['Código', 'Valor Particular']} fieldsRight={['Valor Particular', 'Preparo', 'Material Utilizado']} descField="Descrição" imageField="Imagem_URL" /> {isModalOpen && <ModalForm title="Proc." schema={schema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
-            if(tabName === 'EXAMES LABORATORIAIS') return <><SplitView data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} schema={schema} titleLabel="Procedimento" fieldsLeft={['Código', 'Valor']} fieldsRight={['Valor', 'Prazo de Liberação', 'Preparo']} descField="Motivo_Indicacao" imageField="Imagem_URL" /> {isModalOpen && <ModalForm title="Lab." schema={schema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
-            if(tabName === 'EXAMES DE IMAGEM E OUTROS') return <><SplitView data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} schema={schema} titleLabel="Descrição" fieldsLeft={['Código', 'Valor']} fieldsRight={['Valor', 'Prazo de Laudo', 'Onde Encontrar']} imageField="Imagem_URL" /> {isModalOpen && <ModalForm title="Exame/Laudo" schema={schema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
-            if(tabName === 'EXAMES DE IMAGEM') return <><CategoryCardsView data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} schema={schema} categoryField="Categoria" titleField="Nome do Exame" imageField="Imagem_URL" /> {isModalOpen && <ModalForm title="Exame de Imagem" schema={schema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
-            if(tabName === 'INSTITUTOS') return <><CategoryCardsView data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} schema={schema} categoryField="Tabela_Instituto" titleField="Profissional" /> {isModalOpen && <ModalForm title="Instituto/Tabela" schema={schema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
             if(tabName === 'MURAL_AVISOS') return <><MuralAvisosView data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} /> {isModalOpen && <ModalForm title="Anúncio / Aviso" schema={schema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
 
+            // Telas genéricas (inclusive as que não possuíam o componente desenhado no código original) caem aqui, o que evita o sistema quebrar
             return (
                 <>
                     <DefaultTableView title={title} schema={schema} filteredData={filteredData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} search={search} setSearch={setSearch} />
@@ -973,37 +962,40 @@
         };
 
         const App = () => {
-    const [user, setUser] = useState(null);
-    const [loading, setLoading] = useState(true);
-
-    // ADICIONE ESTA LINHA AQUI:
-    const userFoto = user?.Foto_Perfil_URL || 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
-    
-    // ... o restante do código que já existe
-
-    useEffect(() => {
-        const unsub = auth.onAuthStateChanged(async (u) => {
-            if (u) {
-                // Busca os dados extras do usuário no Firestore
-                const userDoc = await db.collection('USUARIOS').where('E-mail', '==', u.email).get();
-                if (!userDoc.empty) {
-                    setUser({ ID: userDoc.docs[0].id, ...userDoc.docs[0].data() });
-                } else {
-                    setUser({ 'E-mail': u.email, 'Nome Completo': u.email.split('@')[0] });
-                }
-            } else {
-                setUser(null);
-            }
-            setLoading(false);
-        });
-        return () => unsub();
-    }, []);
-
-    // ... restante do código (if loading, if !user, etc)
-            
+            const [user, setUser] = useState(null);
+            const [loading, setLoading] = useState(true);
+            const [activeTab, setActiveTab] = useState('Home');
+            const [sheetData, setSheetData] = useState({});
+            const [darkMode, setDarkMode] = useState(false);
+            const [chatFilter, setChatFilter] = useState('Geral');
             const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
             const [loginErrorMsg, setLoginErrorMsg] = useState('');
 
+            const userFoto = user?.Foto_Perfil_URL || 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
+            const userName = user?.['Nome Completo'] || user?.['E-mail']?.split('@')[0] || 'Usuário';
+
+            // 🛑 LÓGICA DE ACESSO ADMIN AQUI 🛑
+            const nivelKey = user && typeof user === 'object' ? Object.keys(user).find(k => safeString(k).toLowerCase().includes('acesso')) : null;
+            const isAdmin = user && nivelKey && ['admin', 'supervisor', 'supervisão'].some(role => safeString(user[nivelKey]).toLowerCase().includes(role));
+
+            useEffect(() => {
+                const unsub = auth.onAuthStateChanged(async (u) => {
+                    if (u) {
+                        const userDoc = await db.collection('USUARIOS').where('E-mail', '==', u.email).get();
+                        if (!userDoc.empty) {
+                            setUser({ ID: userDoc.docs[0].id, ...userDoc.docs[0].data() });
+                        } else {
+                            // Se o usuário logou, mas não tem cadastro na tabela, ele entra como Colaborador por segurança.
+                            setUser({ 'E-mail': u.email, 'Nome Completo': u.email.split('@')[0], 'Nível de Acesso': 'Colaborador' });
+                        }
+                    } else {
+                        setUser(null);
+                    }
+                    setLoading(false);
+                });
+                return () => unsub && unsub();
+            }, []);
+                    
             const showToast = (msg, type = 'success') => { setToast({ show: true, message: msg, type }); setTimeout(() => setToast(p => ({ ...p, show: false })), 3500); };
 
             useEffect(() => {
@@ -1013,7 +1005,7 @@
 
             useEffect(() => {
                 const init = async () => {
-                    if(!window.isFirebaseConfigured) return;
+                    if(!isFirebaseConfigured) return;
                     const allData = await api.fetchAll(); 
                     if(allData && Object.keys(allData).length > 0) {
                         setSheetData(allData);
@@ -1203,5 +1195,3 @@
     </script>
 </body>
 </html>
-
-
