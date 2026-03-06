@@ -10,13 +10,13 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Portal SV">
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/149/149071.png">
-    <link rel="manifest" href="data:application/manifest+json;charset=utf-8,%7B%22name%22%3A%22Portal%20S%C3%A3o%20Vicente%22%2C%22short_name%22%3A%22Portal%20SV%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23F8FAFC%22%2C%22theme_color%22%3A%22%231E40AF%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22https%3A%2F%2Fcdn-icons-png.flaticon.com%2F512%2F149%2F149071.png%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fpng%22%7D%5D%7D">
+    <link rel="manifest" href='data:application/manifest+json;utf-8,{"name":"Portal São Vicente","short_name":"Portal SV","start_url":"/","display":"standalone","background_color":"#F8FAFC","theme_color":"#1E40AF","icons":[{"src":"https://cdn-icons-png.flaticon.com/512/149/149071.png","sizes":"512x512","type":"image/png"}]}'>
 
     <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <script>
-        const VERSAO_ATUAL = "7.0.0"; // NOVA VERSÃO CORRIGIDA E COMPLETA
+        const VERSAO_ATUAL = "7.1.0"; // Integração Dinâmica da Logo
         if (window.location.search.indexOf('v=' + VERSAO_ATUAL) === -1) {
             localStorage.clear(); sessionStorage.clear();
             window.location.replace(window.location.pathname + (window.location.pathname.indexOf('?') === -1 ? '?' : '&') + 'v=' + VERSAO_ATUAL);
@@ -96,9 +96,6 @@
     <script type="text/babel" data-presets="react">
         const { useState, useEffect, useMemo, useRef, Component } = React;
 
-        // ==========================================
-        // 🛑 SUAS CHAVES DO FIREBASE AQUI 🛑
-        // ==========================================
         const firebaseConfig = {
             apiKey: "AIzaSyArUJk5o90YfmMqRZl2kBaFfvRXFZcW3cE",
             authDomain: "portal-sao-vicente.firebaseapp.com",
@@ -136,7 +133,6 @@
             }
         }
 
-        // FUNÇÕES DE SEGURANÇA E TRADUÇÃO
         const safeString = (val) => (val === null || val === undefined) ? '' : String(val);
 
         const formatDateForInput = (val) => {
@@ -180,7 +176,6 @@
             return false;
         };
 
-        // SCHEMAS (A ESTRUTURA DO SEU BANCO DE DADOS)
         const tabSchemas = {
             'CONVÊNIOS': ['ID', 'Procedimento', 'Unimed', 'Amil', 'Bradesco', 'SulAmérica', 'Particular'],
             'CORPO CLINICO': ['ID', 'Médico', 'Especialidade', 'Segmento', 'Código UNIMED', 'CRM', 'Hora Início', 'Hora Fim', 'Cor_Selo', 'Foto_URL'],
@@ -242,10 +237,6 @@
                 try { await db.collection(colName).doc(id).delete(); return { success: true }; } catch (e) { return { success: false }; }
             }
         };
-
-        // ==============================================================
-        // BLOCOS VISUAIS E COMPONENTES
-        // ==============================================================
 
         const ClockWidget = ({ lembretesData }) => {
             const [time, setTime] = useState(new Date());
@@ -389,7 +380,7 @@
         const ConveniosMatrixView = ({ data, canEdit, openModal, handleDelete, schema }) => {
             const safeData = Array.isArray(data) ? data : [];
             const [search, setSearch] = useState('');
-            let allKeys = schema && schema.length > 0 ? schema : ['ID', 'Procedimento'];
+            let allKeys = schema && schema.length > 0 ? schema : ['ID', 'Procedimento', 'Unimed', 'Particular'];
             if (safeData.length > 0 && typeof safeData[0] === 'object' && safeData[0] !== null) { const dataKeys = Object.keys(safeData[0]); allKeys = [...new Set([...allKeys, ...dataKeys])]; }
             let procColName = 'Procedimento';
             const specificCol = allKeys.find(k => k !== 'ID' && (safeString(k).toLowerCase().includes('procedimento') || safeString(k).toLowerCase().includes('convênio') || safeString(k).toLowerCase().includes('serviço')));
@@ -410,7 +401,7 @@
                             <table className="matrix-table min-w-[1000px]">
                                 <thead><tr><th>{safeString(procColName)}</th>{insurances.map((ins, i) => <th key={`head-${i}`} style={{ backgroundColor: headerColors[i % headerColors.length] }}>{safeString(ins)}</th>)}{canEdit && <th style={{ backgroundColor: '#334155' }}>Ações</th>}</tr></thead>
                                 <tbody>
-                                    {filteredData.length === 0 ? <tr><td colSpan="100%" className="p-16 text-center text-gray-400 font-black text-xl bg-white dark:bg-slate-800 rounded-2xl shadow-sm">Matriz Vazia. Verifique se as colunas estão corretas.</td></tr> : (
+                                    {filteredData.length === 0 ? <tr><td colSpan="100%" className="p-16 text-center text-gray-400 font-black text-xl bg-white dark:bg-slate-800 rounded-2xl shadow-sm">Matriz Vazia. Clique em 'Adicionar Regra' para começar.</td></tr> : (
                                         filteredData.map((row, rowIndex) => (
                                             <tr key={`row-${rowIndex}`} className="matrix-row group">
                                                 <td>{safeString(row[procColName]) || '-'}</td>
@@ -730,6 +721,7 @@
             const [datesToSave, setDatesToSave] = useState([]); 
             const [showSwapSugg, setShowSwapSugg] = useState(false);
 
+            // Permissões
             const nivelKey = user && typeof user === 'object' ? Object.keys(user).find(k => safeString(k).toLowerCase().includes('acesso')) : null;
             const canEdit = nivelKey && ['admin', 'supervisor'].some(role => safeString(user[nivelKey]).toLowerCase().includes(role));
             const isColab = user && typeof user === 'object' && safeString(user[nivelKey]).toLowerCase().includes('colaborador');
@@ -954,7 +946,7 @@
 
                                 {showSwapSugg && canEdit && (
                                     <div className="mt-4 bg-gray-50 dark:bg-slate-900 rounded-2xl p-4 border border-gray-100 dark:border-slate-700 animate-fade-in">
-                                        <h4 className="text-[10px] md:text-xs font-black uppercase text-gray-500 mb-3">Colaboradores compatíveis:</h4>
+                                        <h4 className="text-[10px] md:text-xs font-black uppercase text-gray-500 mb-3">Colaboradores com as mesmas Competências:</h4>
                                         <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-2">
                                             {findSubstitutes(selectedPerson.Nome_Profissional).map((sub, idx) => (
                                                 <div key={idx} className="bg-white dark:bg-slate-800 p-3 md:p-4 rounded-xl border border-gray-100 dark:border-slate-600 flex justify-between items-center shadow-sm">
@@ -983,7 +975,7 @@
                             <div className="bg-white dark:bg-slate-800 rounded-[2rem] md:rounded-[3rem] w-full max-w-6xl max-h-[90vh] flex flex-col shadow-2xl animate-pop-in border border-gray-100 dark:border-slate-700" onMouseDown={e=>e.stopPropagation()}>
                                 <div className="p-6 md:p-8 border-b border-gray-100 dark:border-slate-700 flex justify-between items-center bg-gray-50/50 dark:bg-slate-900 shrink-0">
                                     <h3 className="text-xl md:text-3xl font-black text-gray-900 dark:text-white">Lançamento em Lote</h3>
-                                    <button onClick={() => setIsModalOpen(false)} className="w-10 h-10 md:w-12 md:h-12 bg-white dark:bg-slate-700 rounded-full hover:bg-red-500 hover:text-white shadow-sm text-xl transition flex justify-center items-center"><i className="ph-bold ph-x"></i></button>
+                                    <button onClick={() => setIsModalOpen(false)} className="w-10 h-10 md:w-12 h-12 bg-white dark:bg-slate-700 rounded-full hover:bg-red-500 hover:text-white shadow-sm text-xl transition flex justify-center items-center"><i className="ph-bold ph-x"></i></button>
                                 </div>
                                 <div className="p-6 md:p-8 flex flex-col lg:flex-row gap-8 md:gap-12 overflow-y-auto custom-scrollbar">
                                     <div className="lg:w-1/2">
@@ -1127,58 +1119,6 @@
             );
         };
 
-        const DataTableGeneric = ({ title, tabName, data, user, onRefresh, showToast }) => {
-            const safeData = Array.isArray(data) ? data : [];
-            const [isModalOpen, setIsModalOpen] = useState(false);
-            const [formData, setFormData] = useState({});
-            const [loading, setLoading] = useState(false);
-            const [search, setSearch] = useState('');
-            const [currentSchema, setCurrentSchema] = useState([]);
-            
-            let dynamicKeys = ['ID'];
-            if (safeData.length > 0 && typeof safeData[0] === 'object' && safeData[0] !== null) dynamicKeys = Object.keys(safeData[0]);
-            
-            const schema = tabSchemas[tabName] || dynamicKeys || ['ID'];
-            const nivelKey = user && typeof user === 'object' ? Object.keys(user).find(k => safeString(k).toLowerCase().includes('acesso')) : null;
-            const canEdit = nivelKey && ['admin', 'supervisor', 'supervisão'].some(role => safeString(user[nivelKey]).toLowerCase().includes(role));
-
-            const filteredData = safeData.filter(row => row && typeof row === 'object' && Object.values(row).some(val => safeString(val).toLowerCase().includes(search.toLowerCase())));
-
-            const openModal = (row = null, customSchema = null) => {
-                let initial = {}; const s = customSchema || schema;
-                s.forEach(col => initial[col] = row ? safeString(row[col]) : '');
-                setFormData(initial); setCurrentSchema(s); setIsModalOpen(true);
-            };
-
-            const handleSave = async (e) => {
-                e.preventDefault(); setLoading(true);
-                const res = await api.saveRecord(tabName, formData, !!formData.ID);
-                setLoading(false);
-                if (res && res.success) { setIsModalOpen(false); onRefresh(tabName); showToast('Salvo com sucesso!'); } else showToast('Erro ao salvar.', 'error');
-            };
-
-            const handleDelete = async (id) => {
-                if(confirm('Excluir este item permanentemente?')) {
-                    const res = await api.deleteRecord(tabName, id);
-                    if (res && res.success) { onRefresh(tabName); showToast('Excluído com sucesso!'); }
-                }
-            };
-
-            if(tabName === 'CONVÊNIOS') return <><ConveniosMatrixView data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} schema={schema} /> {isModalOpen && <ModalForm title="Regra de Convênio" schema={currentSchema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
-            if(tabName === 'CORPO CLINICO') return <><CorpoClinicoCards data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} /> {isModalOpen && <ModalForm title="Médico" schema={schema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
-            if(tabName === 'CONTATOS') return <><ContatosViewTabs data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} schema={schema} /> {isModalOpen && <ModalForm title="Contato" schema={schema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
-            if(tabName === 'MURAL_AVISOS') return <><MuralAvisosView data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} /> {isModalOpen && <ModalForm title="Aviso" schema={schema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
-            if(tabName === 'BOLETINS_INFORMATIVOS') return <><BoletinsView data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} /> {isModalOpen && <ModalForm title="Mídia/Informativo" schema={schema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
-            if(tabName === 'SENHAS E LOGINS GERAIS') return <><SenhasView data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} schema={schema} /> {isModalOpen && <ModalForm title="Acesso" schema={schema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
-
-            return (
-                <>
-                    <DefaultTableView title={title} schema={schema} filteredData={filteredData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} search={search} setSearch={setSearch} />
-                    {isModalOpen && <ModalForm title={title} schema={currentSchema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}
-                </>
-            );
-        };
-
         const App = () => {
             const [user, setUser] = useState(null);
             const [loading, setLoading] = useState(true);
@@ -1192,10 +1132,12 @@
             const [isOffline, setIsOffline] = useState(!navigator.onLine);
             const [isSharedAuth, setIsSharedAuth] = useState(localStorage.getItem('shared_auth') === 'true');
 
+            // ⚠️ SENHA DE ACESSO GERAL PARA COLABORADORES
             const SENHA_ACESSO_GERAL = "Csv@123"; 
 
             const userFoto = user?.Foto_Perfil_URL || 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
             const userName = user?.['Nome Completo'] || (isSharedAuth ? 'Equipe São Vicente' : 'Usuário');
+            const [logoUrl, setLogoUrl] = useState(''); // Logo Dinâmica
 
             const nivelKey = user && typeof user === 'object' ? Object.keys(user).find(k => safeString(k).toLowerCase().includes('acesso')) : null;
             const isAdmin = user && nivelKey && ['admin', 'supervisor', 'supervisão'].some(role => safeString(user[nivelKey]).toLowerCase().includes(role));
@@ -1245,10 +1187,20 @@
                             if(c.Chave === 'cor_primaria') document.documentElement.style.setProperty('--color-primary', c.Valor);
                             if(c.Chave === 'cor_secundaria') document.documentElement.style.setProperty('--color-secondary', c.Valor);
                             if(c.Chave === 'cor_fundo') document.documentElement.style.setProperty('--color-bg', c.Valor);
+                            if(c.Chave === 'logo_url') setLogoUrl(c.Valor); // Puxando a logo
                         });
                     }
                 }; init();
             }, []);
+
+            // Toda vez que as configurações atualizarem (Admin salvar o painel), atualiza a logo.
+            useEffect(() => {
+                const conf = sheetData['CONFIGURACOES'] || [];
+                conf.forEach(c => {
+                    if(!c) return;
+                    if(c.Chave === 'logo_url') setLogoUrl(c.Valor);
+                });
+            }, [sheetData]);
 
             const loadData = async (tab) => {
                 setLoading(true);
@@ -1294,7 +1246,11 @@
                             <div className="md:w-5/12 bg-gradient-to-br from-primary to-blue-800 text-white p-10 md:p-12 flex flex-col justify-center relative">
                                 <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
                                 <div className="relative z-10 text-center">
-                                    <div className="w-24 h-24 md:w-28 md:h-28 mx-auto bg-white/10 rounded-[2rem] flex items-center justify-center mb-6 backdrop-blur-sm shadow-xl"><i className="ph-fill ph-heartbeat text-6xl md:text-7xl"></i></div>
+                                    {logoUrl ? (
+                                        <img src={formatImageUrl(logoUrl)} className="w-24 h-24 md:w-32 md:h-32 mx-auto object-contain mb-6 drop-shadow-xl" alt="Logo" />
+                                    ) : (
+                                        <div className="w-24 h-24 md:w-28 md:h-28 mx-auto bg-white/10 rounded-[2rem] flex items-center justify-center mb-6 backdrop-blur-sm shadow-xl"><i className="ph-fill ph-heartbeat text-6xl md:text-7xl"></i></div>
+                                    )}
                                     <h1 className="text-3xl md:text-4xl font-black mb-4">São Vicente</h1>
                                     <p className="text-blue-100 font-medium text-xs md:text-sm">Portal interno de comunicação, escalas e processos da clínica.</p>
                                 </div>
@@ -1315,6 +1271,10 @@
                                             <div className="w-14 h-14 md:w-16 md:h-16 rounded-xl bg-white dark:bg-slate-800 text-secondary flex justify-center items-center shrink-0 shadow-sm"><i className="ph-fill ph-shield-star text-2xl md:text-3xl"></i></div>
                                             <div><h3 className="font-black text-lg md:text-xl text-gray-900 dark:text-white group-hover:text-white transition">Acesso Gestão</h3><p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 group-hover:text-orange-100 transition mt-1">Edição de dados e controle de escalas.</p></div>
                                         </button>
+
+                                        <div className="pt-6 text-center">
+                                            <button onClick={()=>setLoginView('admin')} className="text-xs font-bold text-gray-400 hover:text-primary transition underline decoration-dashed underline-offset-4">Acesso Administrador Restrito</button>
+                                        </div>
                                     </div>
                                 )}
                                 
@@ -1323,19 +1283,19 @@
                                         <button type="button" onClick={()=>{setLoginView('selecao'); setLoginErrorMsg('');}} className="text-gray-400 hover:text-primary flex items-center gap-2 mb-4 md:mb-6 font-bold text-sm"><i className="ph-bold ph-arrow-left"></i> Voltar</button>
                                         <h2 className="text-xl md:text-2xl font-black text-gray-800 dark:text-white mb-1 md:mb-2">Acesso da Equipe</h2>
                                         <p className="text-xs md:text-sm text-gray-500 mb-6 md:mb-8">Digite a senha geral fornecida pela coordenação.</p>
-                                        <div><label className="block text-[10px] font-black text-gray-400 mb-2 uppercase tracking-widest">Senha de Acesso</label><div className="relative"><i className="ph-fill ph-lock-key absolute left-5 top-4 text-gray-400 text-xl"></i><input name="shared_password" type="password" className="w-full pl-14 pr-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-100 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-primary font-bold text-gray-900 dark:text-white transition" placeholder="Sua senha..." required /></div></div>
+                                        <div><label className="block text-[10px] font-black text-gray-400 mb-2 uppercase tracking-widest">Senha de Acesso Único</label><div className="relative"><i className="ph-fill ph-lock-key absolute left-5 top-4 text-gray-400 text-xl"></i><input name="shared_password" type="password" className="w-full pl-14 pr-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-100 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-primary font-bold text-gray-900 dark:text-white transition" placeholder="Sua senha..." required /></div></div>
                                         <button type="submit" disabled={loading} className="w-full bg-primary hover:opacity-90 text-white font-black py-4 md:py-5 rounded-xl shadow-xl shadow-primary/30 transition transform hover:-translate-y-1">{loading?'Entrando...':'Entrar no Portal'}</button>
                                     </form>
                                 )}
 
-                                {loginView === 'supervisor' && (
+                                {(loginView === 'supervisor' || loginView === 'admin') && (
                                     <form onSubmit={handleFirebaseLogin} className="space-y-6 animate-fade-in">
                                         <button type="button" onClick={()=>{setLoginView('selecao'); setLoginErrorMsg('');}} className="text-gray-400 hover:text-primary flex items-center gap-2 mb-4 md:mb-6 font-bold text-sm"><i className="ph-bold ph-arrow-left"></i> Voltar</button>
-                                        <h2 className="text-xl md:text-2xl font-black text-gray-800 dark:text-white mb-1 md:mb-2">Acesso Gestão</h2>
-                                        <p className="text-xs md:text-sm text-gray-500 mb-6 md:mb-8">Faça login com suas credenciais do Firebase.</p>
+                                        <h2 className="text-xl md:text-2xl font-black text-gray-800 dark:text-white mb-1 md:mb-2">Acesso {loginView === 'admin' ? 'Administrador' : 'Gestão'}</h2>
+                                        <p className="text-xs md:text-sm text-gray-500 mb-6 md:mb-8">Faça login com suas credenciais do painel.</p>
                                         <div><label className="block text-[10px] font-black text-gray-400 mb-2 uppercase tracking-widest">E-mail</label><div className="relative"><i className="ph-fill ph-user absolute left-5 top-4 text-gray-400 text-xl"></i><input name="email" type="email" className="w-full pl-14 pr-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-100 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-primary font-bold text-gray-900 dark:text-white transition" required /></div></div>
                                         <div><label className="block text-[10px] font-black text-gray-400 mb-2 uppercase tracking-widest">Senha</label><div className="relative"><i className="ph-fill ph-lock-key absolute left-5 top-4 text-gray-400 text-xl"></i><input name="password" type="password" className="w-full pl-14 pr-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-100 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-primary font-bold text-gray-900 dark:text-white transition" required /></div></div>
-                                        <button type="submit" disabled={loading} className="w-full bg-gray-900 dark:bg-white dark:text-gray-900 shadow-gray-900/30 hover:opacity-90 text-white font-black py-4 md:py-5 rounded-xl shadow-xl transition transform hover:-translate-y-1">{loading ? 'Conectando...' : 'Acessar Gestão'}</button>
+                                        <button type="submit" disabled={loading} className={`w-full ${loginView === 'admin' ? 'bg-gray-900 dark:bg-white dark:text-gray-900 shadow-gray-900/30' : 'bg-secondary shadow-secondary/30'} hover:opacity-90 text-white font-black py-4 md:py-5 rounded-xl shadow-xl transition transform hover:-translate-y-1`}>{loading ? 'Conectando...' : 'Acessar'}</button>
                                     </form>
                                 )}
                             </div>
@@ -1369,31 +1329,34 @@
             return (
                 <div className="min-h-screen flex flex-col md:flex-row overflow-hidden relative selection:bg-primary selection:text-white bg-medical dark:bg-slate-900">
                     
-                    {/* AVISO OFFLINE SUPERIOR */}
                     {isOffline && <div className="absolute top-0 inset-x-0 z-[99999] bg-red-600 text-white text-[10px] md:text-xs font-black py-2 md:py-1.5 flex justify-center items-center gap-2 shadow-md animate-fade-in"><i className="ph-bold ph-wifi-slash text-sm md:text-base"></i> Sem Conexão: Operando com dados salvos em cache local.</div>}
                     
                     {toast.show && <div className={`fixed bottom-4 md:bottom-8 right-4 md:right-8 z-[9999] px-6 md:px-8 py-4 md:py-5 rounded-xl md:rounded-custom shadow-2xl text-white font-black text-sm md:text-lg animate-slide-up bg-green-500`}><i className="ph-bold ph-check-circle text-xl md:text-2xl"></i> {toast.message}</div>}
 
-                    {/* HEADER MOBILE */}
                     <div className="md:hidden bg-primary text-white p-4 flex justify-between items-center z-40 shadow-lg relative">
-                        <div className="flex items-center gap-2 font-black text-xl"><i className="ph-fill ph-heartbeat"></i> Portal SV</div>
+                        <div className="flex items-center gap-3 font-black text-xl">
+                            {logoUrl ? <img src={formatImageUrl(logoUrl)} className="h-8 object-contain" alt="Logo" /> : <i className="ph-fill ph-heartbeat text-2xl"></i>}
+                            Portal SV
+                        </div>
                         <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="text-3xl p-1 bg-white/10 rounded-lg"><i className={`ph-bold ${isMobileMenuOpen ? 'ph-x' : 'ph-list'}`}></i></button>
                     </div>
 
-                    {/* OVERLAY MOBILE */}
                     {isMobileMenuOpen && <div className="fixed inset-0 bg-black/60 z-40 md:hidden backdrop-blur-sm" onClick={() => setIsMobileMenuOpen(false)}></div>}
 
-                    {/* MENU LATERAL */}
                     <aside className={`fixed inset-y-0 left-0 w-72 md:w-80 bg-white dark:bg-slate-800 border-r border-gray-100 dark:border-slate-700 flex flex-col h-screen shrink-0 shadow-2xl z-50 transform ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 transition-transform duration-300 ease-in-out`}>
                         <div className="p-6 md:p-8 flex items-center border-b border-gray-100 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-900/50 cursor-pointer" onClick={()=>{setActiveTab('Home'); loadData('Home'); setIsMobileMenuOpen(false);}}>
-                            <div className="bg-primary text-white p-2 md:p-3 rounded-xl md:rounded-2xl mr-3 shadow-md"><i className="ph-fill ph-heartbeat text-2xl md:text-3xl"></i></div>
+                            {logoUrl ? (
+                                <img src={formatImageUrl(logoUrl)} className="w-12 h-12 md:w-16 md:h-16 object-contain mr-3" alt="Logo" />
+                            ) : (
+                                <div className="bg-primary text-white p-2 md:p-3 rounded-xl md:rounded-2xl mr-3 shadow-md"><i className="ph-fill ph-heartbeat text-2xl md:text-3xl"></i></div>
+                            )}
                             <div><h1 className="text-xl md:text-2xl font-black leading-none text-gray-900 dark:text-white">Portal</h1><span className="text-[10px] font-black text-primary uppercase tracking-widest">São Vicente</span></div>
                         </div>
                         <div className="p-5 md:p-6 border-b border-gray-50 dark:border-slate-700 flex items-center gap-4">
                             {userFoto ? <img src={formatImageUrl(userFoto)} className="w-12 h-12 md:w-14 md:h-14 rounded-xl md:rounded-custom object-cover shadow-md shrink-0 border-2 border-white dark:border-slate-700" alt="Avatar" /> : <div className="w-12 h-12 md:w-14 md:h-14 rounded-xl md:rounded-custom bg-gradient-to-tr from-secondary to-orange-400 flex items-center justify-center text-white font-black text-xl md:text-2xl shadow-md shrink-0">{safeString(userName || 'U').charAt(0).toUpperCase()}</div>}
                             <div className="flex-1 overflow-hidden">
                                 <p className="text-sm md:text-base font-black truncate text-gray-900 dark:text-white">{userName}</p>
-                                <p className="text-[9px] md:text-[10px] font-black text-primary bg-primary/10 px-2 py-1 rounded-md inline-block mt-1 uppercase tracking-widest">{isAdmin?'Admin':'Colaborador'}</p>
+                                <p className="text-[9px] md:text-[10px] font-black text-primary bg-primary/10 px-2 py-1 rounded-md inline-block mt-1 uppercase tracking-widest">{isAdmin?'Gestão/Admin':'Equipe'}</p>
                             </div>
                         </div>
                         <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-1 custom-scrollbar pb-8 mt-4 md:mt-0">
