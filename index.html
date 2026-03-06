@@ -10,13 +10,13 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Portal SV">
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/149/149071.png">
-    <link rel="manifest" href='data:application/manifest+json;utf-8,{"name":"Portal São Vicente","short_name":"Portal SV","start_url":".","display":"standalone","background_color":"#F8FAFC","theme_color":"#1E40AF","icons":[{"src":"https://cdn-icons-png.flaticon.com/512/149/149071.png","sizes":"512x512","type":"image/png"}]}'>
+    <link rel="manifest" href="data:application/manifest+json;charset=utf-8,%7B%22name%22%3A%22Portal%20S%C3%A3o%20Vicente%22%2C%22short_name%22%3A%22Portal%20SV%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23F8FAFC%22%2C%22theme_color%22%3A%22%231E40AF%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22https%3A%2F%2Fcdn-icons-png.flaticon.com%2F512%2F149%2F149071.png%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fpng%22%7D%5D%7D">
 
     <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <script>
-        const VERSAO_ATUAL = "6.3.0";
+        const VERSAO_ATUAL = "6.4.0"; // Correções Absolutas de Login e UI
         if (window.location.search.indexOf('v=' + VERSAO_ATUAL) === -1) {
             localStorage.clear(); sessionStorage.clear();
             window.location.replace(window.location.pathname + (window.location.pathname.indexOf('?') === -1 ? '?' : '&') + 'v=' + VERSAO_ATUAL);
@@ -124,10 +124,20 @@
         }
 
         class ErrorBoundary extends Component {
-            constructor(props) { super(props); this.state = { hasError: false }; }
-            static getDerivedStateFromError(error) { return { hasError: true }; }
+            constructor(props) { super(props); this.state = { hasError: false, errorDetails: '' }; }
+            static getDerivedStateFromError(error) { return { hasError: true, errorDetails: String(error) }; }
+            componentDidCatch(error, errorInfo) { console.error("Escudo ativado:", error); }
             render() {
-                if (this.state.hasError) return <div className="p-10 text-center"><h2 className="text-2xl font-black text-red-500">Aviso do Sistema</h2><p className="text-gray-500 mb-6">Uma informação do banco de dados causou conflito na renderização.</p><button onClick={()=>window.location.reload()} className="bg-primary text-white px-8 py-3 rounded-xl font-bold shadow-lg hover:scale-105 transition">Recarregar Painel</button></div>;
+                if (this.state.hasError) return (
+                    <div className="min-h-screen flex items-center justify-center p-6 w-full">
+                        <div className="bg-white dark:bg-slate-800 p-10 rounded-[2rem] shadow-2xl text-center max-w-xl border border-red-200">
+                            <div className="w-24 h-24 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-6"><i className="ph-fill ph-warning-circle text-6xl"></i></div>
+                            <h2 className="text-2xl font-black mb-4">Aviso do Sistema</h2>
+                            <p className="text-gray-500 mb-4">Uma informação incompleta causou conflito na renderização. Detalhe técnico: {this.state.errorDetails}</p>
+                            <button onClick={() => window.location.reload()} className="w-full bg-red-600 hover:bg-red-700 text-white py-4 rounded-xl font-black shadow-lg transition">Recarregar Painel</button>
+                        </div>
+                    </div>
+                );
                 return this.props.children; 
             }
         }
@@ -152,7 +162,6 @@
             return str;
         };
 
-        // CORREÇÃO DO DRIVE (CSP / X-Frame-Options Bypass via Preview mode)
         const getEmbedUrl = (url) => {
             const str = safeString(url).trim();
             if (str.includes('youtube.com/watch')) return str.replace('watch?v=', 'embed/');
@@ -177,7 +186,9 @@
             return false;
         };
 
+        // ATUALIZADO: Esquema Base para Matriz de Convênios voltar a aparecer
         const tabSchemas = {
+            'CONVÊNIOS': ['ID', 'Procedimento', 'Unimed', 'Amil', 'Bradesco', 'SulAmérica', 'Particular'],
             'CORPO CLINICO': ['ID', 'Médico', 'Especialidade', 'Segmento', 'Código UNIMED', 'CRM', 'Hora Início', 'Hora Fim', 'Cor_Selo', 'Foto_URL'],
             'EXAMES DE IMAGEM': ['ID', 'Categoria', 'Código', 'Nome do Exame', 'Profissionais', 'Idade Permitida', 'Observações', 'Imagem_URL'],
             'EXAMES DE IMAGEM E OUTROS': ['ID', 'Código', 'Descrição', 'Valor', 'Prazo de Laudo', 'Onde Encontrar', 'Imagem_URL'],
@@ -334,8 +345,8 @@
         const ChatModerno = ({ chatData, user, onSaveChat, onRefresh }) => {
             const [msg, setMsg] = useState('');
             const [activeRoom, setActiveRoom] = useState('Geral'); 
-            const isAdmin = user && ['admin', 'supervisor'].some(r => safeString(user['Nível de Acesso']).toLowerCase().includes(r));
-            const myName = safeString(user['Nome Completo']);
+            const isAdmin = user && typeof user === 'object' && ['admin', 'supervisor'].some(r => { const nk = Object.keys(user).find(k => safeString(k).toLowerCase().includes('acesso')); return nk ? safeString(user[nk]).toLowerCase().includes(r) : false; });
+            const myName = safeString(user && user['Nome Completo'] ? user['Nome Completo'] : 'Usuário');
             const chatLog = Array.isArray(chatData) ? chatData : [];
             const isGeral = activeRoom === 'Geral';
             
@@ -548,6 +559,7 @@
             const [datesToSave, setDatesToSave] = useState([]); 
             const [showSwapSugg, setShowSwapSugg] = useState(false);
 
+            // Permissões
             const nivelKey = user && typeof user === 'object' ? Object.keys(user).find(k => safeString(k).toLowerCase().includes('acesso')) : null;
             const canEdit = nivelKey && ['admin', 'supervisor'].some(role => safeString(user[nivelKey]).toLowerCase().includes(role));
             const isColab = user && typeof user === 'object' && safeString(user[nivelKey]).toLowerCase().includes('colaborador');
@@ -645,6 +657,7 @@
                                             
                                             let bgCard = isIntervalo ? 'bg-orange-50 dark:bg-orange-900/30 border-orange-200' : isAusente ? 'bg-red-50 dark:bg-red-900/30 border-red-200 opacity-60' : 'bg-white dark:bg-slate-800 border-gray-100 dark:border-slate-600';
                                             
+                                            // CONTROLE UNIMED
                                             const cUnimed = controleUnimed.find(a => a && safeString(a.Profissional) === safeString(esc.Nome_Profissional));
                                             let uPulseClass = '';
                                             if (cUnimed) {
@@ -729,7 +742,7 @@
                     {selectedDate && !selectedPerson && (
                         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 glass-modal" onClick={() => setSelectedDate(null)}>
                             <div className="bg-white dark:bg-slate-800 rounded-[2rem] md:rounded-[3rem] w-full max-w-5xl p-6 md:p-10 shadow-2xl animate-pop-in relative border border-gray-100 dark:border-slate-700 flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
-                                <button onClick={()=>setSelectedDate(null)} className="absolute top-4 right-4 md:top-8 md:right-8 w-10 h-10 md:w-12 md:h-12 bg-gray-100 dark:bg-slate-700 hover:bg-red-500 hover:text-white rounded-full transition"><i className="ph-bold ph-x"></i></button>
+                                <button onClick={()=>setSelectedDate(null)} className="absolute top-4 right-4 md:top-8 md:right-8 w-10 h-10 md:w-12 h-12 bg-gray-100 dark:bg-slate-700 hover:bg-red-500 hover:text-white rounded-full transition"><i className="ph-bold ph-x"></i></button>
                                 <h3 className="text-2xl md:text-4xl font-black mb-6 md:mb-10 flex items-center gap-4 text-gray-900 dark:text-white">Plantão {selectedDate}</h3>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 overflow-y-auto custom-scrollbar flex-1 pb-4 pr-2">
                                     {filteredEscalas.filter(e => e && (safeString(e.Data).includes(selectedDate) || safeString(e.Data).includes(selectedDate.substring(0,6) + selectedDate.substring(8,10)))).map((esc, i) => (
@@ -800,7 +813,7 @@
                             <div className="bg-white dark:bg-slate-800 rounded-[2rem] md:rounded-[3rem] w-full max-w-6xl max-h-[90vh] flex flex-col shadow-2xl animate-pop-in border border-gray-100 dark:border-slate-700" onMouseDown={e=>e.stopPropagation()}>
                                 <div className="p-6 md:p-8 border-b border-gray-100 dark:border-slate-700 flex justify-between items-center bg-gray-50/50 dark:bg-slate-900 shrink-0">
                                     <h3 className="text-xl md:text-3xl font-black text-gray-900 dark:text-white">Lançamento em Lote</h3>
-                                    <button onClick={() => setIsModalOpen(false)} className="w-10 h-10 md:w-12 md:h-12 bg-white dark:bg-slate-700 rounded-full hover:bg-red-500 hover:text-white shadow-sm text-xl transition flex justify-center items-center"><i className="ph-bold ph-x"></i></button>
+                                    <button onClick={() => setIsModalOpen(false)} className="w-10 h-10 md:w-12 h-12 bg-white dark:bg-slate-700 rounded-full hover:bg-red-500 hover:text-white shadow-sm text-xl transition flex justify-center items-center"><i className="ph-bold ph-x"></i></button>
                                 </div>
                                 <div className="p-6 md:p-8 flex flex-col lg:flex-row gap-8 md:gap-12 overflow-y-auto custom-scrollbar">
                                     <div className="lg:w-1/2">
@@ -834,10 +847,7 @@
                                         </form>
                                     </div>
                                 </div>
-                                <div className="p-6 border-t border-gray-100 dark:border-slate-700 flex justify-end gap-3 md:gap-4 bg-gray-50/50 dark:bg-slate-900 shrink-0">
-                                    <button onClick={() => setIsModalOpen(false)} className="px-6 md:px-10 py-3 md:py-4 font-black text-gray-500 hover:bg-gray-200 dark:hover:bg-slate-800 rounded-xl transition text-sm md:text-base">Cancelar</button>
-                                    <button type="submit" form="esc-form" disabled={loadingAction} className="px-8 md:px-12 py-3 md:py-4 bg-primary text-white font-black rounded-xl md:rounded-custom shadow-xl hover:-translate-y-1 transition text-sm md:text-base flex items-center gap-2">{loadingAction?<i className="ph animate-spin ph-spinner"></i>:<i className="ph-bold ph-floppy-disk"></i>} {loadingAction?'Gravando...':'Salvar'}</button>
-                                </div>
+                                <div className="p-6 border-t border-gray-100 dark:border-slate-700 flex justify-end gap-4 bg-gray-50/50 dark:bg-slate-900 shrink-0"><button onClick={() => setIsModalOpen(false)} className="px-10 py-4 font-black text-gray-500 hover:text-gray-800 dark:hover:text-white transition">Cancelar</button><button type="submit" form="esc-form" disabled={loadingAction} className="px-12 py-4 bg-primary text-white font-black rounded-custom shadow-xl hover:-translate-y-1 transition">{loadingAction?'Gravando...':'Gravar Múltiplos'}</button></div>
                             </div>
                         </div>
                     )}
@@ -1007,18 +1017,14 @@
             const [darkMode, setDarkMode] = useState(false);
             const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
             
-            // Lógica de Login Misto
-            const [loginView, setLoginView] = useState('selecao'); // selecao | geral | painel
+            const [loginView, setLoginView] = useState('selecao'); 
             const [loginErrorMsg, setLoginErrorMsg] = useState('');
             const [isOffline, setIsOffline] = useState(!navigator.onLine);
-            const [isSharedAuth, setIsSharedAuth] = useState(localStorage.getItem('shared_auth') === 'true');
-            const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-            // ⚠️ SENHA DE ACESSO GERAL PARA COLABORADORES
             const SENHA_ACESSO_GERAL = "Csv@123"; 
 
             const userFoto = user?.Foto_Perfil_URL || 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
-            const userName = user?.['Nome Completo'] || (isSharedAuth ? 'Equipe São Vicente' : 'Usuário');
+            const userName = user?.['Nome Completo'] || 'Usuário';
 
             const nivelKey = user && typeof user === 'object' ? Object.keys(user).find(k => safeString(k).toLowerCase().includes('acesso')) : null;
             const isAdmin = user && nivelKey && ['admin', 'supervisor', 'supervisão'].some(role => safeString(user[nivelKey]).toLowerCase().includes(role));
@@ -1030,24 +1036,35 @@
                 return () => { window.removeEventListener('online', handleOnline); window.removeEventListener('offline', handleOffline); }
             }, []);
 
+            // Lógica de Autenticação Ultra Blindada
             useEffect(() => {
                 const unsub = auth?.onAuthStateChanged(async (u) => {
-                    if (u && !isSharedAuth) {
+                    const isSharedLocal = localStorage.getItem('shared_auth') === 'true';
+                    
+                    if (isSharedLocal) {
+                        setUser({ 'Nome Completo': 'Equipe São Vicente', 'Nível de Acesso': 'Colaborador' });
+                        setLoading(false);
+                        return;
+                    }
+
+                    if (u) {
                         try {
                             const userDoc = await db.collection('USUARIOS').where('E-mail', '==', u.email).get();
-                            if (!userDoc.empty) setUser({ ID: userDoc.docs[0].id, ...userDoc.docs[0].data() });
-                            else setUser({ 'E-mail': u.email, 'Nome Completo': u.email.split('@')[0], 'Nível de Acesso': 'Colaborador' });
+                            if (!userDoc.empty) {
+                                setUser({ ID: userDoc.docs[0].id, ...userDoc.docs[0].data() });
+                            } else {
+                                setUser({ 'E-mail': u.email, 'Nome Completo': u.email.split('@')[0], 'Nível de Acesso': 'Colaborador' });
+                            }
                         } catch (err) {
                             setUser({ 'E-mail': u.email, 'Nome Completo': u.email.split('@')[0], 'Nível de Acesso': 'Colaborador' });
                         }
                     } else {
-                        if(isSharedAuth) setUser({ 'Nome Completo': 'Equipe São Vicente', 'Nível de Acesso': 'Colaborador' });
-                        else setUser(null);
+                        setUser(null);
                     }
                     setLoading(false);
                 });
                 return () => unsub && unsub();
-            }, [isSharedAuth]);
+            }, []);
                     
             const showToast = (msg, type = 'success') => { setToast({ show: true, message: msg, type }); setTimeout(() => setToast(p => ({ ...p, show: false })), 3500); };
 
@@ -1087,10 +1104,12 @@
                 setLoading(false);
             };
 
+            const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
             if (!user) {
                 const handleFirebaseLogin = async (e) => {
                     e.preventDefault(); setLoading(true); setLoginErrorMsg('');
-                    setIsSharedAuth(false); localStorage.removeItem('shared_auth');
+                    localStorage.setItem('shared_auth', 'false'); // Garante que não mistura
                     const res = await api.login(e.target.email.value, e.target.password.value);
                     if (res && res.success) { setUser(res.user); loadData('Home'); } 
                     else { setLoginErrorMsg(res?.message || 'Erro ao conectar com o servidor.'); }
@@ -1102,7 +1121,6 @@
                     if (e.target.shared_password.value === SENHA_ACESSO_GERAL) {
                         auth?.signOut(); // <-- FORÇA LOGOUT DO FIREBASE PARA EVITAR O BUG DO ADMIN FANTASMA
                         localStorage.setItem('shared_auth', 'true');
-                        setIsSharedAuth(true);
                         setUser({ 'Nome Completo': 'Equipe São Vicente', 'Nível de Acesso': 'Colaborador' });
                         loadData('Home');
                     } else { setLoginErrorMsg('Senha de acesso geral incorreta.'); }
@@ -1122,20 +1140,27 @@
                             </div>
                             <div className="md:w-7/12 p-8 md:p-12 bg-white dark:bg-slate-800 flex flex-col justify-center">
                                 {loginErrorMsg && <div className="mb-6 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 p-4 rounded-xl flex gap-3 items-start animate-pop-in"><i className="ph-fill ph-warning-circle text-red-600 dark:text-red-400 text-xl shrink-0 mt-0.5"></i><p className="text-sm font-bold text-red-800 dark:text-red-200 leading-tight">{loginErrorMsg}</p></div>}
+                                
                                 {loginView === 'selecao' && (
                                     <div className="space-y-4 md:space-y-6 animate-fade-in">
                                         <h2 className="text-xl md:text-2xl font-black text-gray-800 dark:text-white mb-6 md:mb-8 text-center md:text-left">Selecione seu acesso:</h2>
+                                        
                                         <button onClick={()=>setLoginView('geral')} className="w-full bg-blue-50 hover:bg-primary dark:bg-slate-700 dark:hover:bg-primary group p-5 md:p-6 rounded-[1.5rem] md:rounded-2xl border-2 border-blue-100 dark:border-slate-600 hover:border-primary transition flex items-center gap-4 md:gap-6 text-left">
                                             <div className="w-14 h-14 md:w-16 md:h-16 rounded-xl bg-white dark:bg-slate-800 text-primary flex justify-center items-center shrink-0 shadow-sm"><i className="ph-fill ph-users text-2xl md:text-3xl"></i></div>
-                                            <div><h3 className="font-black text-lg md:text-xl text-gray-900 dark:text-white group-hover:text-white transition">Acesso Equipe</h3><p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 group-hover:text-blue-100 transition mt-1">Visualização de escalas, ramais e consultas.</p></div>
+                                            <div><h3 className="font-black text-lg md:text-xl text-gray-900 dark:text-white group-hover:text-white transition">Acesso Colaboradores</h3><p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 group-hover:text-blue-100 transition mt-1">Visualização de escalas, ramais e consultas.</p></div>
                                         </button>
+
                                         <button onClick={()=>setLoginView('supervisor')} className="w-full bg-orange-50 hover:bg-secondary dark:bg-slate-700 dark:hover:bg-secondary group p-5 md:p-6 rounded-[1.5rem] md:rounded-2xl border-2 border-orange-100 dark:border-slate-600 hover:border-secondary transition flex items-center gap-4 md:gap-6 text-left">
                                             <div className="w-14 h-14 md:w-16 md:h-16 rounded-xl bg-white dark:bg-slate-800 text-secondary flex justify-center items-center shrink-0 shadow-sm"><i className="ph-fill ph-shield-star text-2xl md:text-3xl"></i></div>
-                                            <div><h3 className="font-black text-lg md:text-xl text-gray-900 dark:text-white group-hover:text-white transition">Acesso Gestão</h3><p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 group-hover:text-orange-100 transition mt-1">Edição de dados e controle da clínica.</p></div>
+                                            <div><h3 className="font-black text-lg md:text-xl text-gray-900 dark:text-white group-hover:text-white transition">Acesso Supervisor</h3><p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 group-hover:text-orange-100 transition mt-1">Gestão de equipe e controle de escalas.</p></div>
                                         </button>
-                                        <div className="pt-6 text-center"><button onClick={()=>setLoginView('admin')} className="text-xs font-bold text-gray-400 hover:text-primary transition underline decoration-dashed underline-offset-4">Acesso Administrador Restrito</button></div>
+
+                                        <div className="pt-6 text-center">
+                                            <button onClick={()=>setLoginView('admin')} className="text-xs font-bold text-gray-400 hover:text-primary transition underline decoration-dashed underline-offset-4">Acesso Administrador Restrito</button>
+                                        </div>
                                     </div>
                                 )}
+                                
                                 {loginView === 'geral' && (
                                     <form onSubmit={handleSharedLogin} className="space-y-6 animate-fade-in">
                                         <button type="button" onClick={()=>{setLoginView('selecao'); setLoginErrorMsg('');}} className="text-gray-400 hover:text-primary flex items-center gap-2 mb-4 md:mb-6 font-bold text-sm"><i className="ph-bold ph-arrow-left"></i> Voltar</button>
@@ -1145,6 +1170,7 @@
                                         <button type="submit" disabled={loading} className="w-full bg-primary hover:opacity-90 text-white font-black py-4 md:py-5 rounded-xl shadow-xl shadow-primary/30 transition transform hover:-translate-y-1">{loading?'Entrando...':'Entrar no Portal'}</button>
                                     </form>
                                 )}
+
                                 {(loginView === 'supervisor' || loginView === 'admin') && (
                                     <form onSubmit={handleFirebaseLogin} className="space-y-6 animate-fade-in">
                                         <button type="button" onClick={()=>{setLoginView('selecao'); setLoginErrorMsg('');}} className="text-gray-400 hover:text-primary flex items-center gap-2 mb-4 md:mb-6 font-bold text-sm"><i className="ph-bold ph-arrow-left"></i> Voltar</button>
@@ -1210,10 +1236,10 @@
                             {userFoto ? <img src={formatImageUrl(userFoto)} className="w-12 h-12 md:w-14 md:h-14 rounded-xl md:rounded-custom object-cover shadow-md shrink-0 border-2 border-white dark:border-slate-700" alt="Avatar" /> : <div className="w-12 h-12 md:w-14 md:h-14 rounded-xl md:rounded-custom bg-gradient-to-tr from-secondary to-orange-400 flex items-center justify-center text-white font-black text-xl md:text-2xl shadow-md shrink-0">{safeString(userName || 'U').charAt(0).toUpperCase()}</div>}
                             <div className="flex-1 overflow-hidden">
                                 <p className="text-sm md:text-base font-black truncate text-gray-900 dark:text-white">{userName}</p>
-                                <p className="text-[9px] md:text-[10px] font-black text-primary bg-primary/10 px-2 py-1 rounded-md inline-block mt-1 uppercase tracking-widest">{isAdmin?'Admin':'Colaborador'}</p>
+                                <p className="text-[9px] md:text-[10px] font-black text-primary bg-primary/10 px-2 py-1 rounded-md inline-block mt-1 uppercase tracking-widest">{isAdmin ? 'Gestão/Admin' : 'Equipe'}</p>
                             </div>
                         </div>
-                        <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-1 custom-scrollbar pb-8">
+                        <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-1 custom-scrollbar pb-8 mt-4 md:mt-0">
                             <div className="px-3 md:px-4 mb-2 mt-2 text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest">Menu Principal</div>
                             {menus.map(m => <button key={m.id} onClick={()=>{setActiveTab(m.id); loadData(m.id); setIsMobileMenuOpen(false);}} className={`w-full flex items-center gap-3 md:gap-4 px-4 md:px-5 py-3 rounded-xl md:rounded-custom text-xs md:text-sm font-bold transition-all ${activeTab===m.id?'bg-primary text-white shadow-xl md:scale-[1.02]':'text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-700'}`}><i className={`ph-fill ${m.icon} text-lg md:text-xl`}></i> {m.label}</button>)}
                             
@@ -1234,6 +1260,26 @@
                             {activeTab === 'Home' && !loading && (
                                 <div className="space-y-8 md:space-y-12 animate-fade-in max-w-[1400px] mx-auto">
                                     <ClockWidget lembretesData={sheetData['LEMBRETES_HORA']} />
+                                    
+                                    {Array.isArray(sheetData['CONTROLE_ATENDIMENTOS']) && sheetData['CONTROLE_ATENDIMENTOS'].filter(a => Number(a.Limite_Max||0) > 0 && (Number(a.Qtd_Atual||0)/Number(a.Limite_Max||1)) >= 0.9).length > 0 && (
+                                        <div>
+                                            <h3 className="text-xl md:text-2xl font-black text-red-600 flex items-center gap-3 mb-4 md:mb-6 px-2"><i className="ph-fill ph-warning-circle animate-pulse"></i> Alertas Unimed</h3>
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                                {sheetData['CONTROLE_ATENDIMENTOS'].filter(a => Number(a.Limite_Max||0) > 0 && (Number(a.Qtd_Atual||0)/Number(a.Limite_Max||1)) >= 0.9).map((a, i) => {
+                                                    const qtd = Number(a.Qtd_Atual || 0); const max = Number(a.Limite_Max || 1);
+                                                    const perc = (qtd / max) * 100; const isCritico = perc >= 100;
+                                                    return (
+                                                        <div key={i} className={`p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem] shadow-xl border-4 ${isCritico ? 'bg-red-600 border-red-800 text-white' : 'bg-orange-50 border-orange-200 text-orange-900'}`}>
+                                                            <div className="flex justify-between items-center mb-4 md:mb-6"><span className="font-black text-xl md:text-2xl">{safeString(a.Profissional)}</span></div>
+                                                            <div className="w-full bg-black/10 rounded-full h-3 md:h-4 mb-4"><div className={`h-3 md:h-4 rounded-full ${isCritico ? 'bg-white' : 'bg-orange-500'}`} style={{width: `${Math.min(perc, 100)}%`}}></div></div>
+                                                            <p className="text-4xl md:text-5xl font-black leading-none">{qtd} <span className="text-lg md:text-xl opacity-60">/ {max}</span></p>
+                                                        </div>
+                                                    )
+                                                })}
+                                            </div>
+                                        </div>
+                                    )}
+
                                     <div>
                                         <h3 className="text-xl md:text-3xl font-black mb-6 md:mb-8 text-gray-900 dark:text-white px-2">Acesso Rápido</h3>
                                         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 md:gap-6">
