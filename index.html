@@ -15,7 +15,7 @@
     <meta http-equiv="Expires" content="0">
     
     <script>
-        const VERSAO_ATUAL = "11.0.0"; 
+        const VERSAO_ATUAL = "11.0.0"; // Correção definitiva das abas, canEdit e Competências.
         if (window.location.search.indexOf('v=' + VERSAO_ATUAL) === -1) {
             localStorage.clear(); sessionStorage.clear();
             window.location.replace(window.location.pathname + (window.location.pathname.indexOf('?') === -1 ? '?' : '&') + 'v=' + VERSAO_ATUAL);
@@ -47,7 +47,6 @@
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -84,9 +83,6 @@
     <script type="text/babel" data-presets="react">
         const { useState, useEffect, Component } = React;
 
-        // ==========================================
-        // 1. CONFIGURAÇÃO DO FIREBASE
-        // ==========================================
         const firebaseConfig = {
             apiKey: "AIzaSyArUJk5o90YfmMqRZl2kBaFfvRXFZcW3cE",
             authDomain: "portal-sao-vicente.firebaseapp.com",
@@ -105,15 +101,35 @@
                 firebase.initializeApp(firebaseConfig); 
             }
             db = firebase.firestore(); 
-            db.enablePersistence({ synchronizeTabs: true }).catch(() => { console.log("Modo offline apenas leitura ativado."); }); 
+            db.enablePersistence({ synchronizeTabs: true }).catch(() => { console.log("Modo offline ativado."); }); 
             auth = firebase.auth(); 
         } catch (e) { 
             console.error("Erro ao conectar no Firebase:", e); 
         }
 
-        // ==========================================
-        // 2. FUNÇÕES UTILITÁRIAS
-        // ==========================================
+        class ErrorBoundary extends Component {
+            constructor(props) { 
+                super(props); 
+                this.state = { hasError: false, errStr: '' }; 
+            }
+            static getDerivedStateFromError(error) { 
+                return { hasError: true, errStr: String(error) }; 
+            }
+            render() {
+                if (this.state.hasError) {
+                    return (
+                        <div className="p-10 text-center flex flex-col items-center justify-center min-h-screen bg-gray-50 dark:bg-slate-900">
+                            <i className="ph-fill ph-warning-circle text-6xl text-red-500 mb-4 animate-bounce"></i>
+                            <h2 className="text-2xl font-black mb-2 text-gray-900 dark:text-white">Aviso do Sistema</h2>
+                            <p className="text-sm text-gray-500 mb-6 max-w-md">Ocorreu um erro ao carregar esta tela ({this.state.errStr}). Fique tranquilo, seus dados estão salvos no servidor.</p>
+                            <button onClick={()=>window.location.reload()} className="bg-primary text-white px-8 py-3 rounded-xl font-bold shadow-lg">Recarregar Portal</button>
+                        </div>
+                    );
+                }
+                return this.props.children; 
+            }
+        }
+
         const safeString = (val) => {
             if (val === null || val === undefined) return '';
             return String(val);
@@ -162,9 +178,6 @@
             return false; 
         };
 
-        // ==========================================
-        // 3. ESTRUTURA DO BANCO DE DADOS
-        // ==========================================
         const tabSchemas = {
             'CONVÊNIOS': ['ID', 'Código', 'Procedimento'], 
             'CORPO CLINICO': ['ID', 'Médico', 'Especialidade', 'Segmento', 'Código UNIMED', 'CRM', 'CBO', 'Cor_Selo', 'Foto_URL'], 
@@ -186,9 +199,6 @@
             'MURAL_AVISOS': ['ID', 'Layout', 'Título', 'Subtítulo', 'Imagem_URL', 'Link', 'Ativo']
         };
 
-        // ==========================================
-        // 4. MOTOR DA API
-        // ==========================================
         const api = {
             fetch: async (colName) => { 
                 if(!db) return []; 
@@ -258,33 +268,6 @@
                 } 
             }
         };
-
-        // ==========================================
-        // 5. COMPONENTES VISUAIS
-        // ==========================================
-
-        class ErrorBoundary extends Component {
-            constructor(props) { 
-                super(props); 
-                this.state = { hasError: false, errStr: '' }; 
-            }
-            static getDerivedStateFromError(error) { 
-                return { hasError: true, errStr: String(error) }; 
-            }
-            render() {
-                if (this.state.hasError) {
-                    return (
-                        <div className="p-10 text-center flex flex-col items-center justify-center min-h-screen bg-gray-50 dark:bg-slate-900">
-                            <i className="ph-fill ph-warning-circle text-6xl text-red-500 mb-4 animate-bounce"></i>
-                            <h2 className="text-2xl font-black mb-2 text-gray-900 dark:text-white">Aviso do Sistema</h2>
-                            <p className="text-sm text-gray-500 mb-6 max-w-md">Ocorreu um erro ao carregar esta tela. Seus dados estão seguros.</p>
-                            <button onClick={()=>window.location.reload()} className="bg-primary text-white px-8 py-3 rounded-xl font-bold shadow-lg">Recarregar Portal</button>
-                        </div>
-                    );
-                }
-                return this.props.children; 
-            }
-        }
 
         const ClockWidget = ({ lembretesData }) => {
             const [time, setTime] = useState(new Date());
@@ -450,16 +433,12 @@
             );
         };
 
-        // ==========================================
-        // ABAS ESPECÍFICAS DE VISUALIZAÇÃO
-        // ==========================================
-
         const GenericCardView = ({ data, canEdit, openModal, handleDelete, schema, titleField, descField, extraField, title }) => {
             const [search, setSearch] = useState(''); 
             const [selectedItem, setSelectedItem] = useState(null);
             
             const safeData = Array.isArray(data) ? data : [];
-            const filtered = safeData.filter(i => i && Object.values(i).some(v => safeString(v).toLowerCase().includes(search.toLowerCase()))).sort((a,b) => safeString(a[titleField]).localeCompare(safeString(b[titleField])));
+            const filtered = safeData.filter(item => item && typeof item === 'object' && Object.values(item).some(v => safeString(v).toLowerCase().includes(search.toLowerCase()))).sort((a,b) => safeString(a[titleField]).localeCompare(safeString(b[titleField])));
             
             return (
                 <div className="space-y-6">
@@ -626,7 +605,7 @@
             );
         };
 
-        const CorpoClinicoCards = ({ data, canEdit, openModal, handleDelete, setActiveTab }) => {
+        const CorpoClinicoCards = ({ data, canEdit, openModal, handleDelete, openLancarEscala }) => {
             const safeData = Array.isArray(data) ? data : []; 
             const [search, setSearch] = useState(''); 
             const filtered = safeData.filter(m => m && typeof m === 'object' && (safeString(m.Médico).toLowerCase().includes(search.toLowerCase()) || safeString(m.Especialidade).toLowerCase().includes(search.toLowerCase()))).sort((a,b) => safeString(a.Médico).localeCompare(safeString(b.Médico)));
@@ -651,7 +630,7 @@
                                         {med.CBO && <p className="text-[10px] font-bold text-gray-500 flex justify-between uppercase pt-2 border-t dark:border-slate-700"><span>CBO</span><span className="bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-gray-200 px-2 py-0.5 rounded">{safeString(med.CBO)}</span></p>}
                                     </div>
                                     
-                                    {canEdit && <button onClick={()=>setActiveTab('ESCALAS')} className="w-full bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-black py-3 rounded-xl hover:scale-105 transition mt-auto flex justify-center items-center gap-2 text-xs shadow-md"><i className="ph-bold ph-calendar-plus text-base"></i> Abrir Escalas</button>}
+                                    {canEdit && <button onClick={()=>openLancarEscala(safeString(med.Médico), true)} className="w-full bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-black py-3 rounded-xl hover:scale-105 transition mt-auto flex justify-center items-center gap-2 text-xs shadow-md"><i className="ph-bold ph-calendar-plus text-base"></i> Agendar Plantão</button>}
                                 </div>
                                 {canEdit && (
                                     <div className="absolute top-4 right-4 flex gap-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition z-20">
@@ -682,15 +661,15 @@
                             <button onClick={()=>setActiveTab('Telefone')} className={`flex-1 md:flex-none px-6 py-2.5 rounded-lg text-sm font-black transition-all ${activeTab==='Telefone'?'bg-white dark:bg-slate-800 shadow-md text-green-600':'text-gray-500'}`}>📱 Externos</button>
                         </div>
                         <div className="flex gap-3 w-full md:w-auto">
-                            <div className="relative flex-1 md:w-64"><i className="ph-bold ph-magnifying-glass absolute left-4 top-3 text-gray-400 text-lg"></i><input type="text" placeholder="Buscar..." value={search} onChange={e=>setSearch(e.target.value)} className="w-full pl-12 pr-4 py-2.5 bg-gray-50 dark:bg-slate-900 border dark:border-slate-700 rounded-xl font-bold outline-none focus:ring-2 focus:ring-primary dark:text-white" /></div>
+                            <div className="relative flex-1 md:w-64"><i className="ph-bold ph-magnifying-glass absolute left-4 top-3.5 text-gray-400 text-lg"></i><input type="text" placeholder="Buscar..." value={search} onChange={e=>setSearch(e.target.value)} className="w-full pl-12 pr-4 py-2.5 bg-gray-50 dark:bg-slate-900 border dark:border-slate-700 rounded-xl font-bold outline-none focus:ring-2 focus:ring-primary dark:text-white" /></div>
                             {canEdit && <button onClick={()=>openModal({Tipo: activeTab}, schema)} className="bg-primary text-white px-5 rounded-xl font-black shadow-md hover:-translate-y-1 transition flex justify-center items-center"><i className="ph-bold ph-plus text-xl"></i></button>}
                         </div>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                         {filtered.map((item, i) => (
                             <div key={i} className="bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-[2rem] p-6 shadow-sm card-hover relative group flex flex-col">
-                                <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest bg-gray-50 dark:bg-slate-900 border dark:border-slate-600 px-3 py-1.5 rounded-full mb-3 w-max">{safeString(item.Local_Setor) || 'Geral'}</span>
-                                <h3 className="font-black text-xl mt-1 dark:text-white leading-tight">{safeString(item.Nome_Contato) || 'Sem Nome'}</h3>
+                                <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest bg-gray-50 dark:bg-slate-900 border dark:border-slate-600 px-3 py-1.5 rounded-full mb-4 w-max">{safeString(item.Local_Setor) || 'Geral'}</span>
+                                <h3 className="font-black text-xl mb-1 dark:text-white leading-tight">{safeString(item.Nome_Contato) || 'Sem Nome'}</h3>
                                 <p className={`text-xl font-black mt-3 p-4 rounded-2xl break-all shadow-inner ${activeTab==='Ramal'?'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300':activeTab==='Email'?'bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300':'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300'}`}>{safeString(item.Valor_Contato)}</p>
                                 {item.Anotacoes && <p className="text-xs font-bold text-gray-500 mt-4 leading-tight border-t dark:border-slate-700 pt-3">{safeString(item.Anotacoes)}</p>}
                                 {canEdit && (
@@ -701,7 +680,7 @@
                                 )}
                             </div>
                         ))}
-                        {filtered.length === 0 && <div className="col-span-full p-20 text-center text-gray-400 font-bold border-2 border-dashed dark:border-slate-700 rounded-[2rem]">Nenhum {activeTab} cadastrado.</div>}
+                        {filtered.length === 0 && <div className="col-span-full p-20 text-center text-gray-400 font-black text-2xl border-2 border-dashed dark:border-slate-700 rounded-[3rem]">Nenhum {activeTab} cadastrado.</div>}
                     </div>
                 </div>
             )
@@ -717,7 +696,7 @@
             return (
                 <div className="space-y-6 animate-fade-in">
                     <div className="flex flex-col md:flex-row bg-white dark:bg-slate-800 p-5 rounded-[1.5rem] border dark:border-slate-700 shadow-sm gap-4 justify-between items-center">
-                        <div className="relative w-full md:w-96"><i className="ph-bold ph-magnifying-glass absolute left-4 top-3.5 text-gray-400 text-lg"></i><input type="text" placeholder="Buscar sistema ou login..." value={search} onChange={e=>setSearch(e.target.value)} className="w-full pl-12 pr-4 py-3 bg-gray-50 dark:bg-slate-900 border dark:border-slate-700 rounded-xl font-bold outline-none focus:ring-2 focus:ring-primary dark:text-white shadow-inner" /></div>
+                        <div className="relative w-full md:w-96"><i className="ph-bold ph-magnifying-glass absolute left-4 top-3.5 text-gray-400 text-lg"></i><input type="text" placeholder="Buscar sistema ou login..." value={search} onChange={e=>setSearch(e.target.value)} className="w-full pl-12 pr-4 py-3 bg-gray-50 dark:bg-slate-900 border dark:border-slate-700 rounded-xl font-bold outline-none focus:ring-2 focus:ring-primary dark:text-white" /></div>
                         {canEdit && <button onClick={()=>openModal(null, schema)} className="bg-primary text-white font-black px-8 py-3.5 rounded-xl shadow-lg hover:-translate-y-1 transition w-full md:w-auto flex items-center justify-center gap-2"><i className="ph-bold ph-plus text-xl"></i> Nova Senha</button>}
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -743,7 +722,7 @@
                                 )}
                             </div>
                         ))}
-                        {filtered.length === 0 && <div className="col-span-full p-20 text-center text-gray-400 font-black text-2xl border-2 border-dashed dark:border-slate-700 rounded-[2rem]">Nenhuma senha encontrada.</div>}
+                        {filtered.length === 0 && <div className="col-span-full p-20 text-center text-gray-400 font-black text-2xl border-2 border-dashed dark:border-slate-700 rounded-[3rem]">Nenhuma senha encontrada.</div>}
                     </div>
                 </div>
             );
@@ -804,7 +783,7 @@
                                 <div className="flex items-start justify-between mb-4"><div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-3xl shadow-inner ${color}`}><i className={`ph-fill ${icon}`}></i></div><span className="text-[10px] font-black text-gray-400 border dark:border-slate-600 px-3 py-1.5 rounded-full uppercase">{safeString(item.Data_Publicacao).split('-').reverse().join('/')}</span></div>
                                 <h3 className="font-black text-xl leading-tight mb-2 dark:text-white">{safeString(item.Título)}</h3><p className="text-sm text-gray-500 font-medium line-clamp-3 mb-6">{safeString(item.Descrição)}</p>
                                 <button onClick={()=>setSelectedMedia(item)} className="mt-auto w-full py-3 bg-gray-50 dark:bg-slate-900 hover:bg-gray-900 dark:hover:bg-white text-gray-700 dark:text-gray-300 hover:text-white dark:hover:text-gray-900 rounded-xl font-black transition flex items-center justify-center gap-2">Abrir Material <i className="ph-bold ph-arrow-square-out text-lg"></i></button>
-                                {canEdit && <div className="absolute top-4 right-4 flex gap-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition"><button onClick={()=>openModal(item)} className="w-10 h-10 bg-white dark:bg-slate-700 shadow-md rounded-full text-blue-600 hover:scale-110 transition flex items-center justify-center"><i className="ph-bold ph-pencil-simple text-lg"></i></button><button onClick={()=>{if(confirm('Excluir?')) handleDelete(item.ID)}} className="w-10 h-10 bg-white dark:bg-slate-700 shadow-md rounded-full text-red-600 hover:scale-110 transition flex items-center justify-center"><i className="ph-bold ph-trash text-lg"></i></button></div>}
+                                {canEdit && <div className="absolute top-4 right-4 flex gap-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition"><button onClick={()=>openModal(item)} className="w-10 h-10 bg-white dark:bg-slate-700 shadow-md rounded-full text-blue-600 flex items-center justify-center hover:scale-110 transition"><i className="ph-bold ph-pencil-simple text-lg"></i></button><button onClick={()=>{if(confirm('Excluir?')) handleDelete(item.ID)}} className="w-10 h-10 bg-white dark:bg-slate-700 shadow-md rounded-full text-red-600 flex items-center justify-center hover:scale-110 transition"><i className="ph-bold ph-trash text-lg"></i></button></div>}
                             </div>
                         )
                     })}</div>
@@ -812,7 +791,7 @@
                     {selectedMedia && (
                         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 glass-modal animate-fade-in" onClick={()=>setSelectedMedia(null)}>
                             <div className="bg-white dark:bg-slate-800 rounded-[2rem] w-full max-w-5xl shadow-2xl flex flex-col border dark:border-slate-700 overflow-hidden animate-pop-in" onClick={e=>e.stopPropagation()}>
-                                <div className="p-6 bg-gray-900 text-white flex justify-between items-center shrink-0"><h3 className="text-xl font-black truncate pr-4 flex items-center gap-3"><i className="ph-fill ph-monitor-play text-primary"></i> {safeString(selectedMedia.Título)}</h3><button onClick={()=>setSelectedMedia(null)} className="w-10 h-10 bg-white/20 hover:bg-red-500 rounded-full flex justify-center items-center transition text-lg"><i className="ph-bold ph-x"></i></button></div>
+                                <div className="p-6 bg-gray-900 text-white flex justify-between items-center shrink-0"><h3 className="text-xl font-black truncate pr-4 flex items-center gap-2"><i className="ph-fill ph-monitor-play text-primary"></i> {safeString(selectedMedia.Título)}</h3><button onClick={()=>setSelectedMedia(null)} className="w-10 h-10 bg-white/20 hover:bg-red-500 rounded-full flex justify-center items-center transition text-lg"><i className="ph-bold ph-x"></i></button></div>
                                 <div className="bg-gray-100 dark:bg-slate-900 h-[70vh] relative flex items-center justify-center p-4">
                                     {selectedMedia.Link_Arquivo ? (safeString(selectedMedia.Tipo_Midia).includes('Imagem') ? <img src={formatImageUrl(selectedMedia.Link_Arquivo)} className="max-w-full max-h-full object-contain rounded-2xl shadow-lg border dark:border-slate-700" /> : <iframe src={getEmbedUrl(selectedMedia.Link_Arquivo)} className="w-full h-full border-0 rounded-2xl bg-white shadow-lg" allowFullScreen></iframe>) : <p className="font-bold text-gray-400 p-10 border-2 border-dashed rounded-[2rem]">Link indisponível.</p>}
                                 </div>
@@ -850,7 +829,7 @@
                         <div className="p-6 border-b dark:border-slate-700 bg-white dark:bg-slate-800"><h2 className="text-2xl font-black text-primary flex items-center gap-3"><i className="ph-fill ph-chats-circle"></i> Comunicação</h2></div>
                         <div className="p-4 space-y-3 overflow-y-auto flex md:flex-col gap-2 md:gap-0 hide-scroll">
                             <div onClick={()=>setActiveRoom('Geral')} className={`p-4 rounded-[1.5rem] cursor-pointer font-black flex items-center gap-4 transition whitespace-nowrap md:whitespace-normal shrink-0 ${activeRoom==='Geral'?'bg-primary text-white shadow-lg':'hover:bg-white dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 border border-transparent hover:border-gray-200'}`}><div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center shadow-inner"><i className="ph-fill ph-users text-2xl"></i></div> Fórum Geral</div>
-                            <div onClick={()=>setActiveRoom(isAdmin?'Caixa de Entrada':'Supervisão')} className={`p-4 rounded-[1.5rem] cursor-pointer font-black flex items-center justify-between transition whitespace-nowrap md:whitespace-normal shrink-0 ${activeRoom!=='Geral'?'bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-lg':'hover:bg-white dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 border border-transparent hover:border-gray-200'}`}><div className="flex items-center gap-4"><div className="w-12 h-12 rounded-xl bg-white/20 dark:bg-black/10 flex items-center justify-center shadow-inner"><i className="ph-fill ph-shield-star text-2xl"></i></div> {isAdmin?'Caixa Inbox':'Falar c/ Supervisão'}</div></div>
+                            <div onClick={()=>setActiveRoom(isAdmin?'Caixa de Entrada':'Supervisão')} className={`p-4 rounded-[1.5rem] cursor-pointer font-black flex items-center gap-4 transition whitespace-nowrap md:whitespace-normal shrink-0 ${activeRoom!=='Geral'?'bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-lg':'hover:bg-white dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 border border-transparent hover:border-gray-200'}`}><div className="w-12 h-12 rounded-xl bg-white/20 dark:bg-black/10 flex items-center justify-center shadow-inner"><i className="ph-fill ph-shield-star text-2xl"></i></div> {isAdmin?'Caixa Inbox':'Falar c/ Supervisão'}</div>
                         </div>
                     </div>
                     <div className="w-full flex flex-col bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-gray-50 dark:bg-slate-900 flex-1 relative">
@@ -930,7 +909,7 @@
                 dataToShow.forEach(e => { if(!e) return; const s = safeString(e.Setor_Consultorio) || 'Sem Setor'; if(!setores[s]) setores[s] = []; setores[s].push(e); });
                 return (
                     <div className="bg-white dark:bg-slate-800 rounded-[2rem] md:rounded-[3rem] p-6 md:p-10 border dark:border-slate-700 min-h-[60vh] shadow-sm">
-                        <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-6"><h3 className="text-2xl md:text-3xl font-black text-gray-800 dark:text-white flex items-center gap-4"><div className="w-14 h-14 bg-primary/10 text-primary rounded-2xl flex justify-center items-center shadow-inner"><i className="ph-fill ph-kanban"></i></div> Operação de Hoje</h3><div className="flex flex-wrap justify-center gap-4 text-[10px] font-black uppercase tracking-widest bg-gray-50 dark:bg-slate-900 p-3.5 rounded-2xl border dark:border-slate-700 shadow-inner w-full md:w-auto"><span className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.8)]"></div> Ativo</span><span className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.8)]"></div> Intervalo</span><span className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]"></div> Ausente</span></div></div>
+                        <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-6"><h3 className="text-2xl md:text-3xl font-black text-gray-800 dark:text-white flex items-center gap-4"><div className="w-14 h-14 bg-primary/10 text-primary rounded-2xl flex justify-center items-center shadow-inner"><i className="ph-fill ph-kanban"></i></div> Operação de Hoje</h3><div className="flex flex-wrap justify-center gap-4 text-[10px] font-black uppercase tracking-widest bg-gray-50 dark:bg-slate-900 p-3.5 rounded-2xl border dark:border-slate-700 shadow-inner w-full md:w-auto"><span className="flex items-center gap-2 text-gray-700 dark:text-gray-300"><div className="w-3 h-3 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.8)]"></div> Ativo</span><span className="flex items-center gap-2 text-gray-700 dark:text-gray-300"><div className="w-3 h-3 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.8)]"></div> Intervalo</span><span className="flex items-center gap-2 text-gray-700 dark:text-gray-300"><div className="w-3 h-3 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]"></div> Ausente</span></div></div>
                         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
                             {Object.keys(setores).sort().map(setor => (
                                 <div key={setor} className="bg-gray-50 dark:bg-slate-900 rounded-[2rem] p-6 shadow-inner border dark:border-slate-700 flex flex-col"><h4 className="font-black text-gray-400 uppercase tracking-widest text-xs mb-5 px-2 flex items-center gap-2"><i className="ph-fill ph-door text-lg"></i> {setor}</h4>
@@ -942,10 +921,10 @@
                                             const isIntervalo = status === 'Intervalo'; const isAusente = status.includes('Ausente') || status === 'Folga' || status === 'Falta';
                                             let bgCard = isIntervalo ? 'bg-orange-50 dark:bg-orange-900/30 border-orange-200' : isAusente ? 'bg-red-50 dark:bg-red-900/30 border-red-200 opacity-60 grayscale-[50%]' : 'bg-white dark:bg-slate-800 border-gray-100 dark:border-slate-600';
                                             const cUnimed = controleUnimed.find(a => a && safeString(a.Profissional) === safeString(esc.Nome_Profissional));
-                                            let uPulseClass = ''; if (cUnimed) { const q = Number(cUnimed.Qtd_Atual||0); const m = Number(cUnimed.Limite_Max||1); if (m > 0 && m - q <= 5) uPulseClass = 'animate-pulse bg-red-500 text-white border-red-600 shadow-lg shadow-red-500/30'; else if (m > 0 && q/m >= 0.8) uPulseClass = 'animate-pulse bg-green-500 text-white border-green-600 shadow-lg shadow-green-500/30'; else uPulseClass = 'bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 border-blue-200 dark:border-blue-800'; }
+                                            let uPulseClass = ''; if (cUnimed) { const q = Number(cUnimed.Qtd_Atual||0); const m = Number(cUnimed.Limite_Max||1); if (m > 0 && m - q <= 5) uPulseClass = 'animate-pulse bg-red-500 text-white border-red-600 shadow-lg shadow-red-500/30'; else if (m > 0 && q/m >= 0.8) uPulseClass = 'animate-pulse bg-green-500 text-white border-green-600 shadow-lg shadow-green-500/30'; else uPulseClass = 'bg-blue-50 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200 border-blue-200 dark:border-blue-800'; }
                                             return (
                                                 <div key={i} onClick={()=>(canEdit || isColab) && setSelectedPerson(esc)} className={`p-5 rounded-[1.5rem] border-2 shadow-sm card-hover hover:border-primary transition relative flex flex-col gap-3 ${bgCard}`}>
-                                                    {isIntervalo && <div className="absolute -top-3 -right-3 w-10 h-10 bg-orange-500 text-white rounded-full flex items-center justify-center text-xl animate-bounce-slight shadow-xl border-4 border-white dark:border-slate-800 z-10">🥪</div>}
+                                                    {isIntervalo && <div className="absolute -top-3 -right-3 w-10 h-10 bg-orange-500 text-white rounded-full flex items-center justify-center text-xl animate-bounce-slight shadow-xl border-4 border-white dark:border-slate-900 z-10">🥪</div>}
                                                     <div className="flex justify-between items-start"><div><span className={`font-black text-lg ${isAusente ? 'text-red-900 dark:text-red-400 line-through decoration-red-300' : 'text-gray-900 dark:text-white'} block pr-4`}>{safeString(esc.Nome_Profissional)}</span><p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-1.5"><i className="ph-fill ph-clock"></i> {safeString(esc.Horario)}</p></div>{isAusente && <span className="text-[8px] uppercase font-black tracking-widest text-red-600 bg-red-100 px-2 py-1 rounded-full">Ausente</span>}</div>
                                                     {esc.Substituindo && <p className="text-[9px] font-black text-primary bg-blue-50 dark:bg-blue-900/50 border border-blue-100 dark:border-blue-800 px-3 py-1.5 rounded-lg mt-1 uppercase w-max">Cobrindo: {safeString(esc.Substituindo)}</p>}
                                                     {cUnimed && (<div className={`mt-2 flex flex-col sm:flex-row justify-between items-center p-3 rounded-xl border gap-3 ${uPulseClass}`} onClick={(e)=>e.stopPropagation()}><span className="text-[9px] font-black uppercase tracking-widest">Guia Unimed</span><div className="flex items-center gap-3"><button onClick={()=>handleUnimedUpdate(cUnimed, -1)} className="w-8 h-8 bg-white/60 hover:bg-white rounded-lg flex items-center justify-center text-black shadow-sm font-black transition hover:scale-110">-</button><span className="font-black text-sm w-12 text-center">{cUnimed.Qtd_Atual}<span className="opacity-50 text-[9px] block">/{cUnimed.Limite_Max}</span></span><button onClick={()=>handleUnimedUpdate(cUnimed, 1)} className="w-8 h-8 bg-white/60 hover:bg-white rounded-lg flex items-center justify-center text-black shadow-sm font-black transition hover:scale-110">+</button></div></div>)}
@@ -965,14 +944,14 @@
                 <div className="space-y-8 animate-fade-in">
                     <div className="bg-white dark:bg-slate-800 rounded-[2rem] p-5 shadow-sm border dark:border-slate-700 flex flex-col md:flex-row justify-between items-center gap-5">
                         <div className="flex bg-gray-50 dark:bg-slate-900 p-2 rounded-full overflow-x-auto hide-scroll w-full md:w-auto shadow-inner">{['Painel Hoje', 'Calendário Médicos', 'Calendário Equipe'].map(tab => (<button key={tab} onClick={() => {setActiveSubTab(tab); setSearchTab('');}} className={`px-6 py-3.5 rounded-full font-black text-sm transition-all whitespace-nowrap ${activeSubTab === tab ? 'bg-white dark:bg-slate-800 text-primary shadow-md' : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'}`}>{tab}</button>))}</div>
-                        <div className="flex gap-3 w-full md:w-auto"><div className="relative flex-1 md:w-72"><i className="ph-bold ph-magnifying-glass absolute left-5 top-4.5 text-gray-400 text-lg"></i><input type="text" placeholder="Filtrar Nome..." value={searchTab} onChange={e=>setSearchTab(e.target.value)} className="w-full pl-14 pr-4 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-full font-black outline-none focus:ring-2 focus:ring-primary text-sm dark:text-white shadow-inner" /></div>{canEdit && <button onClick={() => { setFormData({ ID: '', Tipo_Profissional: activeSubTab.includes('Médicos') ? 'Médico' : 'Colaborador', Nome_Profissional: '', Turno: 'Manhã', Horario: '', Unidade: '', Setor_Consultorio: '', Status_Turno: 'Trabalhando', Substituindo: '' }); setDatesToSave([]); setIsModalOpen(true); }} className="bg-primary text-white font-black px-6 py-4 rounded-full shadow-xl hover:scale-105 hover:-translate-y-1 transition shrink-0 flex items-center justify-center gap-2"><i className="ph-bold ph-plus text-xl"></i></button>}</div>
+                        <div className="flex gap-3 w-full md:w-auto"><div className="relative flex-1 md:w-72"><i className="ph-bold ph-magnifying-glass absolute left-5 top-4.5 text-gray-400 text-lg"></i><input type="text" placeholder="Filtrar Nome..." value={searchTab} onChange={e=>setSearchTab(e.target.value)} className="w-full pl-14 pr-4 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-full font-black outline-none focus:ring-2 focus:ring-primary text-sm dark:text-white shadow-inner" /></div>{canEdit && <button onClick={() => { setFormData({ ID: '', Tipo_Profissional: activeSubTab.includes('Médicos') ? 'Médico' : 'Colaborador', Nome_Profissional: '', Turno: 'Manhã', Horario: '', Unidade: '', Setor_Consultorio: '', Status_Turno: 'Trabalhando', Substituindo: '' }); setDatesToSave([]); setIsModalOpen(true); }} className="bg-primary text-white font-black px-6 py-4 rounded-full shadow-xl shadow-blue-900/20 hover:scale-105 hover:-translate-y-1 transition shrink-0 flex items-center justify-center gap-2"><i className="ph-bold ph-plus text-xl"></i></button>}</div>
                     </div>
 
                     {activeSubTab === 'Painel Hoje' ? <PainelDoDia /> : (
                         <div className="bg-white dark:bg-slate-800 rounded-[3rem] shadow-sm border dark:border-slate-700 p-8 md:p-12 relative overflow-hidden">
                             <div className="flex justify-between items-center mb-8 md:mb-12"><button onClick={()=>setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth()-1, 1))} className="w-14 h-14 md:w-16 md:h-16 bg-gray-50 dark:bg-slate-900 rounded-2xl shadow-inner flex justify-center items-center hover:scale-110 transition"><i className="ph-bold ph-caret-left text-2xl text-gray-500"></i></button><h2 className="text-3xl md:text-5xl font-black capitalize text-gray-900 dark:text-white text-center tracking-tight">{currentMonth.toLocaleString('pt-BR', { month: 'long', year: 'numeric' })}</h2><button onClick={()=>setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth()+1, 1))} className="w-14 h-14 md:w-16 md:h-16 bg-gray-50 dark:bg-slate-900 rounded-2xl shadow-inner flex justify-center items-center hover:scale-110 transition"><i className="ph-bold ph-caret-right text-2xl text-gray-500"></i></button></div>
-                            <div className="grid grid-cols-7 gap-2 md:gap-4 mb-4 text-center border-b dark:border-slate-700 pb-4"><div className="font-black text-gray-400 uppercase tracking-widest text-[9px] md:text-xs">Dom</div><div className="font-black text-gray-400 uppercase tracking-widest text-[9px] md:text-xs">Seg</div><div className="font-black text-gray-400 uppercase tracking-widest text-[9px] md:text-xs">Ter</div><div className="font-black text-gray-400 uppercase tracking-widest text-[9px] md:text-xs">Qua</div><div className="font-black text-gray-400 uppercase tracking-widest text-[9px] md:text-xs">Qui</div><div className="font-black text-gray-400 uppercase tracking-widest text-[9px] md:text-xs">Sex</div><div className="font-black text-gray-400 uppercase tracking-widest text-[9px] md:text-xs">Sáb</div></div>
-                            <div className="grid grid-cols-7 gap-2 md:gap-4 relative z-10">
+                            <div className="grid grid-cols-7 gap-2 md:gap-6 mb-4 text-center border-b dark:border-slate-700 pb-4"><div className="font-black text-gray-400 uppercase tracking-widest text-[9px] md:text-xs">Dom</div><div className="font-black text-gray-400 uppercase tracking-widest text-[9px] md:text-xs">Seg</div><div className="font-black text-gray-400 uppercase tracking-widest text-[9px] md:text-xs">Ter</div><div className="font-black text-gray-400 uppercase tracking-widest text-[9px] md:text-xs">Qua</div><div className="font-black text-gray-400 uppercase tracking-widest text-[9px] md:text-xs">Qui</div><div className="font-black text-gray-400 uppercase tracking-widest text-[9px] md:text-xs">Sex</div><div className="font-black text-gray-400 uppercase tracking-widest text-[9px] md:text-xs">Sáb</div></div>
+                            <div className="grid grid-cols-7 gap-2 md:gap-6 relative z-10">
                                 {Array(firstDayOfMonth).fill(null).map((_, i) => <div key={`e-${i}`} className="aspect-square opacity-20 bg-gray-50 dark:bg-slate-900 rounded-[1.5rem]" />)}
                                 {Array(daysInMonth).fill(null).map((_, i) => {
                                     const day = i + 1; const dateStrCompleto = `${String(day).padStart(2, '0')}/${String(currentMonth.getMonth() + 1).padStart(2, '0')}/${currentMonth.getFullYear()}`;
@@ -991,13 +970,14 @@
                     
                     {selectedDate && !selectedPerson && (
                         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 glass-modal animate-fade-in" onClick={() => setSelectedDate(null)}>
-                            <div className="bg-white dark:bg-slate-800 rounded-[3rem] w-full max-w-6xl p-8 md:p-12 shadow-2xl relative border dark:border-slate-700 flex flex-col max-h-[90vh] animate-pop-in" onClick={e => e.stopPropagation()}>
-                                <button onClick={()=>setSelectedDate(null)} className="absolute top-8 right-8 md:top-10 md:right-10 w-12 h-12 bg-gray-50 dark:bg-slate-700 hover:bg-red-500 hover:text-white rounded-full transition flex items-center justify-center text-xl shadow-sm"><i className="ph-bold ph-x"></i></button>
+                            <div className="bg-white dark:bg-slate-800 rounded-[2rem] md:rounded-[3rem] w-full max-w-6xl p-8 md:p-12 shadow-2xl relative border border-gray-100 dark:border-slate-700 flex flex-col max-h-[90vh] animate-pop-in" onClick={e => e.stopPropagation()}>
+                                <button onClick={()=>setSelectedDate(null)} className="absolute top-6 right-6 md:top-10 md:right-10 w-12 h-12 bg-gray-50 dark:bg-slate-700 hover:bg-red-500 hover:text-white rounded-full transition flex justify-center items-center text-xl shadow-sm"><i className="ph-bold ph-x"></i></button>
                                 <h3 className="text-3xl md:text-4xl font-black mb-8 md:mb-12 flex items-center gap-4 dark:text-white border-b dark:border-slate-700 pb-6"><div className="w-14 h-14 bg-primary/10 text-primary rounded-2xl flex items-center justify-center"><i className="ph-fill ph-calendar-check"></i></div> Plantão {selectedDate}</h3>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 overflow-y-auto custom-scrollbar flex-1 pb-4 pr-2">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 overflow-y-auto custom-scrollbar flex-1 pb-4 pr-2">
                                     {filteredEscalas.filter(e => e && (safeString(e.Data).includes(selectedDate) || safeString(e.Data).includes(selectedDate.substring(0,6) + selectedDate.substring(8,10)))).map((esc, i) => (
                                         <div key={i} onClick={() => (canEdit || isColab) && setSelectedPerson(esc)} className="bg-white dark:bg-slate-800 border-2 dark:border-slate-700 rounded-3xl p-6 md:p-8 cursor-pointer card-hover hover:border-primary flex flex-col shadow-sm group">
-                                            <h4 className="font-black text-xl mb-3 dark:text-white group-hover:text-primary transition">{safeString(esc.Nome_Profissional)}</h4><p className="text-xs font-black bg-gray-50 dark:bg-slate-900 border dark:border-slate-700 px-4 py-2 rounded-xl mb-6 text-gray-600 dark:text-gray-400 w-max flex items-center gap-2"><i className="ph-fill ph-clock"></i> {safeString(esc.Turno)} • {safeString(esc.Horario)}</p>
+                                            <h4 className="font-black text-xl md:text-2xl mb-3 dark:text-white group-hover:text-primary transition">{safeString(esc.Nome_Profissional)}</h4>
+                                            <p className="text-xs md:text-sm font-black bg-gray-50 dark:bg-slate-900 border dark:border-slate-700 px-4 py-2 rounded-xl mb-6 text-gray-600 dark:text-gray-400 w-max flex items-center gap-2"><i className="ph-fill ph-clock"></i> {safeString(esc.Turno)} • {safeString(esc.Horario)}</p>
                                             <div className="mt-auto flex justify-between items-center"><span className="text-[9px] font-black uppercase tracking-widest bg-green-100 text-green-800 px-4 py-2 rounded-full">{safeString(esc.Status_Turno)||'Ativo'}</span><span className="text-primary text-xs font-black bg-blue-50 dark:bg-blue-900/30 px-4 py-2 rounded-xl opacity-0 group-hover:opacity-100 transition flex items-center gap-1">Detalhes <i className="ph-bold ph-arrow-right"></i></span></div>
                                         </div>
                                     ))}
@@ -1019,7 +999,10 @@
 
                                 <div className="space-y-4 mb-8">
                                     <h4 className="text-[10px] font-black uppercase text-gray-400 tracking-widest bg-gray-50 dark:bg-slate-900 px-3 py-1.5 rounded-full w-max border dark:border-slate-700">Sinalização de Ponto</h4>
-                                    <div className="grid grid-cols-2 gap-4"><button onClick={()=>{handleStatusChange(selectedPerson, 'Trabalhando'); setSelectedPerson(null);}} className="p-4 md:p-5 rounded-[1.5rem] border-2 hover:border-green-500 bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 font-black text-sm flex flex-col items-center gap-2 transition hover:-translate-y-1 shadow-sm"><i className="ph-fill ph-check-circle text-3xl"></i> Voltei p/ Posto</button><button onClick={()=>{handleStatusChange(selectedPerson, 'Intervalo'); setSelectedPerson(null);}} className="p-4 md:p-5 rounded-[1.5rem] border-2 hover:border-orange-500 bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800 text-orange-700 dark:text-orange-400 font-black text-sm flex flex-col items-center gap-2 transition hover:-translate-y-1 shadow-sm"><i className="ph-fill ph-coffee text-3xl"></i> Fui Lanchar</button></div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <button onClick={()=>{handleStatusChange(selectedPerson, 'Trabalhando'); setSelectedPerson(null);}} className="p-4 md:p-5 rounded-[1.5rem] border-2 hover:border-green-500 bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 font-black text-sm flex flex-col items-center gap-2 transition hover:-translate-y-1 shadow-sm"><i className="ph-fill ph-check-circle text-3xl"></i> Voltei p/ Posto</button>
+                                        <button onClick={()=>{handleStatusChange(selectedPerson, 'Intervalo'); setSelectedPerson(null);}} className="p-4 md:p-5 rounded-[1.5rem] border-2 hover:border-orange-500 bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800 text-orange-700 dark:text-orange-400 font-black text-sm flex flex-col items-center gap-2 transition hover:-translate-y-1 shadow-sm"><i className="ph-fill ph-coffee text-3xl"></i> Fui Lanchar</button>
+                                    </div>
                                 </div>
 
                                 {canEdit && (
@@ -1032,12 +1015,20 @@
 
                                 {showSwapSugg && canEdit && (
                                     <div className="mt-6 bg-gray-50 dark:bg-slate-900 rounded-[2rem] p-6 border dark:border-slate-700 animate-fade-in shadow-inner">
-                                        <h4 className="text-[10px] font-black uppercase text-gray-500 mb-4 flex items-center gap-2"><i className="ph-fill ph-magic-wand text-primary"></i> Lendo habilidades: {safeString((usuarios.find(u => u && safeString(u['Nome Completo']) === safeString(selectedPerson.Nome_Profissional)) || {})['Competências']) || 'Nenhuma'}</h4>
+                                        <h4 className="text-[10px] md:text-xs font-black uppercase text-gray-500 mb-4 flex items-center gap-2"><i className="ph-fill ph-magic-wand text-primary"></i> Lendo habilidades: {safeString((usuarios.find(u => u && safeString(u['Nome Completo']) === safeString(selectedPerson.Nome_Profissional)) || {})['Competências']) || 'Nenhuma'}</h4>
                                         <div className="space-y-3 max-h-56 overflow-y-auto custom-scrollbar pr-2">
                                             {findSubstitutes(selectedPerson.Nome_Profissional).map((sub, idx) => (
                                                 <div key={idx} className="bg-white dark:bg-slate-800 p-4 md:p-5 rounded-2xl border dark:border-slate-600 flex justify-between items-center shadow-sm card-hover">
-                                                    <div><p className="font-black text-sm md:text-base dark:text-white">{safeString(sub['Nome Completo'])}</p><p className="text-[9px] font-bold text-gray-400 mt-1 uppercase tracking-widest flex items-center gap-1.5" title={safeString(sub['Horários Flexíveis'])}><i className="ph-fill ph-clock"></i> Disp: {safeString(sub['Horários Flexíveis']).substring(0,25)}</p></div>
-                                                    <button onClick={async()=>{ await api.saveRecord('ESCALAS', { ...selectedPerson, ID: '', Nome_Profissional: safeString(sub['Nome Completo']), Substituindo: safeString(selectedPerson.Nome_Profissional) }, false); showToast(`Substituto acionado.`); setSelectedPerson(null); setShowSwapSugg(false); onRefresh('ESCALAS'); }} className="bg-primary hover:bg-blue-700 text-white text-[10px] font-black px-4 py-2.5 rounded-xl transition shadow-md flex items-center gap-1">Acionar <i className="ph-bold ph-arrow-right"></i></button>
+                                                    <div>
+                                                        <p className="font-black text-sm md:text-base dark:text-white">{safeString(sub['Nome Completo'])}</p>
+                                                        <p className="text-[9px] font-bold text-gray-400 mt-1 uppercase tracking-widest flex items-center gap-1.5" title={safeString(sub['Horários Flexíveis'])}><i className="ph-fill ph-clock"></i> Disp: {safeString(sub['Horários Flexíveis']).substring(0,25)}</p>
+                                                    </div>
+                                                    <button onClick={async()=>{ 
+                                                        await api.saveRecord('ESCALAS', { ...selectedPerson, ID: '', Nome_Profissional: safeString(sub['Nome Completo']), Substituindo: safeString(selectedPerson.Nome_Profissional) }, false);
+                                                        showToast(`Substituto acionado: ${sub['Nome Completo']}.`); 
+                                                        setSelectedPerson(null); setShowSwapSugg(false); 
+                                                        onRefresh('ESCALAS');
+                                                    }} className="bg-primary hover:bg-blue-700 text-white text-[10px] md:text-xs font-black px-4 py-2.5 md:px-5 md:py-3 rounded-xl transition shadow-md flex items-center gap-1">Acionar <i className="ph-bold ph-arrow-right"></i></button>
                                                 </div>
                                             ))}
                                             {findSubstitutes(selectedPerson.Nome_Profissional).length === 0 && <p className="text-xs font-bold text-gray-400 text-center py-8 border-2 border-dashed dark:border-slate-700 rounded-2xl">A IA não encontrou ninguém livre com estas competências.</p>}
@@ -1050,8 +1041,11 @@
                     
                     {isModalOpen && (
                         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 glass-modal animate-fade-in" onMouseDown={()=>setIsModalOpen(false)}>
-                            <div className="bg-white dark:bg-slate-800 rounded-[3rem] w-full max-w-6xl max-h-[90vh] flex flex-col shadow-2xl border dark:border-slate-700 animate-pop-in overflow-hidden" onMouseDown={e=>e.stopPropagation()}>
-                                <div className="p-8 md:p-10 border-b dark:border-slate-700 flex justify-between items-center bg-gray-50/50 dark:bg-slate-900 shrink-0"><h3 className="text-2xl md:text-3xl font-black flex items-center gap-3 dark:text-white"><div className="w-12 h-12 bg-primary/10 text-primary rounded-2xl flex items-center justify-center"><i className="ph-fill ph-calendar-plus"></i></div> Lançar Escalas</h3><button onClick={() => setIsModalOpen(false)} className="w-12 h-12 bg-white dark:bg-slate-700 rounded-full shadow-sm border dark:border-slate-600 hover:bg-red-500 hover:text-white transition flex justify-center items-center text-xl"><i className="ph-bold ph-x"></i></button></div>
+                            <div className="bg-white dark:bg-slate-800 rounded-[2rem] md:rounded-[3rem] w-full max-w-6xl max-h-[90vh] flex flex-col shadow-2xl border dark:border-slate-700 animate-pop-in overflow-hidden" onMouseDown={e=>e.stopPropagation()}>
+                                <div className="p-8 md:p-10 border-b dark:border-slate-700 flex justify-between items-center bg-gray-50/50 dark:bg-slate-900 shrink-0">
+                                    <h3 className="text-2xl md:text-3xl font-black flex items-center gap-3 dark:text-white"><div className="w-12 h-12 bg-primary/10 text-primary rounded-2xl flex items-center justify-center"><i className="ph-fill ph-calendar-plus"></i></div> Lançar Escalas</h3>
+                                    <button onClick={() => setIsModalOpen(false)} className="w-12 h-12 bg-white dark:bg-slate-700 rounded-full shadow-sm border dark:border-slate-600 hover:bg-red-500 hover:text-white transition flex justify-center items-center text-xl"><i className="ph-bold ph-x"></i></button>
+                                </div>
                                 <div className="p-8 md:p-10 flex flex-col lg:flex-row gap-10 md:gap-12 overflow-y-auto custom-scrollbar">
                                     <div className="lg:w-1/2">
                                         <h4 className="font-black mb-6 text-sm uppercase tracking-widest bg-gray-50 dark:bg-slate-900 border dark:border-slate-700 px-4 py-2 rounded-full w-max text-gray-500">1. Selecione as Datas</h4>
@@ -1059,7 +1053,7 @@
                                             {Array(firstDayOfMonth).fill(null).map((_, i) => <div key={`empty-${i}`} />)}
                                             {Array(daysInMonth).fill(null).map((_, i) => {
                                                 const day = i + 1; const dStr = `${String(day).padStart(2, '0')}/${String(currentMonth.getMonth() + 1).padStart(2, '0')}/${currentMonth.getFullYear()}`; const sel = datesToSave.includes(dStr);
-                                                return <button type="button" key={day} onClick={() => { if(sel) setDatesToSave(datesToSave.filter(x => x !== dStr)); else setDatesToSave([...datesToSave, dStr]); }} className={`w-full aspect-square rounded-2xl font-black text-sm md:text-lg transition-all ${sel ? 'bg-primary text-white shadow-lg shadow-blue-900/30 scale-105' : 'bg-gray-50 dark:bg-slate-800 border-2 dark:border-slate-600 hover:border-primary shadow-sm text-gray-800 dark:text-white'}`}>{day}</button>
+                                                return <button type="button" key={day} onClick={() => { if(sel) setDatesToSave(datesToSave.filter(x => x !== dStr)); else setDatesToSave([...datesToSave, dStr]); }} className={`w-full aspect-square rounded-xl md:rounded-2xl font-black text-sm md:text-lg transition-all ${sel ? 'bg-primary text-white shadow-lg shadow-blue-900/30 scale-105' : 'bg-gray-50 dark:bg-slate-800 border-2 dark:border-slate-600 hover:border-primary shadow-sm text-gray-800 dark:text-white'}`}>{day}</button>
                                             })}
                                         </div>
                                     </div>
@@ -1078,7 +1072,7 @@
                                         </form>
                                     </div>
                                 </div>
-                                <div className="p-8 border-t dark:border-slate-700 flex justify-end gap-4 bg-white dark:bg-slate-800 shrink-0"><button onClick={() => setIsModalOpen(false)} className="px-8 py-4 font-black text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-full transition">Cancelar</button><button type="submit" form="esc-form" disabled={loadingAction} className="px-12 py-4 bg-primary text-white font-black rounded-full shadow-xl shadow-blue-900/30 hover:-translate-y-1 transition flex items-center gap-2">{loadingAction?<i className="ph animate-spin ph-spinner text-xl"></i>:<i className="ph-bold ph-check-circle text-xl"></i>} {loadingAction?'Processando...':'Confirmar Escala'}</button></div>
+                                <div className="p-6 md:p-8 border-t dark:border-slate-700 bg-white dark:bg-slate-800 flex justify-end gap-4 shrink-0"><button onClick={() => setIsModalOpen(false)} className="px-8 py-4 font-black text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-full transition">Cancelar</button><button type="submit" form="esc-form" disabled={loadingAction} className="px-12 py-4 bg-primary text-white font-black rounded-full shadow-xl shadow-blue-900/30 hover:-translate-y-1 transition flex items-center gap-2">{loadingAction?<i className="ph animate-spin ph-spinner text-xl"></i>:<i className="ph-bold ph-check-circle text-xl"></i>} {loadingAction?'Processando...':'Confirmar Escala'}</button></div>
                             </div>
                         </div>
                     )}
@@ -1086,24 +1080,121 @@
             );
         };
 
+        // ==========================================
+        // O COMPONENTE ROTEADOR: TABELA GENÉRICA
+        // ==========================================
+        const DataTableGeneric = ({ title, tabName, data, user, onRefresh, showToast }) => {
+            const safeData = Array.isArray(data) ? data : [];
+            const [isModalOpen, setIsModalOpen] = useState(false); 
+            const [formData, setFormData] = useState({}); 
+            const [loading, setLoading] = useState(false); 
+            const [search, setSearch] = useState(''); 
+            const [currentSchema, setCurrentSchema] = useState([]);
+            
+            let dynamicKeys = ['ID']; 
+            if (safeData.length > 0 && typeof safeData[0] === 'object' && safeData[0] !== null) dynamicKeys = Object.keys(safeData[0]);
+            const schema = tabSchemas[tabName] || dynamicKeys || ['ID'];
+            
+            const nivelKey = user && typeof user === 'object' ? Object.keys(user).find(k => safeString(k).toLowerCase().includes('acesso')) : null;
+            const canEdit = nivelKey && ['admin', 'supervisor', 'supervisão'].some(role => safeString(user[nivelKey]).toLowerCase().includes(role));
+            
+            const filteredData = safeData.filter(row => row && typeof row === 'object' && Object.values(row).some(val => safeString(val).toLowerCase().includes(search.toLowerCase())));
+
+            const openModal = (row = null, customSchema = null) => { 
+                let initial = {}; 
+                const s = customSchema || schema; 
+                s.forEach(col => initial[col] = row ? safeString(row[col]) : ''); 
+                setFormData(initial); 
+                setCurrentSchema(s); 
+                setIsModalOpen(true); 
+            };
+
+            const handleSave = async (e) => { 
+                e.preventDefault(); 
+                setLoading(true); 
+                const res = await api.saveRecord(tabName, formData, !!formData.ID); 
+                setLoading(false); 
+                if (res && res.success) { 
+                    setIsModalOpen(false); 
+                    onRefresh(tabName); 
+                    showToast('Salvo com sucesso!'); 
+                } else {
+                    showToast('Erro ao salvar.', 'error');
+                }
+            };
+
+            const handleDelete = async (id) => { 
+                if(confirm('Excluir permanentemente?')) { 
+                    const res = await api.deleteRecord(tabName, id); 
+                    if (res && res.success) { 
+                        onRefresh(tabName); 
+                        showToast('Excluído com sucesso!'); 
+                    } 
+                } 
+            };
+
+            if(tabName === 'CONVÊNIOS') return <><ConveniosMatrixView data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} schema={schema} /> {isModalOpen && <ModalForm title="Regra Convênio" schema={currentSchema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
+            if(tabName === 'CORPO CLINICO') return <><CorpoClinicoCards data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} openLancarEscala={()=>{}} /> {isModalOpen && <ModalForm title="Médico" schema={schema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
+            if(tabName === 'CONTATOS') return <><ContatosViewTabs data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} schema={schema} /> {isModalOpen && <ModalForm title="Contato" schema={schema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
+            if(tabName === 'MURAL_AVISOS') return <><MuralAvisosView data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} /> {isModalOpen && <ModalForm title="Aviso" schema={schema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
+            if(tabName === 'BOLETINS_INFORMATIVOS') return <><BoletinsView data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} /> {isModalOpen && <ModalForm title="Mídia" schema={schema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
+            if(tabName === 'SENHAS E LOGINS GERAIS') return <><SenhasView data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} schema={schema} /> {isModalOpen && <ModalForm title="Acesso" schema={schema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
+            if(tabName === 'EXAMES DE IMAGEM') return <><GenericCardView data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} schema={schema} titleField="Nome do Exame" descField="Observações" extraField="Categoria" title="Exame de Imagem" /> {isModalOpen && <ModalForm title="Exame" schema={schema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
+            if(tabName === 'EXAMES DE IMAGEM E OUTROS') return <><GenericCardView data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} schema={schema} titleField="Descrição" descField="Onde Encontrar" extraField="Prazo de Laudo" title="Exame/Laudo" /> {isModalOpen && <ModalForm title="Exame" schema={schema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
+            if(tabName === 'CONSULTA E PROCEDIMENTOS') return <><GenericCardView data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} schema={schema} titleField="Consulta/Procedimento" descField="Descrição" extraField="Valor Particular" title="Consulta/Proc." /> {isModalOpen && <ModalForm title="Consulta" schema={schema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
+            if(tabName === 'EXAMES LABORATORIAIS') return <><GenericCardView data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} schema={schema} titleField="Procedimento" descField="Preparo" extraField="Prazo de Liberação" title="Laboratório" /> {isModalOpen && <ModalForm title="Exame Lab" schema={schema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
+            if(tabName === 'REMOÇÕES') return <><GenericCardView data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} schema={schema} titleField="Nome do Hospital/Clínica" descField="Informações Importantes" extraField="Contato" title="Remoção" /> {isModalOpen && <ModalForm title="Remoção" schema={schema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
+            if(tabName === 'INSTITUTOS') return <><InstitutosView data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} schema={schema} /> {isModalOpen && <ModalForm title="Vínculo" schema={schema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
+
+            return (
+                <div className="bg-white dark:bg-slate-800 rounded-[2rem] shadow-sm border dark:border-slate-700 overflow-hidden animate-fade-in">
+                    <div className="p-6 md:p-8 border-b dark:border-slate-700 bg-gray-50/50 dark:bg-slate-900/50 flex flex-col md:flex-row justify-between items-center gap-4">
+                        <h2 className="text-2xl font-black flex items-center gap-3 dark:text-white"><div className="w-2 h-6 bg-primary rounded-full"></div> {title}</h2>
+                        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+                            <div className="relative flex-1 sm:w-72"><i className="ph-bold ph-magnifying-glass absolute left-4 top-3.5 text-gray-400"></i><input type="text" placeholder="Pesquisar..." value={search} onChange={e=>setSearch(e.target.value)} className="w-full pl-12 pr-4 py-3 bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-full outline-none focus:ring-2 focus:ring-primary font-bold text-sm dark:text-white shadow-inner" /></div>
+                            {canEdit && <button onClick={() => openModal(null, schema)} className="bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold px-8 py-3 rounded-full hover:scale-105 transition text-sm flex items-center justify-center gap-2 shadow-lg"><i className="ph-bold ph-plus text-lg"></i> Novo Item</button>}
+                        </div>
+                    </div>
+                    <div className="overflow-x-auto p-4 custom-scrollbar">
+                        <table className="w-full text-left border-collapse min-w-[800px]">
+                            <thead><tr className="text-gray-400 text-[10px] uppercase tracking-widest border-b-2 dark:border-slate-700">{schema.filter(c=>c!=='ID').map((col, i) => <th key={i} className="p-4 font-black">{col}</th>)}{canEdit && <th className="p-4 font-black text-right">Ações</th>}</tr></thead>
+                            <tbody className="text-sm font-bold dark:text-slate-200">
+                                {filteredData.length === 0 ? <tr><td colSpan="100%" className="text-center p-16 text-gray-400 font-black border-2 border-dashed dark:border-slate-700 rounded-2xl m-4 block">Nenhum dado cadastrado.</td></tr> : 
+                                filteredData.map((row, i) => (
+                                    <tr key={i} className="hover:bg-blue-50/50 dark:hover:bg-slate-700/50 border-b dark:border-slate-700 group transition">
+                                        {schema.filter(c=>c!=='ID').map((col, j) => {
+                                            const val = safeString(row[col]); const cl = col.toLowerCase();
+                                            return <td key={j} className="p-4 whitespace-nowrap">{cl.includes('url')||cl.includes('foto')||cl.includes('imagem')?(val?<img src={formatImageUrl(val)} className="h-12 w-12 object-cover rounded-xl border dark:border-slate-600 shadow-sm"/>:<div className="h-12 w-12 bg-gray-100 dark:bg-slate-700 rounded-xl flex items-center justify-center text-gray-300"><i className="ph-fill ph-image text-xl"></i></div>):cl.includes('senha')?'••••••••':val==='Sim'||val==='Ativo'?<span className="bg-green-100 text-green-800 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest">{val}</span>:val==='Não'||val==='Inativo'?<span className="bg-red-100 text-red-800 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest">{val}</span>:val||'-'}</td>
+                                        })}
+                                        {canEdit && <td className="p-4 flex justify-end gap-2 opacity-50 group-hover:opacity-100 transition"><button onClick={()=>openModal(row, schema)} className="text-blue-600 bg-blue-50 dark:bg-slate-700 p-2.5 rounded-xl hover:bg-blue-600 hover:text-white shadow-sm transition hover:scale-110"><i className="ph-bold ph-pencil-simple text-lg"></i></button><button onClick={()=>handleDelete(row.ID)} className="text-red-600 bg-red-50 dark:bg-slate-700 p-2.5 rounded-xl hover:bg-red-600 hover:text-white shadow-sm transition hover:scale-110"><i className="ph-bold ph-trash text-lg"></i></button></td>}
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                    {isModalOpen && <ModalForm title={title} schema={currentSchema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}
+                </div>
+            );
+        };
+
         const App = () => {
-            const [user, setUser] = useState(null); const [loading, setLoading] = useState(true); const [activeTab, setActiveTab] = useState('Home'); const [sheetData, setSheetData] = useState({}); const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
-            const [loginView, setLoginView] = useState('selecao'); const [loginErrorMsg, setLoginErrorMsg] = useState(''); const [isSharedAuth, setIsSharedAuth] = useState(localStorage.getItem('shared_auth') === 'true');
+            const [user, setUser] = useState(null); 
+            const [loading, setLoading] = useState(true); 
+            const [activeTab, setActiveTab] = useState('Home'); 
+            const [sheetData, setSheetData] = useState({}); 
+            const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+            const [loginView, setLoginView] = useState('selecao'); 
+            const [loginErrorMsg, setLoginErrorMsg] = useState(''); 
+            const [isSharedAuth, setIsSharedAuth] = useState(localStorage.getItem('shared_auth') === 'true');
             const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-            // SENHA GERAL DA EQUIPE
-            const SENHA_ACESSO_GERAL = "Csv@123"; 
+            // SUA SENHA GERAL DA EQUIPE
+            const SENHA_ACESSO_GERAL = "sao.vicente2026"; 
 
             const userFoto = user?.Foto_Perfil_URL;
             const userName = user?.['Nome Completo'] || (isSharedAuth ? 'Equipe São Vicente' : 'Usuário');
             const nivelKey = user && typeof user === 'object' ? Object.keys(user).find(k => safeString(k).toLowerCase().includes('acesso')) : null;
             const isAdmin = user && nivelKey && ['admin', 'supervisor', 'supervisão'].some(role => safeString(user[nivelKey]).toLowerCase().includes(role));
-
-            useEffect(() => {
-                const handleOnline = () => { showToast('Conexão restabelecida!', 'success'); }; const handleOffline = () => { showToast('Rede perdida. Usando cache.', 'warning'); };
-                window.addEventListener('online', handleOnline); window.addEventListener('offline', handleOffline);
-                return () => { window.removeEventListener('online', handleOnline); window.removeEventListener('offline', handleOffline); }
-            }, []);
 
             useEffect(() => {
                 const unsub = auth?.onAuthStateChanged(async (u) => {
@@ -1112,7 +1203,7 @@
                             const userDoc = await db.collection('USUARIOS').where('E-mail', '==', u.email).get();
                             if (!userDoc.empty) setUser({ ID: userDoc.docs[0].id, ...userDoc.docs[0].data() });
                             else setUser({ 'E-mail': u.email, 'Nome Completo': u.email.split('@')[0], 'Nível de Acesso': 'Colaborador' });
-                        } catch (err) { setUser({ 'E-mail': u.email, 'Nome Completo': u.email.split('@')[0], 'Nível de Acesso': 'Colaborador' }); }
+                        } catch (err) { setUser({ 'E-mail': u.email, 'Nome Completo': (u.email||'').split('@')[0] || 'Usuário', 'Nível de Acesso': 'Colaborador' }); }
                     } else {
                         if(isSharedAuth) setUser({ 'Nome Completo': 'Equipe São Vicente', 'Nível de Acesso': 'Colaborador' });
                         else setUser(null);
@@ -1126,7 +1217,15 @@
             const [darkMode, setDarkMode] = useState(false);
             useEffect(() => { if (darkMode) { document.documentElement.classList.add('dark'); } else { document.documentElement.classList.remove('dark'); } }, [darkMode]);
 
-            useEffect(() => { const init = async () => { if(db){ const allData = await api.fetchAll(); if(allData && Object.keys(allData).length > 0) setSheetData(allData); } }; init(); }, []);
+            useEffect(() => { 
+                const init = async () => { 
+                    if(db){ 
+                        const allData = await api.fetchAll(); 
+                        if(allData && Object.keys(allData).length > 0) setSheetData(allData); 
+                    } 
+                }; 
+                init(); 
+            }, []);
 
             const loadData = async (tab) => {
                 setLoading(true);
@@ -1164,12 +1263,12 @@
                 };
 
                 return (
-                    <div className="min-h-screen bg-medical dark:bg-slate-900 flex flex-col items-center justify-center p-4">
-                        <div className="bg-white dark:bg-slate-800 rounded-[3rem] shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col md:flex-row border dark:border-slate-700 animate-fade-in">
-                            <div className="md:w-5/12 bg-gradient-to-br from-primary to-blue-800 text-white p-12 flex flex-col justify-center relative">
+                    <div className="min-h-screen bg-blue-50 dark:bg-slate-900 flex flex-col items-center justify-center p-4">
+                        <div className="bg-white dark:bg-slate-800 rounded-[2rem] md:rounded-[3rem] shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col md:flex-row border dark:border-slate-700 animate-fade-in">
+                            <div className="md:w-5/12 bg-gradient-to-br from-primary to-blue-800 text-white p-10 flex flex-col justify-center relative">
                                 <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
                                 <div className="relative z-10 text-center">
-                                    <div className="w-28 h-28 mx-auto bg-white/10 rounded-[2rem] flex items-center justify-center mb-6 shadow-xl border border-white/20"><i className="ph-fill ph-heartbeat text-7xl animate-pulse-fast"></i></div>
+                                    <div className="w-24 h-24 mx-auto bg-white/10 rounded-3xl flex items-center justify-center mb-6 shadow-xl border border-white/20"><i className="ph-fill ph-heartbeat text-6xl animate-pulse-fast"></i></div>
                                     <h1 className="text-4xl font-black mb-2 tracking-tight">São Vicente</h1><p className="text-blue-200 text-sm font-bold">Portal Interno Inteligente</p>
                                 </div>
                             </div>
@@ -1181,11 +1280,11 @@
                                         <h2 className="text-2xl font-black text-gray-800 dark:text-white mb-8 text-center md:text-left">Selecione seu acesso:</h2>
                                         <button onClick={()=>setLoginView('geral')} className="w-full bg-blue-50 dark:bg-slate-700 hover:bg-primary dark:hover:bg-primary group p-5 rounded-3xl border-2 border-blue-100 dark:border-slate-600 hover:border-primary transition-all flex items-center gap-5 text-left shadow-sm hover:shadow-xl hover:-translate-y-1">
                                             <div className="w-16 h-16 rounded-2xl bg-white dark:bg-slate-800 text-primary flex justify-center items-center shrink-0 shadow-sm group-hover:scale-110 transition"><i className="ph-fill ph-users text-3xl"></i></div>
-                                            <div><h3 className="font-black text-xl text-gray-900 dark:text-white group-hover:text-white transition">Equipe / Colaboradores</h3><p className="text-sm text-gray-500 dark:text-gray-400 group-hover:text-blue-100 mt-1 font-bold">Escalas, ramais, guias e consultas.</p></div>
+                                            <div><h3 className="font-black text-lg text-gray-900 dark:text-white group-hover:text-white transition">Equipe / Colaboradores</h3><p className="text-sm text-gray-500 dark:text-gray-400 group-hover:text-blue-100 mt-1 font-bold">Escalas, ramais, guias e consultas.</p></div>
                                         </button>
                                         <button onClick={()=>setLoginView('supervisor')} className="w-full bg-orange-50 dark:bg-slate-700 hover:bg-secondary dark:hover:bg-secondary group p-5 rounded-3xl border-2 border-orange-100 dark:border-slate-600 hover:border-secondary transition-all flex items-center gap-5 text-left shadow-sm hover:shadow-xl hover:-translate-y-1">
                                             <div className="w-16 h-16 rounded-2xl bg-white dark:bg-slate-800 text-secondary flex justify-center items-center shrink-0 shadow-sm group-hover:scale-110 transition"><i className="ph-fill ph-shield-star text-3xl"></i></div>
-                                            <div><h3 className="font-black text-xl text-gray-900 dark:text-white group-hover:text-white transition">Supervisão / Gestão</h3><p className="text-sm text-gray-500 dark:text-gray-400 group-hover:text-orange-100 mt-1 font-bold">Edição de dados e controle da equipe.</p></div>
+                                            <div><h3 className="font-black text-lg text-gray-900 dark:text-white group-hover:text-white transition">Supervisão / Gestão</h3><p className="text-sm text-gray-500 dark:text-gray-400 group-hover:text-orange-100 mt-1 font-bold">Edição de dados e controle da equipe.</p></div>
                                         </button>
                                         <div className="pt-4 text-center"><button onClick={()=>setLoginView('admin')} className="text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-primary transition underline decoration-dashed">Acesso Administrativo</button></div>
                                     </div>
@@ -1196,17 +1295,17 @@
                                         <button type="button" onClick={()=>{setLoginView('selecao'); setLoginErrorMsg('');}} className="text-gray-400 hover:text-primary flex items-center gap-2 mb-6 font-bold text-sm bg-gray-50 dark:bg-slate-700 px-4 py-2 rounded-full w-max transition"><i className="ph-bold ph-arrow-left"></i> Voltar</button>
                                         <h2 className="text-3xl font-black text-gray-800 dark:text-white mb-2">Acesso da Equipe</h2><p className="text-sm text-gray-500 font-bold mb-8">Digite a senha geral fornecida.</p>
                                         <div><label className="block text-[10px] font-black text-gray-400 mb-2 uppercase tracking-widest">Senha Única</label><div className="relative"><i className="ph-fill ph-lock-key absolute left-6 top-4.5 text-gray-400 text-xl"></i><input name="shared_password" type="password" className="w-full pl-16 pr-6 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-600 rounded-full outline-none focus:ring-2 focus:ring-primary font-black text-gray-900 dark:text-white transition shadow-inner" placeholder="Sua senha..." required /></div></div>
-                                        <button type="submit" disabled={loading} className="w-full bg-primary text-white font-black py-5 rounded-full shadow-xl shadow-blue-900/30 hover:-translate-y-1 transition transform flex justify-center items-center gap-2 text-lg">{loading?<i className="ph animate-spin ph-spinner"></i>:<i className="ph-bold ph-sign-in"></i>} {loading?'Entrando...':'Entrar no Portal'}</button>
+                                        <button type="submit" disabled={loading} className="w-full bg-primary text-white font-black py-4 md:py-5 rounded-full shadow-xl hover:-translate-y-1 transition transform flex justify-center items-center gap-2 text-lg">{loading?<i className="ph animate-spin ph-spinner"></i>:<i className="ph-bold ph-sign-in"></i>} {loading?'Entrando...':'Entrar no Portal'}</button>
                                     </form>
                                 )}
 
                                 {(loginView === 'supervisor' || loginView === 'admin') && (
                                     <form onSubmit={handleFirebaseLogin} className="space-y-6 animate-fade-in">
-                                        <button type="button" onClick={()=>{setLoginView('selecao'); setLoginErrorMsg('');}} className="text-gray-400 hover:text-primary flex items-center gap-2 mb-6 font-bold text-sm bg-gray-50 dark:bg-slate-700 px-4 py-2 rounded-full w-max transition"><i className="ph-bold ph-arrow-left"></i> Voltar</button>
-                                        <h2 className="text-3xl font-black text-gray-800 dark:text-white mb-2">Acesso {loginView === 'admin' ? 'Admin' : 'Gestão'}</h2><p className="text-sm text-gray-500 font-bold mb-8">Faça login com suas credenciais.</p>
-                                        <div><label className="block text-[10px] font-black text-gray-400 mb-2 uppercase tracking-widest">E-mail</label><div className="relative"><i className="ph-fill ph-user absolute left-6 top-4.5 text-gray-400 text-xl"></i><input name="email" type="email" className="w-full pl-16 pr-6 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-600 rounded-full outline-none focus:ring-2 focus:ring-primary font-black text-gray-900 dark:text-white transition shadow-inner" required /></div></div>
-                                        <div><label className="block text-[10px] font-black text-gray-400 mb-2 uppercase tracking-widest">Senha</label><div className="relative"><i className="ph-fill ph-lock-key absolute left-6 top-4.5 text-gray-400 text-xl"></i><input name="password" type="password" className="w-full pl-16 pr-6 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-600 rounded-full outline-none focus:ring-2 focus:ring-primary font-black text-gray-900 dark:text-white transition shadow-inner" required /></div></div>
-                                        <button type="submit" disabled={loading} className={`w-full ${loginView === 'admin' ? 'bg-gray-900 dark:bg-slate-700' : 'bg-secondary'} text-white font-black py-5 rounded-full shadow-xl hover:-translate-y-1 transition transform flex justify-center items-center gap-2 text-lg`}>{loading?<i className="ph animate-spin ph-spinner"></i>:<i className="ph-bold ph-shield-check"></i>} {loading ? 'Conectando...' : 'Acessar Painel'}</button>
+                                        <button type="button" onClick={()=>{setLoginView('selecao'); setLoginErrorMsg('');}} className="text-gray-400 hover:text-primary flex items-center gap-2 mb-4 font-bold text-sm bg-gray-50 dark:bg-slate-700 px-4 py-2 rounded-full w-max transition"><i className="ph-bold ph-arrow-left"></i> Voltar</button>
+                                        <h2 className="text-3xl font-black text-gray-800 dark:text-white mb-1">Acesso {loginView === 'admin' ? 'Admin' : 'Gestão'}</h2><p className="text-sm text-gray-500 font-bold mb-8">Faça login com suas credenciais.</p>
+                                        <div><label className="block text-[10px] font-black text-gray-400 mb-2 uppercase tracking-widest">E-mail</label><div className="relative"><i className="ph-fill ph-user absolute left-6 top-4.5 text-gray-400 text-xl"></i><input name="email" type="email" className="w-full pl-16 pr-6 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-600 rounded-full outline-none focus:border-primary font-bold text-gray-900 dark:text-white transition shadow-inner" required /></div></div>
+                                        <div><label className="block text-[10px] font-black text-gray-400 mb-2 uppercase tracking-widest">Senha</label><div className="relative"><i className="ph-fill ph-lock-key absolute left-6 top-4.5 text-gray-400 text-xl"></i><input name="password" type="password" className="w-full pl-16 pr-6 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-600 rounded-full outline-none focus:border-primary font-bold text-gray-900 dark:text-white transition shadow-inner" required /></div></div>
+                                        <button type="submit" disabled={loading} className={`w-full ${loginView === 'admin' ? 'bg-gray-900' : 'bg-secondary'} text-white font-black py-4 md:py-5 rounded-full shadow-xl hover:-translate-y-1 transition transform flex justify-center items-center gap-2 text-lg`}>{loading?<i className="ph animate-spin ph-spinner"></i>:<i className="ph-bold ph-shield-check"></i>} {loading ? 'Conectando...' : 'Acessar Painel'}</button>
                                     </form>
                                 )}
                             </div>
@@ -1265,15 +1364,15 @@
                         </div>
                         <div className="flex-1 overflow-y-auto p-4 space-y-1.5 custom-scrollbar pb-8">
                             <div className="px-4 mb-3 mt-2 text-[9px] font-black text-gray-400 uppercase tracking-widest">Menu Principal</div>
-                            {menus.map(m => <button key={m.id} onClick={()=>{setActiveTab(m.id); loadData(m.id); setIsMobileMenuOpen(false);}} className={`w-full flex items-center gap-4 px-5 py-3.5 rounded-2xl text-sm font-black transition-all ${activeTab===m.id?'bg-primary text-white shadow-lg md:scale-[1.02] translate-x-1':'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700'}`}><i className={`ph-fill ${m.icon} text-xl`}></i> {m.label}</button>)}
+                            {menus.map(m => <button key={m.id} onClick={()=>{setActiveTab(m.id); loadData(m.id); setIsMobileMenuOpen(false);}} className={`w-full flex items-center gap-4 px-5 py-3.5 rounded-2xl text-sm font-black transition-all ${activeTab===m.id?'bg-primary text-white shadow-lg md:scale-[1.02] translate-x-1':'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-slate-700'}`}><i className={`ph-fill ${m.icon} text-xl`}></i> {m.label}</button>)}
                             
                             {isAdmin && (
                                 <>
                                     <div className="px-4 mt-8 mb-3 text-[9px] font-black text-gray-400 uppercase tracking-widest">Avançado</div>
-                                    {adminMenus.map(m => <button key={m.id} onClick={()=>{setActiveTab(m.id); loadData(m.id); setIsMobileMenuOpen(false);}} className={`w-full flex items-center gap-4 px-5 py-3.5 rounded-2xl text-sm font-black transition-all ${activeTab===m.id?'bg-gray-900 dark:bg-white dark:text-gray-900 text-white shadow-lg md:scale-[1.02] translate-x-1':'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700'}`}><i className={`ph-fill ${m.icon} text-xl`}></i> {m.label}</button>)}
+                                    {adminMenus.map(m => <button key={m.id} onClick={()=>{setActiveTab(m.id); loadData(m.id); setIsMobileMenuOpen(false);}} className={`w-full flex items-center gap-4 px-5 py-3.5 rounded-2xl text-sm font-black transition-all ${activeTab===m.id?'bg-gray-900 dark:bg-white dark:text-gray-900 text-white shadow-lg md:scale-[1.02] translate-x-1':'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-slate-700'}`}><i className={`ph-fill ${m.icon} text-xl`}></i> {m.label}</button>)}
                                 </>
                             )}
-                            <button onClick={()=>{auth?.signOut(); localStorage.removeItem('shared_auth'); setIsSharedAuth(false); setUser(null);}} className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-sm font-black text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 mt-10 transition"><i className="ph-fill ph-sign-out text-xl"></i> Encerrar Sessão</button>
+                            <button onClick={()=>{auth?.signOut(); localStorage.removeItem('shared_auth'); setIsSharedAuth(false); setUser(null);}} className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-sm font-black text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 mt-8 transition"><i className="ph-fill ph-sign-out text-xl"></i> Encerrar Sessão</button>
                         </div>
                     </aside>
 
@@ -1318,21 +1417,11 @@
                                 </div>
                             )}
 
-                            {activeTab === 'EXAMES DE IMAGEM' && !loading && <GenericCardView data={sheetData['EXAMES DE IMAGEM']} canEdit={canEdit} openModal={(row, s)=>setSheetData(p=>({...p, __modal: {tab: activeTab, row: row, sch: s}}))} handleDelete={(id)=>api.deleteRecord(activeTab, id)} schema={tabSchemas[activeTab]} titleField="Nome do Exame" descField="Observações" extraField="Categoria" title="Exame de Imagem" />}
-                            {activeTab === 'EXAMES DE IMAGEM E OUTROS' && !loading && <GenericCardView data={sheetData['EXAMES DE IMAGEM E OUTROS']} canEdit={canEdit} openModal={(row, s)=>setSheetData(p=>({...p, __modal: {tab: activeTab, row: row, sch: s}}))} handleDelete={(id)=>api.deleteRecord(activeTab, id)} schema={tabSchemas[activeTab]} titleField="Descrição" descField="Onde Encontrar" extraField="Prazo de Laudo" title="Exame/Laudo" />}
-                            {activeTab === 'CONSULTA E PROCEDIMENTOS' && !loading && <GenericCardView data={sheetData['CONSULTA E PROCEDIMENTOS']} canEdit={canEdit} openModal={(row, s)=>setSheetData(p=>({...p, __modal: {tab: activeTab, row: row, sch: s}}))} handleDelete={(id)=>api.deleteRecord(activeTab, id)} schema={tabSchemas[activeTab]} titleField="Consulta/Procedimento" descField="Descrição" extraField="Valor Particular" title="Consulta/Proc." />}
-                            {activeTab === 'EXAMES LABORATORIAIS' && !loading && <GenericCardView data={sheetData['EXAMES LABORATORIAIS']} canEdit={canEdit} openModal={(row, s)=>setSheetData(p=>({...p, __modal: {tab: activeTab, row: row, sch: s}}))} handleDelete={(id)=>api.deleteRecord(activeTab, id)} schema={tabSchemas[activeTab]} titleField="Procedimento" descField="Preparo" extraField="Prazo de Liberação" title="Lab." />}
-                            {activeTab === 'REMOÇÕES' && !loading && <GenericCardView data={sheetData['REMOÇÕES']} canEdit={canEdit} openModal={(row, s)=>setSheetData(p=>({...p, __modal: {tab: activeTab, row: row, sch: s}}))} handleDelete={(id)=>api.deleteRecord(activeTab, id)} schema={tabSchemas[activeTab]} titleField="Nome do Hospital/Clínica" descField="Informações Importantes" extraField="Contato" title="Remoção" />}
-                            {activeTab === 'INSTITUTOS' && !loading && <InstitutosView data={sheetData['INSTITUTOS']} canEdit={canEdit} openModal={(row, s)=>setSheetData(p=>({...p, __modal: {tab: activeTab, row: row, sch: s}}))} handleDelete={(id)=>api.deleteRecord(activeTab, id)} schema={tabSchemas[activeTab]} />}
                             {activeTab === 'CHAT_MENSAGENS' && !loading && <ChatModerno chatData={sheetData['CHAT_MENSAGENS']} user={user} onSaveChat={api.saveRecord} onRefresh={()=>loadData('CHAT_MENSAGENS')} />}
                             {activeTab === 'ESCALAS' && !loading && <EscalasContainer sheetData={sheetData} user={user} onRefresh={()=>loadData('ESCALAS')} showToast={showToast} />}
 
-                            {['CONVÊNIOS', 'CORPO CLINICO', 'CONTATOS', 'MURAL_AVISOS', 'BOLETINS_INFORMATIVOS', 'SENHAS E LOGINS GERAIS', 'CONTROLE_ATENDIMENTOS', 'USUARIOS', 'LEMBRETES_HORA'].includes(activeTab) && !loading && (
+                            {activeTab !== 'Home' && activeTab !== 'CHAT_MENSAGENS' && activeTab !== 'ESCALAS' && !loading && (
                                 <DataTableGeneric title={titleTab} tabName={activeTab} data={sheetData[activeTab] || []} user={user} onRefresh={()=>loadData(activeTab)} showToast={showToast} />
-                            )}
-
-                            {sheetData.__modal && (
-                                <ModalForm title={sheetData.__modal.tab} schema={sheetData.__modal.sch || tabSchemas[sheetData.__modal.tab]} formData={sheetData.__modal.row || {}} setFormData={(nd)=>setSheetData(p=>({...p, __modal: {...p.__modal, row: nd}}))} onSave={async (e)=>{e.preventDefault(); setLoading(true); await api.saveRecord(sheetData.__modal.tab, sheetData.__modal.row, !!sheetData.__modal.row.ID); setSheetData(p=>({...p, __modal: null})); loadData(sheetData.__modal.tab); showToast('Salvo com sucesso!');}} onClose={()=>setSheetData(p=>({...p, __modal: null}))} loading={loading} />
                             )}
                         </ErrorBoundary>
                     </main>
