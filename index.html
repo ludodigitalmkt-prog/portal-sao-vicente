@@ -6,6 +6,19 @@
     <meta name="theme-color" content="#1E40AF">
     <title>Portal São Vicente</title>
     
+    <link rel="manifest" href='data:application/manifest+json;utf-8,{"name":"Portal São Vicente","short_name":"Portal SV","start_url":".","display":"standalone","background_color":"#F8FAFC","theme_color":"#1E40AF","icons":[{"src":"https://cdn-icons-png.flaticon.com/512/149/149071.png","sizes":"512x512","type":"image/png"}]}'>
+
+    <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <script>
+        const VERSAO_ATUAL = "10.0.0"; // Versão Definitiva - Correção isFirebaseConfigured
+        if (window.location.search.indexOf('v=' + VERSAO_ATUAL) === -1) {
+            localStorage.clear(); sessionStorage.clear();
+            window.location.replace(window.location.pathname + (window.location.pathname.indexOf('?') === -1 ? '?' : '&') + 'v=' + VERSAO_ATUAL);
+        }
+    </script>
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -50,16 +63,23 @@
         const { useState, useEffect, Component } = React;
 
         const firebaseConfig = { apiKey: "AIzaSyArUJk5o90YfmMqRZl2kBaFfvRXFZcW3cE", authDomain: "portal-sao-vicente.firebaseapp.com", projectId: "portal-sao-vicente", storageBucket: "portal-sao-vicente.firebasestorage.app", messagingSenderId: "52988900084", appId: "1:52988900084:web:9f5f2d494c22b10eb2a4a1" };
+        
+        // A PEÇA QUE FALTAVA: A VARIÁVEL DE CONFIGURAÇÃO!
+        const isFirebaseConfigured = true;
         let db = null; let auth = null;
-        if (firebaseConfig.apiKey && !firebaseConfig.apiKey.includes("AIzaSySuaChave")) {
-            try { if (!firebase.apps.length) firebase.initializeApp(firebaseConfig); db = firebase.firestore(); db.enablePersistence({ synchronizeTabs: true }).catch(()=>{}); auth = firebase.auth(); } catch (e) { }
-        }
+        
+        try { 
+            if (!firebase.apps.length) firebase.initializeApp(firebaseConfig); 
+            db = firebase.firestore(); 
+            db.enablePersistence({ synchronizeTabs: true }).catch(()=>{}); 
+            auth = firebase.auth(); 
+        } catch (e) { console.error("Erro Firebase:", e); }
 
         class ErrorBoundary extends Component {
             constructor(props) { super(props); this.state = { hasError: false, errStr: '' }; }
             static getDerivedStateFromError(error) { return { hasError: true, errStr: String(error) }; }
             render() {
-                if (this.state.hasError) return <div className="p-10 text-center flex flex-col items-center justify-center min-h-screen bg-gray-50"><i className="ph-fill ph-warning-circle text-6xl text-red-500 mb-4"></i><h2 className="text-2xl font-black mb-2">Erro de Renderização</h2><p className="text-xs text-gray-400 mb-6">{this.state.errStr}</p><button onClick={()=>window.location.reload()} className="bg-primary text-white px-8 py-3 rounded-xl font-bold">Recarregar</button></div>;
+                if (this.state.hasError) return <div className="p-10 text-center flex flex-col items-center justify-center min-h-screen bg-gray-50"><i className="ph-fill ph-warning-circle text-6xl text-red-500 mb-4"></i><h2 className="text-2xl font-black mb-2 text-gray-900">Aviso do Sistema</h2><p className="text-sm text-gray-500 mb-6 max-w-md">Ocorreu um pequeno erro de renderização. Seus dados estão salvos.</p><button onClick={()=>window.location.reload()} className="bg-primary text-white px-8 py-3 rounded-xl font-bold shadow-lg">Recarregar Painel</button></div>;
                 return this.props.children; 
             }
         }
@@ -128,15 +148,15 @@
                                 return (
                                     <div key={idx} className={isLong ? 'md:col-span-2' : ''}>
                                         <label className="block text-[10px] font-black text-gray-400 mb-1 uppercase tracking-widest">{col}</label>
-                                        {col === 'Layout' ? <select className="w-full p-3 bg-gray-50 dark:bg-slate-900 border rounded-xl font-bold" value={safeString(formData[col])} onChange={e=>setFormData({...formData, [col]:e.target.value})}><option>Padrão</option><option>Imagem Grande</option><option>Só Texto</option></select>
-                                        : col === 'Tipo_Midia' ? <select className="w-full p-3 bg-gray-50 dark:bg-slate-900 border rounded-xl font-bold" value={safeString(formData[col])} onChange={e=>setFormData({...formData, [col]:e.target.value})}><option>Documento PDF</option><option>Apresentação</option><option>Vídeo</option><option>Imagem</option><option>Outro</option></select>
-                                        : col === 'Tipo' && title.includes('Contato') ? <select className="w-full p-3 bg-gray-50 dark:bg-slate-900 border rounded-xl font-bold" value={safeString(formData[col])} onChange={e=>setFormData({...formData, [col]:e.target.value})}><option>Ramal</option><option>Email</option><option>Telefone</option></select>
-                                        : cLower.includes('status') || cLower.includes('ativo') ? <select className="w-full p-3 bg-gray-50 dark:bg-slate-900 border rounded-xl font-bold" value={safeString(formData[col])} onChange={e=>setFormData({...formData, [col]:e.target.value})}><option value="">Selecione...</option><option>Sim</option><option>Não</option><option>Ativo</option><option>Inativo</option></select>
-                                        : col === 'Nível de Acesso' ? <select className="w-full p-3 bg-gray-50 dark:bg-slate-900 border rounded-xl font-bold" value={safeString(formData[col])} onChange={e=>setFormData({...formData, [col]:e.target.value})}><option value="">Selecione...</option><option>Colaborador</option><option>Supervisor</option><option>Admin</option></select>
-                                        : isLong ? <textarea className="w-full p-3 bg-gray-50 dark:bg-slate-900 border rounded-xl font-bold min-h-[80px]" value={safeString(formData[col])} onChange={e=>setFormData({...formData, [col]:e.target.value})} />
-                                        : cLower.includes('data') ? <input type="date" className="w-full p-3 bg-gray-50 dark:bg-slate-900 border rounded-xl font-bold" value={formatDateForInput(formData[col])} onChange={e=>setFormData({...formData, [col]:e.target.value})} />
-                                        : cLower.includes('hora') || cLower.includes('início') || cLower.includes('fim') ? <input type="time" className="w-full p-3 bg-gray-50 dark:bg-slate-900 border rounded-xl font-bold" value={safeString(formData[col])} onChange={e=>setFormData({...formData, [col]:e.target.value})} />
-                                        : <input type={cLower.includes('senha')?'password':'text'} className="w-full p-3 bg-gray-50 dark:bg-slate-900 border rounded-xl font-bold" value={safeString(formData[col])} onChange={e=>setFormData({...formData, [col]:e.target.value})} />}
+                                        {col === 'Layout' ? <select className="w-full p-3 bg-gray-50 dark:bg-slate-900 border dark:border-slate-700 rounded-xl font-bold" value={safeString(formData[col])} onChange={e=>setFormData({...formData, [col]:e.target.value})}><option>Padrão</option><option>Imagem Grande</option><option>Só Texto</option></select>
+                                        : col === 'Tipo_Midia' ? <select className="w-full p-3 bg-gray-50 dark:bg-slate-900 border dark:border-slate-700 rounded-xl font-bold" value={safeString(formData[col])} onChange={e=>setFormData({...formData, [col]:e.target.value})}><option>Documento PDF</option><option>Apresentação</option><option>Vídeo</option><option>Imagem</option><option>Outro</option></select>
+                                        : col === 'Tipo' && title.includes('Contato') ? <select className="w-full p-3 bg-gray-50 dark:bg-slate-900 border dark:border-slate-700 rounded-xl font-bold" value={safeString(formData[col])} onChange={e=>setFormData({...formData, [col]:e.target.value})}><option>Ramal</option><option>Email</option><option>Telefone</option></select>
+                                        : cLower.includes('status') || cLower.includes('ativo') ? <select className="w-full p-3 bg-gray-50 dark:bg-slate-900 border dark:border-slate-700 rounded-xl font-bold" value={safeString(formData[col])} onChange={e=>setFormData({...formData, [col]:e.target.value})}><option value="">Selecione...</option><option>Sim</option><option>Não</option><option>Ativo</option><option>Inativo</option></select>
+                                        : col === 'Nível de Acesso' ? <select className="w-full p-3 bg-gray-50 dark:bg-slate-900 border dark:border-slate-700 rounded-xl font-bold" value={safeString(formData[col])} onChange={e=>setFormData({...formData, [col]:e.target.value})}><option value="">Selecione...</option><option>Colaborador</option><option>Supervisor</option><option>Admin</option></select>
+                                        : isLong ? <textarea className="w-full p-3 bg-gray-50 dark:bg-slate-900 border dark:border-slate-700 rounded-xl font-bold min-h-[80px]" value={safeString(formData[col])} onChange={e=>setFormData({...formData, [col]:e.target.value})} />
+                                        : cLower.includes('data') ? <input type="date" className="w-full p-3 bg-gray-50 dark:bg-slate-900 border dark:border-slate-700 rounded-xl font-bold" value={formatDateForInput(formData[col])} onChange={e=>setFormData({...formData, [col]:e.target.value})} />
+                                        : cLower.includes('hora') || cLower.includes('início') || cLower.includes('fim') ? <input type="time" className="w-full p-3 bg-gray-50 dark:bg-slate-900 border dark:border-slate-700 rounded-xl font-bold" value={safeString(formData[col])} onChange={e=>setFormData({...formData, [col]:e.target.value})} />
+                                        : <input type={cLower.includes('senha')?'password':'text'} className="w-full p-3 bg-gray-50 dark:bg-slate-900 border dark:border-slate-700 rounded-xl font-bold" value={safeString(formData[col])} onChange={e=>setFormData({...formData, [col]:e.target.value})} />}
                                     </div>
                                 )
                             })}
@@ -152,14 +172,14 @@
             return (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 glass-modal" onClick={onClose}>
                     <div className="bg-white dark:bg-slate-800 rounded-[2rem] w-full max-w-lg shadow-2xl relative flex flex-col max-h-[90vh]" onClick={e=>e.stopPropagation()}>
-                        <div className="p-6 border-b flex justify-between items-center"><h3 className="text-xl font-black text-primary">Detalhes</h3><button onClick={onClose} className="w-8 h-8 bg-gray-100 rounded-full"><i className="ph-bold ph-x"></i></button></div>
+                        <div className="p-6 border-b dark:border-slate-700 flex justify-between items-center"><h3 className="text-xl font-black text-primary">Detalhes</h3><button onClick={onClose} className="w-8 h-8 bg-gray-100 dark:bg-slate-700 rounded-full"><i className="ph-bold ph-x"></i></button></div>
                         <div className="p-6 overflow-y-auto custom-scrollbar space-y-4">
                             {item.Imagem_URL && <img src={formatImageUrl(item.Imagem_URL)} className="w-full h-40 object-cover rounded-xl" />}
                             {schema.filter(c=>c!=='ID' && c!=='Imagem_URL').map((col, i) => (
-                                <div key={i} className="border-b pb-2"><p className="text-[10px] font-black text-gray-400 uppercase">{col}</p><p className="font-bold text-sm">{safeString(item[col]) || '-'}</p></div>
+                                <div key={i} className="border-b dark:border-slate-700 pb-2"><p className="text-[10px] font-black text-gray-400 uppercase">{col}</p><p className="font-bold text-sm">{safeString(item[col]) || '-'}</p></div>
                             ))}
                         </div>
-                        {canEdit && <div className="p-4 bg-gray-50 flex gap-2"><button onClick={()=>{onClose(); openModal(item);}} className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-black">Editar</button><button onClick={()=>{if(confirm('Excluir?')){handleDelete(item.ID); onClose();}}} className="py-3 px-4 bg-red-100 text-red-600 rounded-xl font-black"><i className="ph-bold ph-trash"></i></button></div>}
+                        {canEdit && <div className="p-4 bg-gray-50 dark:bg-slate-900 flex gap-2"><button onClick={()=>{onClose(); openModal(item);}} className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-black">Editar</button><button onClick={()=>{if(confirm('Excluir?')){handleDelete(item.ID); onClose();}}} className="py-3 px-4 bg-red-100 text-red-600 rounded-xl font-black"><i className="ph-bold ph-trash"></i></button></div>}
                     </div>
                 </div>
             )
@@ -171,16 +191,16 @@
             const filtered = safeData.filter(i => i && Object.values(i).some(v => safeString(v).toLowerCase().includes(search.toLowerCase()))).sort((a,b) => safeString(a[titleField]).localeCompare(safeString(b[titleField])));
             return (
                 <div className="space-y-6">
-                    <div className="flex flex-col md:flex-row justify-between bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border gap-4">
-                        <input type="text" placeholder="Pesquisar..." value={search} onChange={e=>setSearch(e.target.value)} className="w-full md:w-80 p-3 bg-gray-50 border rounded-lg font-bold outline-none" />
+                    <div className="flex flex-col md:flex-row justify-between bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border dark:border-slate-700 gap-4">
+                        <input type="text" placeholder="Pesquisar..." value={search} onChange={e=>setSearch(e.target.value)} className="w-full md:w-80 p-3 bg-gray-50 dark:bg-slate-900 border dark:border-slate-700 rounded-lg font-bold outline-none" />
                         {canEdit && <button onClick={()=>openModal(null, schema)} className="bg-primary text-white px-6 py-3 rounded-lg font-black w-full md:w-auto">Novo Cadastro</button>}
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-6">
                         {filtered.map((item, i) => (
-                            <div key={i} onClick={()=>setSelectedItem(item)} className="bg-white dark:bg-slate-800 border rounded-2xl p-5 shadow-sm card-hover relative group">
-                                {item.Imagem_URL ? <img src={formatImageUrl(item.Imagem_URL)} className="w-full h-24 object-cover rounded-lg mb-3" /> : <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-lg flex justify-center items-center text-xl mb-3"><i className="ph-fill ph-file-text"></i></div>}
+                            <div key={i} onClick={()=>setSelectedItem(item)} className="bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-2xl p-5 shadow-sm card-hover relative group">
+                                {item.Imagem_URL ? <img src={formatImageUrl(item.Imagem_URL)} className="w-full h-24 object-cover rounded-lg mb-3" /> : <div className="w-10 h-10 bg-blue-50 dark:bg-blue-900/30 text-blue-600 rounded-lg flex justify-center items-center text-xl mb-3"><i className="ph-fill ph-file-text"></i></div>}
                                 <h3 className="font-black text-base mb-1 line-clamp-2">{safeString(item[titleField])}</h3>
-                                {extraField && item[extraField] && <span className="text-[10px] font-black uppercase bg-gray-100 px-2 py-1 rounded w-max mb-2">{safeString(item[extraField])}</span>}
+                                {extraField && item[extraField] && <span className="text-[10px] font-black uppercase bg-gray-100 dark:bg-slate-700 px-2 py-1 rounded w-max mb-2">{safeString(item[extraField])}</span>}
                                 {descField && <p className="text-xs text-gray-500 line-clamp-2">{safeString(item[descField])}</p>}
                             </div>
                         ))}
@@ -197,17 +217,17 @@
             filtered.forEach(item => { const key = viewMode==='Tabela' ? (safeString(item.Tabela_Instituto)||'Geral') : (safeString(item.Profissional)||'Sem Nome'); if(!grouped[key]) grouped[key] = []; grouped[key].push(item); });
             return (
                 <div className="space-y-6">
-                    <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border flex flex-col md:flex-row gap-4">
-                        <div className="flex bg-gray-50 p-1 rounded-lg w-full md:w-auto"><button onClick={()=>setViewMode('Tabela')} className={`flex-1 px-4 py-2 rounded font-bold text-sm ${viewMode==='Tabela'?'bg-white shadow text-primary':'text-gray-500'}`}>Tabela</button><button onClick={()=>setViewMode('Profissional')} className={`flex-1 px-4 py-2 rounded font-bold text-sm ${viewMode==='Profissional'?'bg-white shadow text-primary':'text-gray-500'}`}>Profissional</button></div>
-                        <input type="text" placeholder="Buscar..." value={search} onChange={e=>setSearch(e.target.value)} className="w-full md:w-64 p-2.5 bg-gray-50 border rounded-lg font-bold" />
+                    <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border dark:border-slate-700 flex flex-col md:flex-row gap-4">
+                        <div className="flex bg-gray-50 dark:bg-slate-900 p-1 rounded-lg w-full md:w-auto"><button onClick={()=>setViewMode('Tabela')} className={`flex-1 px-4 py-2 rounded font-bold text-sm ${viewMode==='Tabela'?'bg-white dark:bg-slate-800 shadow text-primary':'text-gray-500'}`}>Tabela</button><button onClick={()=>setViewMode('Profissional')} className={`flex-1 px-4 py-2 rounded font-bold text-sm ${viewMode==='Profissional'?'bg-white dark:bg-slate-800 shadow text-primary':'text-gray-500'}`}>Profissional</button></div>
+                        <input type="text" placeholder="Buscar..." value={search} onChange={e=>setSearch(e.target.value)} className="w-full md:w-64 p-2.5 bg-gray-50 dark:bg-slate-900 border dark:border-slate-700 rounded-lg font-bold" />
                         {canEdit && <button onClick={()=>openModal(null, schema)} className="bg-primary text-white font-black px-4 py-2.5 rounded-lg w-full md:w-auto">Novo Vínculo</button>}
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         {Object.keys(grouped).sort().map((grp, i) => (
-                            <div key={i} className="bg-white border rounded-2xl p-5 shadow-sm">
+                            <div key={i} className="bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-2xl p-5 shadow-sm">
                                 <h3 className="font-black text-lg mb-2 flex items-center gap-2"><i className={`ph-fill ${viewMode==='Tabela'?'ph-buildings':'ph-user-md'} text-primary`}></i> {grp}</h3>
-                                <div className="space-y-1 mt-3 border-t pt-3">
-                                    {grouped[grp].map((item, j) => <p key={j} onClick={()=>setSelectedItem(item)} className="text-sm font-bold text-gray-600 hover:text-primary cursor-pointer truncate">• {safeString(viewMode==='Tabela'?item.Profissional:item.Tabela_Instituto)}</p>)}
+                                <div className="space-y-1 mt-3 border-t dark:border-slate-700 pt-3">
+                                    {grouped[grp].map((item, j) => <p key={j} onClick={()=>setSelectedItem(item)} className="text-sm font-bold text-gray-600 dark:text-gray-300 hover:text-primary cursor-pointer truncate">• {safeString(viewMode==='Tabela'?item.Profissional:item.Tabela_Instituto)}</p>)}
                                 </div>
                             </div>
                         ))}
@@ -225,13 +245,13 @@
             const filteredData = safeData.filter(row => row && (safeString(row.Procedimento).toLowerCase().includes(search.toLowerCase()) || safeString(row['Código']).toLowerCase().includes(search.toLowerCase())));
             return (
                 <div className="space-y-6">
-                    <div className="flex flex-col md:flex-row justify-between items-center bg-white p-4 rounded-xl shadow-sm border gap-4">
-                        <input type="text" placeholder="Buscar Procedimento..." value={search} onChange={e=>setSearch(e.target.value)} className="w-full md:w-80 p-3 bg-gray-50 border rounded-lg font-bold" />
-                        {canEdit && <div className="flex gap-2 w-full md:w-auto"><button onClick={()=>{ const nc = prompt("Novo Convênio:"); if(nc) { let init={Código:'', Procedimento:''}; init[nc]=''; openModal(init, [...allKeys, nc]); } }} className="bg-gray-900 text-white px-4 py-3 rounded-lg font-black text-xs w-full">+ Coluna</button><button onClick={() => { let init = {Código:'', Procedimento:''}; insurances.forEach(ins => init[ins] = ''); openModal(init, allKeys); }} className="bg-primary text-white px-4 py-3 rounded-lg font-black text-xs w-full">Adicionar Regra</button></div>}
+                    <div className="flex flex-col md:flex-row justify-between items-center bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border dark:border-slate-700 gap-4">
+                        <input type="text" placeholder="Buscar Procedimento..." value={search} onChange={e=>setSearch(e.target.value)} className="w-full md:w-80 p-3 bg-gray-50 dark:bg-slate-900 border dark:border-slate-700 rounded-lg font-bold" />
+                        {canEdit && <div className="flex gap-2 w-full md:w-auto"><button onClick={()=>{ const nc = prompt("Novo Convênio:"); if(nc) { let init={Código:'', Procedimento:''}; init[nc]=''; openModal(init, [...allKeys, nc]); } }} className="bg-gray-900 dark:bg-slate-700 text-white px-4 py-3 rounded-lg font-black text-xs w-full">+ Coluna</button><button onClick={() => { let init = {Código:'', Procedimento:''}; insurances.forEach(ins => init[ins] = ''); openModal(init, allKeys); }} className="bg-primary text-white px-4 py-3 rounded-lg font-black text-xs w-full">Adicionar Regra</button></div>}
                     </div>
                     <div className="overflow-x-auto custom-scrollbar pb-10"><table className="matrix-table min-w-[800px]"><thead><tr><th style={{width:'80px'}}>Cód.</th><th>Procedimento</th>{insurances.map((ins, i) => <th key={i}>{safeString(ins)}</th>)}{canEdit && <th>Ações</th>}</tr></thead><tbody>
                         {filteredData.length===0?<tr><td colSpan="100%" className="p-10 text-center text-gray-400">Vazio.</td></tr>:filteredData.map((row, rowIndex) => (
-                            <tr key={rowIndex} className="matrix-row group"><td className="font-mono text-xs">{safeString(row['Código'])||'-'}</td><td>{safeString(row.Procedimento) || '-'}</td>{insurances.map((ins, i) => { const val = safeString(row[ins]); const isNo = val.toLowerCase()==='x'||val.toLowerCase()==='não'; return <td key={i}>{isNo?<div className="mx-auto w-6 h-6 flex items-center justify-center rounded-full bg-red-100 text-red-600"><i className="ph-bold ph-x"></i></div>:!val?<span className="text-gray-300">-</span>:<span className="text-[9px] font-bold bg-gray-100 px-2 py-1 rounded uppercase">{val}</span>}</td>; })}{canEdit && <td className="border-l"><button onClick={()=>openModal(row, allKeys)} className="w-8 h-8 text-blue-600 bg-blue-50 rounded mr-1"><i className="ph-bold ph-pencil-simple"></i></button><button onClick={()=>{if(confirm('Excluir?')) handleDelete(row.ID)}} className="w-8 h-8 text-red-600 bg-red-50 rounded"><i className="ph-bold ph-trash"></i></button></td>}</tr>
+                            <tr key={rowIndex} className="matrix-row group"><td className="font-mono text-xs text-gray-500">{safeString(row['Código'])||'-'}</td><td>{safeString(row.Procedimento) || '-'}</td>{insurances.map((ins, i) => { const val = safeString(row[ins]); const isNo = val.toLowerCase()==='x'||val.toLowerCase()==='não'; return <td key={i}>{isNo?<div className="mx-auto w-6 h-6 flex items-center justify-center rounded-full bg-red-100 text-red-600"><i className="ph-bold ph-x"></i></div>:!val?<span className="text-gray-300 dark:text-slate-600">-</span>:<span className="text-[9px] font-bold bg-gray-100 dark:bg-slate-700 px-2 py-1 rounded uppercase">{val}</span>}</td>; })}{canEdit && <td className="border-l dark:border-slate-700"><button onClick={()=>openModal(row, allKeys)} className="w-8 h-8 text-blue-600 bg-blue-50 dark:bg-slate-800 rounded mr-1"><i className="ph-bold ph-pencil-simple"></i></button><button onClick={()=>{if(confirm('Excluir?')) handleDelete(row.ID)}} className="w-8 h-8 text-red-600 bg-red-50 dark:bg-slate-800 rounded"><i className="ph-bold ph-trash"></i></button></td>}</tr>
                         ))}
                     </tbody></table></div>
                 </div>
@@ -242,56 +262,14 @@
             const [search, setSearch] = useState(''); const filtered = (Array.isArray(data)?data:[]).filter(m => m && (safeString(m.Médico).toLowerCase().includes(search.toLowerCase()) || safeString(m.Especialidade).toLowerCase().includes(search.toLowerCase()))).sort((a,b) => safeString(a.Médico).localeCompare(safeString(b.Médico)));
             return (
                 <div className="space-y-6">
-                    <div className="flex flex-col md:flex-row justify-between bg-white p-4 rounded-xl border gap-4"><input type="text" placeholder="Buscar médico..." value={search} onChange={e=>setSearch(e.target.value)} className="w-full md:w-80 p-3 bg-gray-50 border rounded-lg font-bold" />{canEdit && <button onClick={()=>openModal({})} className="bg-primary text-white px-6 py-3 rounded-lg font-black w-full md:w-auto">Novo Médico</button>}</div>
+                    <div className="flex flex-col md:flex-row justify-between bg-white dark:bg-slate-800 p-4 rounded-xl border dark:border-slate-700 gap-4"><input type="text" placeholder="Buscar médico..." value={search} onChange={e=>setSearch(e.target.value)} className="w-full md:w-80 p-3 bg-gray-50 dark:bg-slate-900 border dark:border-slate-700 rounded-lg font-bold" />{canEdit && <button onClick={()=>openModal({})} className="bg-primary text-white px-6 py-3 rounded-lg font-black w-full md:w-auto">Novo Médico</button>}</div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">{filtered.map((med, i) => (
-                        <div key={i} className="bg-white p-5 border rounded-2xl relative group flex flex-col items-center text-center">
-                            {med.Foto_URL ? <img src={formatImageUrl(med.Foto_URL)} className="w-20 h-20 rounded-full object-cover border-4 border-gray-50 mb-3" /> : <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center text-2xl font-black text-gray-400 mb-3">{safeString(med.Médico||'M').charAt(0)}</div>}
+                        <div key={i} className="bg-white dark:bg-slate-800 p-5 border dark:border-slate-700 rounded-2xl relative group flex flex-col items-center text-center">
+                            {med.Foto_URL ? <img src={formatImageUrl(med.Foto_URL)} className="w-20 h-20 rounded-full object-cover border-4 border-gray-50 dark:border-slate-900 mb-3" /> : <div className="w-20 h-20 rounded-full bg-gray-100 dark:bg-slate-700 flex items-center justify-center text-2xl font-black text-gray-400 mb-3">{safeString(med.Médico||'M').charAt(0)}</div>}
                             <h3 className="font-black text-lg">{safeString(med.Médico)}</h3><p className="text-xs font-bold text-primary mb-3 uppercase">{safeString(med.Especialidade)}</p>
-                            <div className="w-full bg-gray-50 rounded-lg p-3 text-left space-y-1 mb-3">{med.CRM&&<p className="text-[10px] font-bold text-gray-500 flex justify-between"><span>CRM</span><span>{safeString(med.CRM)}</span></p>}{med.CBO&&<p className="text-[10px] font-bold text-gray-500 flex justify-between"><span>CBO</span><span>{safeString(med.CBO)}</span></p>}</div>
-                            {canEdit && <button onClick={()=>openLancarEscala(safeString(med.Médico), true)} className="w-full bg-gray-900 text-white font-bold py-2 rounded-lg text-xs mt-auto">Agendar Plantão</button>}
-                            {canEdit && <div className="absolute top-2 right-2 flex gap-1"><button onClick={()=>openModal(med)} className="p-2 bg-white shadow rounded hover:text-blue-600"><i className="ph-bold ph-pencil-simple"></i></button><button onClick={()=>{if(confirm('Excluir?')) handleDelete(med.ID)}} className="p-2 bg-white shadow rounded hover:text-red-600"><i className="ph-bold ph-trash"></i></button></div>}
-                        </div>
-                    ))}</div>
-                </div>
-            );
-        };
-
-        const ContatosViewTabs = ({ data, canEdit, openModal, handleDelete, schema }) => {
-            const [search, setSearch] = useState(''); const [activeTab, setActiveTab] = useState('Ramal'); 
-            const filtered = (Array.isArray(data)?data:[]).filter(c => c && safeString(c.Tipo) === activeTab && Object.values(c).some(v=>safeString(v).toLowerCase().includes(search.toLowerCase()))).sort((a,b)=>safeString(a.Nome_Contato).localeCompare(safeString(b.Nome_Contato)));
-            return (
-                <div className="space-y-6">
-                    <div className="bg-white rounded-xl p-4 shadow-sm border flex flex-col md:flex-row justify-between gap-4">
-                        <div className="flex bg-gray-50 p-1 rounded-lg w-full md:w-auto"><button onClick={()=>setActiveTab('Ramal')} className={`flex-1 px-4 py-2 rounded text-sm font-bold ${activeTab==='Ramal'?'bg-white shadow text-primary':'text-gray-500'}`}>Ramais</button><button onClick={()=>setActiveTab('Email')} className={`flex-1 px-4 py-2 rounded text-sm font-bold ${activeTab==='Email'?'bg-white shadow text-secondary':'text-gray-500'}`}>E-mails</button><button onClick={()=>setActiveTab('Telefone')} className={`flex-1 px-4 py-2 rounded text-sm font-bold ${activeTab==='Telefone'?'bg-white shadow text-green-600':'text-gray-500'}`}>Externos</button></div>
-                        <div className="flex gap-2 w-full md:w-auto"><input type="text" placeholder="Buscar..." value={search} onChange={e=>setSearch(e.target.value)} className="w-full md:w-64 p-3 bg-gray-50 border rounded-xl font-bold text-sm" />{canEdit && <button onClick={()=>openModal({Tipo: activeTab}, schema)} className="bg-primary text-white px-4 rounded-xl font-bold"><i className="ph-bold ph-plus"></i></button>}</div>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">{filtered.map((item, i) => (
-                        <div key={i} className="bg-white border rounded-2xl p-5 shadow-sm relative group">
-                            <span className="text-[9px] font-black text-gray-400 uppercase bg-gray-50 px-2 py-1 rounded w-max">{safeString(item.Local_Setor) || 'Geral'}</span>
-                            <h3 className="font-black text-lg mt-2">{safeString(item.Nome_Contato) || 'Sem Nome'}</h3>
-                            <p className="text-base font-black text-primary mt-1 break-all">{safeString(item.Valor_Contato)}</p>
-                            {canEdit && <div className="absolute top-2 right-2 flex gap-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition"><button onClick={()=>openModal(item, schema)} className="p-2 bg-white shadow rounded hover:text-blue-600"><i className="ph-bold ph-pencil-simple"></i></button><button onClick={()=>{if(confirm('Excluir?')) handleDelete(item.ID)}} className="p-2 bg-white shadow rounded hover:text-red-600"><i className="ph-bold ph-trash"></i></button></div>}
-                        </div>
-                    ))}</div>
-                </div>
-            )
-        };
-
-        const SenhasView = ({ data, canEdit, openModal, handleDelete, schema }) => {
-            const [search, setSearch] = useState(''); const [visiblePwd, setVisiblePwd] = useState({});
-            const filtered = (Array.isArray(data)?data:[]).filter(c => c && (safeString(c['Nome do Sistema']).toLowerCase().includes(search.toLowerCase()) || safeString(c.Login).toLowerCase().includes(search.toLowerCase()))).sort((a,b)=>safeString(a['Nome do Sistema']).localeCompare(safeString(b['Nome do Sistema'])));
-            return (
-                <div className="space-y-6">
-                    <div className="flex bg-white p-4 rounded-2xl border gap-4"><input type="text" placeholder="Buscar sistema..." value={search} onChange={e=>setSearch(e.target.value)} className="w-full md:w-80 p-3 bg-gray-50 border rounded-xl font-bold" />{canEdit && <button onClick={()=>openModal(null, schema)} className="bg-primary text-white font-bold px-6 py-2 rounded-xl">Nova Senha</button>}</div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">{filtered.map((item, i) => (
-                        <div key={i} className="bg-white border rounded-2xl p-6 shadow-sm relative group flex flex-col">
-                            <div className="flex justify-between items-start mb-3"><h3 className="font-black text-lg truncate flex items-center gap-2"><i className="ph-fill ph-lock-key text-primary"></i> {safeString(item['Nome do Sistema'])}</h3>{item['Link do Sistema'] && <a href={safeString(item['Link do Sistema'])} target="_blank" className="text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded font-bold">Acessar</a>}</div>
-                            <div className="bg-gray-50 rounded-xl p-4 mb-2">
-                                <p className="text-[10px] font-black text-gray-400 uppercase">Login</p><p className="font-bold text-sm mb-2 break-all">{safeString(item.Login)}</p>
-                                <p className="text-[10px] font-black text-gray-400 uppercase flex justify-between">Senha <button onClick={()=>setVisiblePwd(p=>({...p, [item.ID]: !p[item.ID]}))} className="text-primary hover:underline">{visiblePwd[item.ID]?'Ocultar':'Mostrar'}</button></p>
-                                <div className="flex justify-between items-center bg-white px-3 py-2 rounded-lg border mt-1"><span className="font-mono text-sm font-bold">{visiblePwd[item.ID]?safeString(item.Senha):'••••••••'}</span><button onClick={()=>navigator.clipboard.writeText(safeString(item.Senha))} className="text-gray-400 hover:text-primary"><i className="ph-bold ph-copy"></i></button></div>
-                            </div>
-                            {canEdit && <div className="absolute top-2 right-2 flex gap-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition"><button onClick={()=>openModal(item, schema)} className="p-2 bg-white shadow rounded hover:text-blue-600"><i className="ph-bold ph-pencil-simple"></i></button><button onClick={()=>{if(confirm('Excluir?')) handleDelete(item.ID)}} className="p-2 bg-white shadow rounded hover:text-red-600"><i className="ph-bold ph-trash"></i></button></div>}
+                            <div className="w-full bg-gray-50 dark:bg-slate-900 rounded-lg p-3 text-left space-y-1 mb-3">{med.CRM&&<p className="text-[10px] font-bold text-gray-500 flex justify-between"><span>CRM</span><span>{safeString(med.CRM)}</span></p>}{med.CBO&&<p className="text-[10px] font-bold text-gray-500 flex justify-between"><span>CBO</span><span>{safeString(med.CBO)}</span></p>}</div>
+                            {canEdit && <button onClick={()=>openLancarEscala(safeString(med.Médico), true)} className="w-full bg-gray-900 dark:bg-slate-700 text-white font-bold py-2 rounded-lg text-xs mt-auto">Agendar Plantão</button>}
+                            {canEdit && <div className="absolute top-2 right-2 flex gap-1"><button onClick={()=>openModal(med)} className="p-2 bg-white dark:bg-slate-800 shadow rounded hover:text-blue-600"><i className="ph-bold ph-pencil-simple"></i></button><button onClick={()=>{if(confirm('Excluir?')) handleDelete(med.ID)}} className="p-2 bg-white dark:bg-slate-800 shadow rounded hover:text-red-600"><i className="ph-bold ph-trash"></i></button></div>}
                         </div>
                     ))}</div>
                 </div>
@@ -302,12 +280,12 @@
             const ativos = (Array.isArray(data)?data:[]).filter(i => i && safeString(i.Ativo).toLowerCase()!=='não'&&safeString(i.Ativo).toLowerCase()!=='nao');
             return (
                 <div className="space-y-6">
-                    <div className="flex justify-between items-center bg-white p-4 rounded-xl border">
+                    <div className="flex justify-between items-center bg-white dark:bg-slate-800 p-4 rounded-xl border dark:border-slate-700">
                         <h2 className="text-xl font-black"><i className="ph-fill ph-presentation-chart text-primary"></i> Mural de Avisos</h2>
                         {canEdit && <button onClick={()=>openModal({Layout: 'Padrão'})} className="bg-primary text-white px-6 py-2.5 rounded-lg font-black text-sm">Criar Anúncio</button>}
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">{ativos.map((item, i) => (
-                        <div key={i} className={`bg-white rounded-2xl shadow-md overflow-hidden relative border flex flex-col ${item.Layout==='Imagem Grande'?'min-h-[400px]':'min-h-[250px]'}`}>
+                        <div key={i} className={`bg-white dark:bg-slate-800 rounded-2xl shadow-md overflow-hidden relative border dark:border-slate-700 flex flex-col ${item.Layout==='Imagem Grande'?'min-h-[400px]':'min-h-[250px]'}`}>
                             {item.Imagem_URL && <div className="absolute inset-0 bg-cover bg-center" style={{backgroundImage:`url('${formatImageUrl(item.Imagem_URL)}')`}}></div>}
                             <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
                             <div className="relative z-10 p-6 mt-auto">
@@ -325,27 +303,27 @@
             const [selectedMedia, setSelectedMedia] = useState(null); const ativos = Array.isArray(data)?data.filter(d=>d):[];
             return (
                 <div className="space-y-6">
-                    <div className="flex justify-between items-center bg-white p-4 rounded-xl border">
+                    <div className="flex justify-between items-center bg-white dark:bg-slate-800 p-4 rounded-xl border dark:border-slate-700">
                         <h2 className="text-xl font-black"><i className="ph-fill ph-newspaper text-primary"></i> Boletins e Treinamentos</h2>
                         {canEdit && <button onClick={()=>openModal({Tipo_Midia: 'Documento PDF'})} className="bg-primary text-white px-6 py-2.5 rounded-lg font-black text-sm">Nova Mídia</button>}
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">{ativos.map((item, i) => {
-                        let icon = 'ph-file-pdf'; let color = 'bg-blue-50 text-blue-600'; const t = safeString(item.Tipo_Midia).toLowerCase();
-                        if(t.includes('vídeo')||t.includes('video')) { icon = 'ph-play-circle'; color = 'bg-red-50 text-red-600'; } else if(t.includes('imagem')) { icon = 'ph-image'; color = 'bg-green-50 text-green-600'; } else if(t.includes('apresentação')) { icon = 'ph-projector-screen'; color = 'bg-orange-50 text-orange-600'; }
+                        let icon = 'ph-file-pdf'; let color = 'bg-blue-50 text-blue-600 dark:bg-blue-900/30'; const t = safeString(item.Tipo_Midia).toLowerCase();
+                        if(t.includes('vídeo')||t.includes('video')) { icon = 'ph-play-circle'; color = 'bg-red-50 text-red-600 dark:bg-red-900/30'; } else if(t.includes('imagem')) { icon = 'ph-image'; color = 'bg-green-50 text-green-600 dark:bg-green-900/30'; } else if(t.includes('apresentação')) { icon = 'ph-projector-screen'; color = 'bg-orange-50 text-orange-600 dark:bg-orange-900/30'; }
                         return (
-                            <div key={i} className="bg-white border rounded-2xl p-5 shadow-sm relative group flex flex-col">
-                                <div className="flex justify-between mb-3"><div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl ${color}`}><i className={`ph-fill ${icon}`}></i></div><span className="text-[10px] font-black text-gray-400 border px-2 py-1 rounded-full h-max">{safeString(item.Data_Publicacao).split('-').reverse().join('/')}</span></div>
+                            <div key={i} className="bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-2xl p-5 shadow-sm relative group flex flex-col">
+                                <div className="flex justify-between mb-3"><div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl ${color}`}><i className={`ph-fill ${icon}`}></i></div><span className="text-[10px] font-black text-gray-400 border dark:border-slate-600 px-2 py-1 rounded-full h-max">{safeString(item.Data_Publicacao).split('-').reverse().join('/')}</span></div>
                                 <h3 className="font-black text-lg leading-tight mb-1">{safeString(item.Título)}</h3><p className="text-xs text-gray-500 line-clamp-2 mb-4">{safeString(item.Descrição)}</p>
-                                <button onClick={()=>setSelectedMedia(item)} className="mt-auto w-full py-2 bg-gray-50 hover:bg-primary hover:text-white rounded-lg font-bold text-sm transition">Visualizar</button>
-                                {canEdit && <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100"><button onClick={()=>openModal(item)} className="p-1.5 bg-white shadow rounded hover:text-blue-600"><i className="ph-bold ph-pencil-simple"></i></button><button onClick={()=>{if(confirm('Excluir?')) handleDelete(item.ID)}} className="p-1.5 bg-white shadow rounded hover:text-red-600"><i className="ph-bold ph-trash"></i></button></div>}
+                                <button onClick={()=>setSelectedMedia(item)} className="mt-auto w-full py-2 bg-gray-50 dark:bg-slate-900 hover:bg-primary dark:hover:bg-primary hover:text-white rounded-lg font-bold text-sm transition">Visualizar</button>
+                                {canEdit && <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100"><button onClick={()=>openModal(item)} className="p-1.5 bg-white dark:bg-slate-700 shadow rounded hover:text-blue-600"><i className="ph-bold ph-pencil-simple"></i></button><button onClick={()=>{if(confirm('Excluir?')) handleDelete(item.ID)}} className="p-1.5 bg-white dark:bg-slate-700 shadow rounded hover:text-red-600"><i className="ph-bold ph-trash"></i></button></div>}
                             </div>
                         )
                     })}</div>
                     {selectedMedia && (
                         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 glass-modal" onClick={()=>setSelectedMedia(null)}>
-                            <div className="bg-white rounded-2xl w-full max-w-4xl shadow-2xl flex flex-col" onClick={e=>e.stopPropagation()}>
+                            <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-4xl shadow-2xl flex flex-col border dark:border-slate-700" onClick={e=>e.stopPropagation()}>
                                 <div className="p-4 bg-gray-900 text-white flex justify-between items-center"><h3 className="font-black truncate">{safeString(selectedMedia.Título)}</h3><button onClick={()=>setSelectedMedia(null)} className="w-8 h-8 bg-white/20 rounded-full flex justify-center items-center"><i className="ph-bold ph-x"></i></button></div>
-                                <div className="bg-gray-100 h-[70vh] relative flex items-center justify-center p-2">
+                                <div className="bg-gray-100 dark:bg-slate-900 h-[70vh] relative flex items-center justify-center p-2">
                                     {selectedMedia.Link_Arquivo ? (safeString(selectedMedia.Tipo_Midia).includes('Imagem') ? <img src={formatImageUrl(selectedMedia.Link_Arquivo)} className="max-w-full max-h-full object-contain rounded" /> : <iframe src={getEmbedUrl(selectedMedia.Link_Arquivo)} className="w-full h-full border-0 rounded bg-white" allowFullScreen></iframe>) : <p className="font-bold text-gray-400">Link indisponível.</p>}
                                 </div>
                             </div>
@@ -353,6 +331,48 @@
                     )}
                 </div>
             )
+        };
+
+        const ContatosViewTabs = ({ data, canEdit, openModal, handleDelete, schema }) => {
+            const [search, setSearch] = useState(''); const [activeTab, setActiveTab] = useState('Ramal'); 
+            const filtered = (Array.isArray(data)?data:[]).filter(c => c && safeString(c.Tipo) === activeTab && Object.values(c).some(v=>safeString(v).toLowerCase().includes(search.toLowerCase()))).sort((a,b)=>safeString(a.Nome_Contato).localeCompare(safeString(b.Nome_Contato)));
+            return (
+                <div className="space-y-6">
+                    <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border dark:border-slate-700 flex flex-col md:flex-row justify-between gap-4">
+                        <div className="flex bg-gray-50 dark:bg-slate-900 p-1 rounded-lg w-full md:w-auto"><button onClick={()=>setActiveTab('Ramal')} className={`flex-1 px-4 py-2 rounded text-sm font-bold ${activeTab==='Ramal'?'bg-white dark:bg-slate-800 shadow text-primary':'text-gray-500'}`}>Ramais</button><button onClick={()=>setActiveTab('Email')} className={`flex-1 px-4 py-2 rounded text-sm font-bold ${activeTab==='Email'?'bg-white dark:bg-slate-800 shadow text-secondary':'text-gray-500'}`}>E-mails</button><button onClick={()=>setActiveTab('Telefone')} className={`flex-1 px-4 py-2 rounded text-sm font-bold ${activeTab==='Telefone'?'bg-white dark:bg-slate-800 shadow text-green-600':'text-gray-500'}`}>Externos</button></div>
+                        <div className="flex gap-2 w-full md:w-auto"><input type="text" placeholder="Buscar..." value={search} onChange={e=>setSearch(e.target.value)} className="w-full md:w-64 p-2 bg-gray-50 dark:bg-slate-900 border dark:border-slate-700 rounded-lg font-bold text-sm" />{canEdit && <button onClick={()=>openModal({Tipo: activeTab}, schema)} className="bg-primary text-white px-4 rounded-lg font-bold"><i className="ph-bold ph-plus"></i></button>}</div>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">{filtered.map((item, i) => (
+                        <div key={i} className="bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-xl p-4 shadow-sm relative group">
+                            <span className="text-[9px] font-black text-gray-400 uppercase bg-gray-50 dark:bg-slate-900 px-2 py-1 rounded">{safeString(item.Local_Setor) || 'Geral'}</span>
+                            <h3 className="font-black text-lg mt-2">{safeString(item.Nome_Contato) || 'Sem Nome'}</h3>
+                            <p className="text-base font-black text-primary mt-1 break-all">{safeString(item.Valor_Contato)}</p>
+                            {canEdit && <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100"><button onClick={()=>openModal(item, schema)} className="p-1.5 bg-white dark:bg-slate-700 shadow rounded text-blue-600"><i className="ph-bold ph-pencil-simple"></i></button><button onClick={()=>{if(confirm('Excluir?')) handleDelete(item.ID)}} className="p-1.5 bg-white dark:bg-slate-700 shadow rounded text-red-600"><i className="ph-bold ph-trash"></i></button></div>}
+                        </div>
+                    ))}</div>
+                </div>
+            )
+        };
+
+        const SenhasView = ({ data, canEdit, openModal, handleDelete, schema }) => {
+            const [search, setSearch] = useState(''); const [visiblePwd, setVisiblePwd] = useState({});
+            const filtered = (Array.isArray(data)?data:[]).filter(c => c && (safeString(c['Nome do Sistema']).toLowerCase().includes(search.toLowerCase()) || safeString(c.Login).toLowerCase().includes(search.toLowerCase()))).sort((a,b)=>safeString(a['Nome do Sistema']).localeCompare(safeString(b['Nome do Sistema'])));
+            return (
+                <div className="space-y-6">
+                    <div className="flex bg-white dark:bg-slate-800 p-4 rounded-2xl border dark:border-slate-700 gap-4"><input type="text" placeholder="Buscar sistema..." value={search} onChange={e=>setSearch(e.target.value)} className="w-full md:w-80 p-2 bg-gray-50 dark:bg-slate-900 border dark:border-slate-700 rounded-lg font-bold" />{canEdit && <button onClick={()=>openModal(null, schema)} className="bg-primary text-white font-bold px-4 py-2 rounded-lg">Nova Senha</button>}</div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">{filtered.map((item, i) => (
+                        <div key={i} className="bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-2xl p-6 shadow-sm relative group flex flex-col">
+                            <div className="flex justify-between items-start mb-3"><h3 className="font-black text-lg truncate flex items-center gap-2"><i className="ph-fill ph-lock-key text-primary"></i> {safeString(item['Nome do Sistema'])}</h3>{item['Link do Sistema'] && <a href={safeString(item['Link do Sistema'])} target="_blank" className="text-[10px] bg-blue-50 dark:bg-blue-900/30 text-blue-600 px-2 py-1 rounded font-bold">Acessar</a>}</div>
+                            <div className="bg-gray-50 dark:bg-slate-900 rounded-lg p-3 mb-2">
+                                <p className="text-[10px] font-black text-gray-400 uppercase">Login</p><p className="font-bold text-sm mb-2 break-all">{safeString(item.Login)}</p>
+                                <p className="text-[10px] font-black text-gray-400 uppercase flex justify-between">Senha <button onClick={()=>setVisiblePwd(p=>({...p, [item.ID]: !p[item.ID]}))} className="text-primary hover:underline">{visiblePwd[item.ID]?'Ocultar':'Mostrar'}</button></p>
+                                <div className="flex justify-between items-center bg-white dark:bg-slate-800 px-2 py-1.5 rounded border dark:border-slate-700 mt-1"><span className="font-mono text-sm">{visiblePwd[item.ID]?safeString(item.Senha):'••••••••'}</span><button onClick={()=>navigator.clipboard.writeText(safeString(item.Senha))} className="text-gray-400 hover:text-primary"><i className="ph-bold ph-copy"></i></button></div>
+                            </div>
+                            {canEdit && <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100"><button onClick={()=>openModal(item, schema)} className="p-1.5 bg-white dark:bg-slate-700 shadow rounded text-blue-600"><i className="ph-bold ph-pencil-simple"></i></button><button onClick={()=>{if(confirm('Excluir?')) handleDelete(item.ID)}} className="p-1.5 bg-white dark:bg-slate-700 shadow rounded text-red-600"><i className="ph-bold ph-trash"></i></button></div>}
+                        </div>
+                    ))}</div>
+                </div>
+            );
         };
 
         const ChatModerno = ({ chatData, user, onSaveChat, onRefresh }) => {
@@ -363,9 +383,9 @@
             const mensagensRoom = chatLog.filter(m => m && (activeRoom==='Geral' ? safeString(m.Destinatario)==='Geral' : ((safeString(m.Nome)===myName && safeString(m.Destinatario)===activeRoom) || (safeString(m.Nome)===activeRoom && safeString(m.Destinatario)===myName)))).sort((a,b) => new Date(a.Data_Hora) - new Date(b.Data_Hora));
             const handleSend = async (e) => { e.preventDefault(); if(!msg)return; let dest = activeRoom; if(!isAdmin && activeRoom === 'Supervisão') dest = 'Supervisão'; await onSaveChat('CHAT_MENSAGENS', {ID:'', Data_Hora:new Date().toISOString(), Nome:myName, Mensagem:msg, Destinatario:dest}, false); setMsg(''); onRefresh(); };
             return (
-                <div className="bg-white rounded-3xl shadow-sm border h-[80vh] flex flex-col md:flex-row overflow-hidden">
-                    <div className="md:w-1/3 border-b md:border-r bg-gray-50 flex flex-col shrink-0"><div className="p-6 border-b bg-white"><h2 className="text-xl font-black text-primary">Chat Interno</h2></div><div className="p-4 space-y-2"><div onClick={()=>setActiveRoom('Geral')} className={`p-4 rounded-2xl cursor-pointer font-bold flex items-center gap-3 ${activeRoom==='Geral'?'bg-primary text-white':'hover:bg-gray-100'}`}><i className="ph-fill ph-users"></i> Fórum Geral</div><div onClick={()=>setActiveRoom(isAdmin?'Caixa de Entrada':'Supervisão')} className={`p-4 rounded-2xl cursor-pointer font-bold flex items-center gap-3 ${activeRoom!=='Geral'?'bg-gray-900 text-white':'hover:bg-gray-100'}`}><i className="ph-fill ph-shield-star"></i> {isAdmin?'Caixa Inbox':'Falar c/ Supervisão'}</div></div></div>
-                    <div className="w-full flex flex-col bg-gray-50 flex-1"><div className="p-6 bg-white border-b flex justify-between items-center shadow-sm"><h3 className="font-black text-lg">{activeRoom}</h3><button onClick={onRefresh} className="text-primary text-2xl hover:rotate-180 transition"><i className="ph-bold ph-arrows-clockwise"></i></button></div><div className="flex-1 overflow-y-auto p-6 space-y-4 flex flex-col custom-scrollbar">{mensagensRoom.length===0 && <p className="m-auto text-gray-400 font-bold text-sm">Vazio.</p>}{mensagensRoom.map((m, i) => { const isMe = safeString(m.Nome) === myName; return (<div key={i} className={`flex flex-col gap-1 max-w-[85%] md:max-w-[70%] ${isMe ? 'self-end items-end' : 'self-start items-start'}`}><span className="text-[10px] font-black text-gray-400 mx-2">{safeString(m.Nome)}</span><div className={`p-4 rounded-2xl shadow-sm text-sm ${isMe ? 'bg-primary text-white rounded-tr-none' : 'bg-white border rounded-tl-none'}`}>{safeString(m.Mensagem)}</div></div>) })}</div><form onSubmit={handleSend} className="p-4 bg-white border-t flex gap-3"><input type="text" value={msg} onChange={e=>setMsg(e.target.value)} placeholder="Mensagem..." className="flex-1 bg-gray-50 border rounded-full px-6 text-sm font-bold outline-none focus:border-primary" /><button type="submit" className="w-12 h-12 rounded-full bg-primary text-white flex justify-center items-center shadow-lg"><i className="ph-fill ph-paper-plane-tilt"></i></button></form></div>
+                <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border dark:border-slate-700 h-[75vh] flex flex-col md:flex-row overflow-hidden">
+                    <div className="md:w-1/3 border-b md:border-r dark:border-slate-700 bg-gray-50 dark:bg-slate-900 flex flex-col shrink-0"><div className="p-4 border-b dark:border-slate-700 bg-white dark:bg-slate-800"><h2 className="text-xl font-black text-primary">Chat Interno</h2></div><div className="p-3 space-y-2"><div onClick={()=>setActiveRoom('Geral')} className={`p-3 rounded-xl cursor-pointer font-bold flex items-center gap-3 ${activeRoom==='Geral'?'bg-primary text-white':'hover:bg-gray-100 dark:hover:bg-slate-700'}`}><i className="ph-fill ph-users"></i> Fórum Geral</div><div onClick={()=>setActiveRoom(isAdmin?'Caixa de Entrada':'Supervisão')} className={`p-3 rounded-xl cursor-pointer font-bold flex items-center gap-3 ${activeRoom!=='Geral'?'bg-gray-900 dark:bg-white text-white dark:text-gray-900':'hover:bg-gray-100 dark:hover:bg-slate-700'}`}><i className="ph-fill ph-shield-star"></i> {isAdmin?'Caixa Inbox':'Falar c/ Supervisão'}</div></div></div>
+                    <div className="w-full flex flex-col bg-gray-50 dark:bg-slate-900 flex-1"><div className="p-4 bg-white dark:bg-slate-800 border-b dark:border-slate-700 flex justify-between items-center shadow-sm"><h3 className="font-black text-lg">{activeRoom}</h3><button onClick={onRefresh} className="text-primary text-xl"><i className="ph-bold ph-arrows-clockwise"></i></button></div><div className="flex-1 overflow-y-auto p-4 space-y-4 flex flex-col custom-scrollbar">{mensagensRoom.length===0 && <p className="m-auto text-gray-400 font-bold text-sm">Vazio.</p>}{mensagensRoom.map((m, i) => { const isMe = safeString(m.Nome) === myName; return (<div key={i} className={`flex flex-col gap-1 max-w-[85%] md:max-w-[70%] ${isMe ? 'self-end items-end' : 'self-start items-start'}`}><span className="text-[9px] font-black text-gray-400 mx-2">{safeString(m.Nome)}</span><div className={`p-3 rounded-2xl shadow-sm text-sm ${isMe ? 'bg-primary text-white rounded-tr-none' : 'bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-tl-none'}`}>{safeString(m.Mensagem)}</div></div>) })}</div><form onSubmit={handleSend} className="p-3 bg-white dark:bg-slate-800 border-t dark:border-slate-700 flex gap-2"><input type="text" value={msg} onChange={e=>setMsg(e.target.value)} placeholder="Mensagem..." className="flex-1 bg-gray-50 dark:bg-slate-900 border dark:border-slate-700 rounded-full px-4 text-sm font-bold outline-none focus:border-primary" /><button type="submit" className="w-10 h-10 rounded-full bg-primary text-white flex justify-center items-center"><i className="ph-fill ph-paper-plane-tilt"></i></button></form></div>
                 </div>
             )
         };
@@ -411,11 +431,11 @@
                 const setores = {}; const dataToShow = searchTab ? todayEscalas.filter(e => safeString(e.Nome_Profissional).toLowerCase().includes(searchTab.toLowerCase())) : todayEscalas;
                 dataToShow.forEach(e => { if(!e) return; const s = safeString(e.Setor_Consultorio) || 'Sem Setor'; if(!setores[s]) setores[s] = []; setores[s].push(e); });
                 return (
-                    <div className="bg-white rounded-2xl p-4 md:p-8 border min-h-[60vh]">
-                        <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4"><h3 className="text-2xl font-black text-gray-800 flex items-center gap-3"><i className="ph-fill ph-kanban text-primary"></i> Operação de Hoje</h3><div className="flex flex-wrap justify-center gap-3 text-[10px] font-bold uppercase tracking-widest bg-gray-50 p-2 rounded-lg border"><span className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-green-500"></div> Ativo</span><span className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-orange-500"></div> Intervalo</span><span className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-red-500"></div> Ausente</span></div></div>
+                    <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 md:p-8 border dark:border-slate-700 min-h-[60vh]">
+                        <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4"><h3 className="text-2xl font-black flex items-center gap-3"><i className="ph-fill ph-kanban text-primary"></i> Operação de Hoje</h3><div className="flex flex-wrap justify-center gap-3 text-[10px] font-bold uppercase tracking-widest bg-gray-50 dark:bg-slate-900 p-2 rounded-lg border dark:border-slate-700"><span className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-green-500"></div> Ativo</span><span className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-orange-500"></div> Intervalo</span><span className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-red-500"></div> Ausente</span></div></div>
                         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                             {Object.keys(setores).sort().map(setor => (
-                                <div key={setor} className="bg-gray-50 rounded-xl p-4 shadow-inner border flex flex-col"><h4 className="font-black text-gray-500 uppercase text-xs mb-3 px-1">{setor}</h4>
+                                <div key={setor} className="bg-gray-50 dark:bg-slate-900 rounded-xl p-4 shadow-inner border dark:border-slate-700 flex flex-col"><h4 className="font-black text-gray-500 uppercase text-xs mb-3 px-1">{setor}</h4>
                                     <div className="space-y-3">
                                         {setores[setor].map((esc, i) => {
                                             const profData = usuarios.find(u => u && u['Nome Completo'] === esc.Nome_Profissional) || corpoClinico.find(c => c && c.Médico === esc.Nome_Profissional);
@@ -423,20 +443,20 @@
                                             const status = isFim ? 'Ausente (Fim Expediente)' : (safeString(esc.Status_Turno) || 'Trabalhando');
                                             const isIntervalo = status === 'Intervalo'; const isAusente = status.includes('Ausente') || status === 'Folga' || status === 'Falta';
                                             const cUnimed = controleUnimed.find(a => a && safeString(a.Profissional) === safeString(esc.Nome_Profissional));
-                                            let uPulseClass = ''; if (cUnimed) { const q = Number(cUnimed.Qtd_Atual||0); const m = Number(cUnimed.Limite_Max||1); if (m > 0 && m - q <= 5) uPulseClass = 'animate-pulse bg-red-500 text-white'; else if (m > 0 && q/m >= 0.8) uPulseClass = 'animate-pulse bg-green-500 text-white'; else uPulseClass = 'bg-blue-50 text-blue-800'; }
+                                            let uPulseClass = ''; if (cUnimed) { const q = Number(cUnimed.Qtd_Atual||0); const m = Number(cUnimed.Limite_Max||1); if (m > 0 && m - q <= 5) uPulseClass = 'animate-pulse bg-red-500 text-white'; else if (m > 0 && q/m >= 0.8) uPulseClass = 'animate-pulse bg-green-500 text-white'; else uPulseClass = 'bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200'; }
                                             return (
-                                                <div key={i} onClick={()=>(canEdit || isColab) && setSelectedPerson(esc)} className={`p-4 rounded-xl border shadow-sm cursor-pointer hover:border-primary transition relative flex flex-col gap-2 ${isIntervalo?'bg-orange-50 border-orange-200':isAusente?'bg-red-50 border-red-200 opacity-60':'bg-white'}`}>
+                                                <div key={i} onClick={()=>(canEdit || isColab) && setSelectedPerson(esc)} className={`p-4 rounded-xl border dark:border-slate-700 shadow-sm cursor-pointer hover:border-primary transition relative flex flex-col gap-2 ${isIntervalo?'bg-orange-50 dark:bg-orange-900/30 border-orange-200':isAusente?'bg-red-50 dark:bg-red-900/30 border-red-200 opacity-60':'bg-white dark:bg-slate-800'}`}>
                                                     {isIntervalo && <div className="absolute -top-2 -right-2 w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center animate-bounce-slight shadow-lg border-2 border-white z-10">🥪</div>}
-                                                    <div className="flex justify-between items-start"><div><span className={`font-black text-sm ${isAusente ? 'text-red-900' : 'text-gray-900'} block pr-4`}>{safeString(esc.Nome_Profissional)}</span><p className="text-[10px] font-bold text-gray-500 mt-1"><i className="ph-fill ph-clock"></i> {safeString(esc.Horario)}</p></div>{isAusente && <span className="text-[8px] uppercase font-black tracking-widest text-red-600 bg-red-100 px-1.5 py-0.5 rounded">Ausente</span>}</div>
-                                                    {esc.Substituindo && <p className="text-[9px] font-black text-primary bg-blue-50 px-2 py-1 rounded mt-1 uppercase w-max">Cobrindo: {safeString(esc.Substituindo)}</p>}
-                                                    {cUnimed && (<div className={`mt-1 flex justify-between items-center p-2 rounded-lg border ${uPulseClass || 'border-blue-100'}`} onClick={(e)=>e.stopPropagation()}><span className="text-[9px] font-black uppercase">Guia Unimed</span><div className="flex items-center gap-2"><button onClick={()=>handleUnimedUpdate(cUnimed, -1)} className="w-5 h-5 bg-white/50 rounded flex justify-center items-center text-black shadow-sm font-black">-</button><span className="font-black text-xs w-10 text-center">{cUnimed.Qtd_Atual}<span className="opacity-50 text-[9px]">/{cUnimed.Limite_Max}</span></span><button onClick={()=>handleUnimedUpdate(cUnimed, 1)} className="w-5 h-5 bg-white/50 rounded flex justify-center items-center text-black shadow-sm font-black">+</button></div></div>)}
+                                                    <div className="flex justify-between items-start"><div><span className={`font-black text-sm ${isAusente ? 'text-red-900 dark:text-red-400' : ''} block pr-4`}>{safeString(esc.Nome_Profissional)}</span><p className="text-[10px] font-bold text-gray-500 mt-1"><i className="ph-fill ph-clock"></i> {safeString(esc.Horario)}</p></div>{isAusente && <span className="text-[8px] uppercase font-black tracking-widest text-red-600 bg-red-100 px-1.5 py-0.5 rounded">Ausente</span>}</div>
+                                                    {esc.Substituindo && <p className="text-[9px] font-black text-primary bg-blue-50 dark:bg-blue-900/50 px-2 py-1 rounded mt-1 uppercase w-max">Cobrindo: {safeString(esc.Substituindo)}</p>}
+                                                    {cUnimed && (<div className={`mt-1 flex justify-between items-center p-2 rounded-lg border dark:border-slate-600 ${uPulseClass || 'border-blue-100'}`} onClick={(e)=>e.stopPropagation()}><span className="text-[9px] font-black uppercase">Guia Unimed</span><div className="flex items-center gap-2"><button onClick={()=>handleUnimedUpdate(cUnimed, -1)} className="w-5 h-5 bg-white/50 rounded flex justify-center items-center text-black shadow-sm font-black">-</button><span className="font-black text-xs w-10 text-center">{cUnimed.Qtd_Atual}<span className="opacity-50 text-[9px]">/{cUnimed.Limite_Max}</span></span><button onClick={()=>handleUnimedUpdate(cUnimed, 1)} className="w-5 h-5 bg-white/50 rounded flex justify-center items-center text-black shadow-sm font-black">+</button></div></div>)}
                                                 </div>
                                             )
                                         })}
                                     </div>
                                 </div>
                             ))}
-                            {Object.keys(setores).length === 0 && <div className="col-span-full text-center p-10 text-gray-400 font-bold border-2 border-dashed rounded-xl">Ninguém encontrado.</div>}
+                            {Object.keys(setores).length === 0 && <div className="col-span-full text-center p-10 text-gray-400 font-bold border-2 border-dashed dark:border-slate-700 rounded-xl">Ninguém encontrado.</div>}
                         </div>
                     </div>
                 )
@@ -444,23 +464,23 @@
 
             return (
                 <div className="space-y-6">
-                    <div className="bg-white rounded-xl p-4 shadow-sm border flex flex-col md:flex-row justify-between items-center gap-4">
-                        <div className="flex bg-gray-50 p-1 rounded-lg overflow-x-auto hide-scroll w-full md:w-auto">{['Painel Hoje', 'Calendário Médicos', 'Calendário Equipe'].map(tab => (<button key={tab} onClick={() => {setActiveSubTab(tab); setSearchTab('');}} className={`px-4 py-2 rounded text-sm font-bold whitespace-nowrap ${activeSubTab === tab ? 'bg-white text-primary shadow' : 'text-gray-500 hover:bg-gray-100'}`}>{tab}</button>))}</div>
-                        <div className="flex gap-2 w-full md:w-auto"><div className="relative flex-1 md:w-48"><i className="ph-bold ph-magnifying-glass absolute left-3 top-3 text-gray-400 text-sm"></i><input type="text" placeholder="Nome..." value={searchTab} onChange={e=>setSearchTab(e.target.value)} className="w-full pl-9 pr-3 py-2 bg-gray-50 border rounded-lg font-bold outline-none focus:border-primary text-sm" /></div>{canEdit && <button onClick={() => { setFormData({ ID: '', Tipo_Profissional: activeSubTab.includes('Médicos') ? 'Médico' : 'Colaborador', Nome_Profissional: '', Turno: 'Manhã', Horario: '', Unidade: '', Setor_Consultorio: '', Status_Turno: 'Trabalhando', Substituindo: '' }); setDatesToSave([]); setIsModalOpen(true); }} className="bg-primary text-white font-black px-4 rounded-lg shadow-md shrink-0"><i className="ph-bold ph-plus"></i></button>}</div>
+                    <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border dark:border-slate-700 flex flex-col md:flex-row justify-between items-center gap-4">
+                        <div className="flex bg-gray-50 dark:bg-slate-900 p-1 rounded-lg overflow-x-auto hide-scroll w-full md:w-auto">{['Painel Hoje', 'Calendário Médicos', 'Calendário Equipe'].map(tab => (<button key={tab} onClick={() => {setActiveSubTab(tab); setSearchTab('');}} className={`px-4 py-2 rounded text-sm font-bold whitespace-nowrap ${activeSubTab === tab ? 'bg-white dark:bg-slate-800 text-primary shadow' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-700'}`}>{tab}</button>))}</div>
+                        <div className="flex gap-2 w-full md:w-auto"><div className="relative flex-1 md:w-48"><i className="ph-bold ph-magnifying-glass absolute left-3 top-3 text-gray-400 text-sm"></i><input type="text" placeholder="Nome..." value={searchTab} onChange={e=>setSearchTab(e.target.value)} className="w-full pl-9 pr-3 py-2 bg-gray-50 dark:bg-slate-900 border dark:border-slate-700 rounded-lg font-bold outline-none focus:border-primary text-sm" /></div>{canEdit && <button onClick={() => { setFormData({ ID: '', Tipo_Profissional: activeSubTab.includes('Médicos') ? 'Médico' : 'Colaborador', Nome_Profissional: '', Turno: 'Manhã', Horario: '', Unidade: '', Setor_Consultorio: '', Status_Turno: 'Trabalhando', Substituindo: '' }); setDatesToSave([]); setIsModalOpen(true); }} className="bg-primary text-white font-black px-4 rounded-lg shadow-md shrink-0"><i className="ph-bold ph-plus"></i></button>}</div>
                     </div>
                     {activeSubTab === 'Painel Hoje' ? <PainelDoDia /> : (
-                        <div className="bg-white rounded-2xl shadow-sm border p-4 md:p-8 relative overflow-hidden">
-                            <div className="flex justify-between items-center mb-6"><button onClick={()=>setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth()-1, 1))} className="w-10 h-10 bg-gray-50 rounded-lg"><i className="ph-bold ph-caret-left"></i></button><h2 className="text-xl md:text-2xl font-black capitalize text-gray-900 text-center">{currentMonth.toLocaleString('pt-BR', { month: 'long', year: 'numeric' })}</h2><button onClick={()=>setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth()+1, 1))} className="w-10 h-10 bg-gray-50 rounded-lg"><i className="ph-bold ph-caret-right"></i></button></div>
+                        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border dark:border-slate-700 p-4 md:p-8 relative overflow-hidden">
+                            <div className="flex justify-between items-center mb-6"><button onClick={()=>setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth()-1, 1))} className="w-10 h-10 bg-gray-50 dark:bg-slate-900 rounded-lg"><i className="ph-bold ph-caret-left"></i></button><h2 className="text-xl md:text-2xl font-black capitalize text-center">{currentMonth.toLocaleString('pt-BR', { month: 'long', year: 'numeric' })}</h2><button onClick={()=>setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth()+1, 1))} className="w-10 h-10 bg-gray-50 dark:bg-slate-900 rounded-lg"><i className="ph-bold ph-caret-right"></i></button></div>
                             <div className="grid grid-cols-7 gap-2 mb-2 text-center"><div className="font-black text-gray-400 text-xs">D</div><div className="font-black text-gray-400 text-xs">S</div><div className="font-black text-gray-400 text-xs">T</div><div className="font-black text-gray-400 text-xs">Q</div><div className="font-black text-gray-400 text-xs">Q</div><div className="font-black text-gray-400 text-xs">S</div><div className="font-black text-gray-400 text-xs">S</div></div>
                             <div className="grid grid-cols-7 gap-2 relative z-10">
-                                {Array(firstDayOfMonth).fill(null).map((_, i) => <div key={`e-${i}`} className="aspect-square opacity-20 bg-gray-50 rounded-lg" />)}
+                                {Array(firstDayOfMonth).fill(null).map((_, i) => <div key={`e-${i}`} className="aspect-square opacity-20 bg-gray-50 dark:bg-slate-900 rounded-lg" />)}
                                 {Array(daysInMonth).fill(null).map((_, i) => {
                                     const day = i + 1; const dateStrCompleto = `${String(day).padStart(2, '0')}/${String(currentMonth.getMonth() + 1).padStart(2, '0')}/${currentMonth.getFullYear()}`;
                                     const pessoasNoDia = filteredEscalas.filter(e => e && (safeString(e.Data).includes(dateStrCompleto) || safeString(e.Data).includes(`${String(day).padStart(2, '0')}/${String(currentMonth.getMonth() + 1).padStart(2, '0')}/${String(currentMonth.getFullYear()).slice(2)}`)));
                                     const isToday = dateStrCompleto === todayStr;
                                     return (
-                                        <div key={day} onClick={() => setSelectedDate(dateStrCompleto)} className={`aspect-square rounded-lg border-2 p-2 flex flex-col cursor-pointer transition-all ${isToday ? 'border-primary bg-blue-50/50 shadow-sm' : 'border-gray-50 hover:border-primary/50 bg-white'}`}>
-                                            <span className={`text-sm md:text-base font-black ${isToday ? 'text-primary' : 'text-gray-700'}`}>{day}</span>
+                                        <div key={day} onClick={() => setSelectedDate(dateStrCompleto)} className={`aspect-square rounded-lg border-2 p-2 flex flex-col cursor-pointer transition-all ${isToday ? 'border-primary bg-blue-50/50 dark:bg-blue-900/20 shadow-sm' : 'border-gray-50 dark:border-slate-700 hover:border-primary/50 bg-white dark:bg-slate-800'}`}>
+                                            <span className={`text-sm md:text-base font-black ${isToday ? 'text-primary' : ''}`}>{day}</span>
                                             <div className="mt-auto w-full">{pessoasNoDia.length > 0 && <div className={`w-full text-center text-[9px] font-black py-0.5 rounded shadow-sm ${activeSubTab.includes('Médicos') ? 'bg-primary text-white' : 'bg-secondary text-white'}`}>{pessoasNoDia.length} <span className="hidden md:inline">Plantões</span></div>}</div>
                                         </div>
                                     )
@@ -471,11 +491,11 @@
                     
                     {selectedDate && !selectedPerson && (
                         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 glass-modal" onClick={() => setSelectedDate(null)}>
-                            <div className="bg-white rounded-2xl w-full max-w-4xl p-6 shadow-2xl relative border flex flex-col max-h-[80vh]" onClick={e => e.stopPropagation()}>
-                                <div className="flex justify-between items-center mb-6"><h3 className="text-xl font-black">Plantão {selectedDate}</h3><button onClick={()=>setSelectedDate(null)} className="w-8 h-8 bg-gray-100 rounded-full"><i className="ph-bold ph-x"></i></button></div>
+                            <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-4xl p-6 shadow-2xl relative border dark:border-slate-700 flex flex-col max-h-[80vh]" onClick={e => e.stopPropagation()}>
+                                <div className="flex justify-between items-center mb-6"><h3 className="text-xl font-black">Plantão {selectedDate}</h3><button onClick={()=>setSelectedDate(null)} className="w-8 h-8 bg-gray-100 dark:bg-slate-700 rounded-full"><i className="ph-bold ph-x"></i></button></div>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 overflow-y-auto custom-scrollbar flex-1 pb-4">
                                     {filteredEscalas.filter(e => e && (safeString(e.Data).includes(selectedDate) || safeString(e.Data).includes(selectedDate.substring(0,6) + selectedDate.substring(8,10)))).map((esc, i) => (
-                                        <div key={i} onClick={() => (canEdit || isColab) && setSelectedPerson(esc)} className="bg-gray-50 border rounded-xl p-4 cursor-pointer hover:border-primary flex flex-col">
+                                        <div key={i} onClick={() => (canEdit || isColab) && setSelectedPerson(esc)} className="bg-gray-50 dark:bg-slate-900 border dark:border-slate-700 rounded-xl p-4 cursor-pointer hover:border-primary flex flex-col">
                                             <h4 className="font-black text-sm mb-1">{safeString(esc.Nome_Profissional)}</h4><p className="text-xs font-bold text-gray-500 mb-3">{safeString(esc.Turno)} • {safeString(esc.Horario)}</p>
                                             <div className="mt-auto flex justify-between items-center"><span className="text-[9px] font-black uppercase bg-green-100 text-green-800 px-2 py-1 rounded">{safeString(esc.Status_Turno)||'Ativo'}</span><span className="text-primary text-[10px] font-black">Abrir</span></div>
                                         </div>
@@ -488,8 +508,8 @@
                     
                     {selectedPerson && (
                         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 glass-modal" onClick={() => {setSelectedPerson(null); setShowSwapSugg(false)}}>
-                            <div className="bg-white rounded-2xl w-full max-w-sm p-6 shadow-2xl relative border max-h-[90vh] overflow-y-auto custom-scrollbar" onClick={e => e.stopPropagation()}>
-                                <button onClick={()=>{setSelectedPerson(null); setShowSwapSugg(false)}} className="absolute top-4 right-4 w-8 h-8 bg-gray-100 rounded-full flex justify-center items-center"><i className="ph-bold ph-x"></i></button>
+                            <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-6 shadow-2xl relative border dark:border-slate-700 max-h-[90vh] overflow-y-auto custom-scrollbar" onClick={e => e.stopPropagation()}>
+                                <button onClick={()=>{setSelectedPerson(null); setShowSwapSugg(false)}} className="absolute top-4 right-4 w-8 h-8 bg-gray-100 dark:bg-slate-700 rounded-full flex justify-center items-center"><i className="ph-bold ph-x"></i></button>
                                 <h2 className="text-lg font-black mb-1 pr-6">{safeString(selectedPerson.Nome_Profissional)}</h2>
                                 <p className="text-xs font-bold text-gray-500 mb-6">{safeString(selectedPerson.Setor_Consultorio)} • {safeString(selectedPerson.Horario)}</p>
                                 <div className="space-y-4 mb-6">
@@ -497,23 +517,23 @@
                                     <div className="grid grid-cols-2 gap-2"><button onClick={()=>{handleStatusChange(selectedPerson, 'Trabalhando'); setSelectedPerson(null);}} className="p-3 rounded-xl border border-green-200 bg-green-50 text-green-700 font-black text-xs flex flex-col items-center gap-1"><i className="ph-fill ph-check-circle text-xl"></i> Voltei</button><button onClick={()=>{handleStatusChange(selectedPerson, 'Intervalo'); setSelectedPerson(null);}} className="p-3 rounded-xl border border-orange-200 bg-orange-50 text-orange-700 font-black text-xs flex flex-col items-center gap-1"><i className="ph-fill ph-coffee text-xl"></i> Lanchar</button></div>
                                 </div>
                                 {canEdit && (
-                                    <div className="border-t pt-4 space-y-2">
+                                    <div className="border-t dark:border-slate-700 pt-4 space-y-2">
                                         <h4 className="text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Ações Admin:</h4>
-                                        <button onClick={()=>setShowSwapSugg(!showSwapSugg)} className="w-full py-3 bg-gray-900 text-white rounded-xl font-black text-sm shadow flex justify-center items-center gap-2 hover:scale-[1.02] transition"><i className="ph-bold ph-arrows-left-right"></i> Sugerir Substituto (Trocar)</button>
-                                        <button onClick={async()=>{if(confirm('Excluir plantão?')){ await api.deleteRecord('ESCALAS', selectedPerson.ID); onRefresh('ESCALAS'); setSelectedPerson(null); setSelectedDate(null); }}} className="w-full py-3 bg-red-50 text-red-600 rounded-xl font-black text-sm flex justify-center items-center gap-2"><i className="ph-bold ph-trash"></i> Excluir Plantão</button>
+                                        <button onClick={()=>setShowSwapSugg(!showSwapSugg)} className="w-full py-3 bg-gray-900 dark:bg-white dark:text-gray-900 text-white rounded-xl font-black text-sm shadow flex justify-center items-center gap-2 hover:scale-[1.02] transition"><i className="ph-bold ph-arrows-left-right"></i> Sugerir Substituto (Trocar)</button>
+                                        <button onClick={async()=>{if(confirm('Excluir plantão?')){ await api.deleteRecord('ESCALAS', selectedPerson.ID); onRefresh('ESCALAS'); setSelectedPerson(null); setSelectedDate(null); }}} className="w-full py-3 bg-red-50 dark:bg-red-900/30 text-red-600 rounded-xl font-black text-sm flex justify-center items-center gap-2"><i className="ph-bold ph-trash"></i> Excluir Plantão</button>
                                     </div>
                                 )}
                                 {showSwapSugg && canEdit && (
-                                    <div className="mt-4 bg-gray-50 rounded-xl p-3 border animate-fade-in">
+                                    <div className="mt-4 bg-gray-50 dark:bg-slate-900 rounded-xl p-3 border dark:border-slate-700 animate-fade-in">
                                         <h4 className="text-[10px] font-black uppercase text-gray-500 mb-2">Opções Compatíveis:</h4>
                                         <div className="space-y-2 max-h-40 overflow-y-auto custom-scrollbar pr-1">
                                             {findSubstitutes(selectedPerson.Nome_Profissional).map((sub, idx) => (
-                                                <div key={idx} className="bg-white p-3 rounded-lg border flex justify-between items-center shadow-sm">
-                                                    <div><p className="font-black text-xs text-gray-900">{safeString(sub['Nome Completo'])}</p><p className="text-[9px] font-bold text-gray-400" title={safeString(sub['Horários Flexíveis'])}>Disp. {safeString(sub['Horários Flexíveis']).substring(0,15)}</p></div>
+                                                <div key={idx} className="bg-white dark:bg-slate-800 p-3 rounded-lg border dark:border-slate-700 flex justify-between items-center shadow-sm">
+                                                    <div><p className="font-black text-xs">{safeString(sub['Nome Completo'])}</p><p className="text-[9px] font-bold text-gray-400" title={safeString(sub['Horários Flexíveis'])}>Disp. {safeString(sub['Horários Flexíveis']).substring(0,15)}</p></div>
                                                     <button onClick={async()=>{ await api.saveRecord('ESCALAS', { ...selectedPerson, ID: '', Nome_Profissional: safeString(sub['Nome Completo']), Substituindo: safeString(selectedPerson.Nome_Profissional) }, false); showToast(`Substituto acionado.`); setSelectedPerson(null); setShowSwapSugg(false); onRefresh('ESCALAS'); }} className="bg-primary text-white text-[10px] font-black px-2 py-1.5 rounded">Acionar</button>
                                                 </div>
                                             ))}
-                                            {findSubstitutes(selectedPerson.Nome_Profissional).length === 0 && <p className="text-xs font-bold text-gray-400 text-center py-4 border-2 border-dashed rounded-lg">Nenhum compatível.</p>}
+                                            {findSubstitutes(selectedPerson.Nome_Profissional).length === 0 && <p className="text-xs font-bold text-gray-400 text-center py-4 border-2 border-dashed dark:border-slate-700 rounded-lg">Nenhum compatível.</p>}
                                         </div>
                                     </div>
                                 )}
@@ -523,35 +543,35 @@
                     
                     {isModalOpen && (
                         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 glass-modal" onMouseDown={()=>setIsModalOpen(false)}>
-                            <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl border" onMouseDown={e=>e.stopPropagation()}>
-                                <div className="p-6 border-b flex justify-between items-center bg-gray-50 shrink-0"><h3 className="text-xl font-black text-gray-900">Lançamento em Lote</h3><button onClick={() => setIsModalOpen(false)} className="w-8 h-8 bg-white rounded-full shadow-sm"><i className="ph-bold ph-x"></i></button></div>
+                            <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl border dark:border-slate-700" onMouseDown={e=>e.stopPropagation()}>
+                                <div className="p-6 border-b dark:border-slate-700 flex justify-between items-center bg-gray-50 dark:bg-slate-900 shrink-0"><h3 className="text-xl font-black">Lançamento em Lote</h3><button onClick={() => setIsModalOpen(false)} className="w-8 h-8 bg-white dark:bg-slate-700 rounded-full shadow-sm"><i className="ph-bold ph-x"></i></button></div>
                                 <div className="p-6 flex flex-col md:flex-row gap-6 overflow-y-auto custom-scrollbar">
                                     <div className="md:w-1/2">
-                                        <h4 className="font-black mb-4 text-sm text-gray-900">1. Selecione as Datas</h4>
+                                        <h4 className="font-black mb-4 text-sm">1. Selecione as Datas</h4>
                                         <div className="grid grid-cols-7 gap-1.5">
                                             {Array(firstDayOfMonth).fill(null).map((_, i) => <div key={`empty-${i}`} />)}
                                             {Array(daysInMonth).fill(null).map((_, i) => {
                                                 const day = i + 1; const dStr = `${String(day).padStart(2, '0')}/${String(currentMonth.getMonth() + 1).padStart(2, '0')}/${currentMonth.getFullYear()}`; const sel = datesToSave.includes(dStr);
-                                                return <button type="button" key={day} onClick={() => { if(sel) setDatesToSave(datesToSave.filter(x => x !== dStr)); else setDatesToSave([...datesToSave, dStr]); }} className={`w-full aspect-square rounded-lg font-black text-xs transition-all ${sel ? 'bg-primary text-white shadow-md' : 'bg-white border hover:border-primary'}`}>{day}</button>
+                                                return <button type="button" key={day} onClick={() => { if(sel) setDatesToSave(datesToSave.filter(x => x !== dStr)); else setDatesToSave([...datesToSave, dStr]); }} className={`w-full aspect-square rounded-lg font-black text-xs transition-all ${sel ? 'bg-primary text-white shadow-md' : 'bg-white dark:bg-slate-800 border dark:border-slate-600 hover:border-primary'}`}>{day}</button>
                                             })}
                                         </div>
                                     </div>
                                     <div className="md:w-1/2">
-                                        <h4 className="font-black mb-4 text-sm text-gray-900">2. Dados do Plantão</h4>
+                                        <h4 className="font-black mb-4 text-sm">2. Dados do Plantão</h4>
                                         <form id="esc-form" onSubmit={handleSaveBatch} className="space-y-4">
-                                            <div><label className="block text-[10px] font-black text-gray-400 mb-1 uppercase tracking-widest">Profissional</label><select className="w-full px-3 py-2.5 bg-gray-50 border rounded-lg outline-none focus:border-primary font-bold text-sm" value={safeString(formData.Nome_Profissional)} onChange={e => { const nome = e.target.value; const refObj = activeSubTab.includes('Médicos') ? corpoClinico.find(c => c && c.Médico === nome) : usuarios.find(u => u && u['Nome Completo'] === nome); const hInicio = refObj ? safeString(refObj['Hora Início']) : ''; const hFim = refObj ? safeString(refObj['Hora Fim']) : ''; const autoHorario = hInicio && hFim ? `${hInicio} às ${hFim}` : formData.Horario; setFormData({...formData, Nome_Profissional: nome, Horario: autoHorario}); }} required><option value="">Selecione...</option>{activeSubTab.includes('Médicos') ? corpoClinico.map((m,i) => m && <option key={i} value={safeString(m.Médico)}>{safeString(m.Médico)}</option>) : usuarios.map((u,i) => u && <option key={i} value={safeString(u['Nome Completo'])}>{safeString(u['Nome Completo'])}</option>)}</select></div>
+                                            <div><label className="block text-[10px] font-black text-gray-400 mb-1 uppercase tracking-widest">Profissional</label><select className="w-full px-3 py-2.5 bg-gray-50 dark:bg-slate-900 border dark:border-slate-700 rounded-lg outline-none focus:border-primary font-bold text-sm" value={safeString(formData.Nome_Profissional)} onChange={e => { const nome = e.target.value; const refObj = activeSubTab.includes('Médicos') ? corpoClinico.find(c => c && c.Médico === nome) : usuarios.find(u => u && u['Nome Completo'] === nome); const hInicio = refObj ? safeString(refObj['Hora Início']) : ''; const hFim = refObj ? safeString(refObj['Hora Fim']) : ''; const autoHorario = hInicio && hFim ? `${hInicio} às ${hFim}` : formData.Horario; setFormData({...formData, Nome_Profissional: nome, Horario: autoHorario}); }} required><option value="">Selecione...</option>{activeSubTab.includes('Médicos') ? corpoClinico.map((m,i) => m && <option key={i} value={safeString(m.Médico)}>{safeString(m.Médico)}</option>) : usuarios.map((u,i) => u && <option key={i} value={safeString(u['Nome Completo'])}>{safeString(u['Nome Completo'])}</option>)}</select></div>
                                             <div className="grid grid-cols-2 gap-4">
-                                                <div><label className="block text-[10px] font-black text-gray-400 mb-1 uppercase">Turno</label><select className="w-full px-3 py-2.5 bg-gray-50 border rounded-lg outline-none font-bold text-sm" value={safeString(formData.Turno)} onChange={e => setFormData({...formData, Turno: e.target.value})}><option>Manhã</option><option>Tarde</option><option>Noite</option></select></div>
-                                                <div><label className="block text-[10px] font-black text-gray-400 mb-1 uppercase">Horário</label><input type="text" className="w-full px-3 py-2.5 bg-gray-50 border rounded-lg outline-none font-bold text-sm" value={safeString(formData.Horario)} onChange={e => setFormData({...formData, Horario: e.target.value})} placeholder="08:00 às 18:00" /></div>
+                                                <div><label className="block text-[10px] font-black text-gray-400 mb-1 uppercase">Turno</label><select className="w-full px-3 py-2.5 bg-gray-50 dark:bg-slate-900 border dark:border-slate-700 rounded-lg outline-none font-bold text-sm" value={safeString(formData.Turno)} onChange={e => setFormData({...formData, Turno: e.target.value})}><option>Manhã</option><option>Tarde</option><option>Noite</option></select></div>
+                                                <div><label className="block text-[10px] font-black text-gray-400 mb-1 uppercase">Horário</label><input type="text" className="w-full px-3 py-2.5 bg-gray-50 dark:bg-slate-900 border dark:border-slate-700 rounded-lg outline-none font-bold text-sm" value={safeString(formData.Horario)} onChange={e => setFormData({...formData, Horario: e.target.value})} placeholder="08:00 às 18:00" /></div>
                                             </div>
                                             <div className="grid grid-cols-2 gap-4">
-                                                <div><label className="block text-[10px] font-black text-gray-400 mb-1 uppercase">Unidade</label><input type="text" className="w-full px-3 py-2.5 bg-gray-50 border rounded-lg outline-none font-bold text-sm" value={safeString(formData.Unidade)} onChange={e => setFormData({...formData, Unidade: e.target.value})} placeholder="Sede" /></div>
-                                                <div><label className="block text-[10px] font-black text-gray-400 mb-1 uppercase">Setor</label><input type="text" className="w-full px-3 py-2.5 bg-gray-50 border rounded-lg outline-none font-bold text-sm" value={safeString(formData.Setor_Consultorio)} onChange={e => setFormData({...formData, Setor_Consultorio: e.target.value})} placeholder="Recepção 1" /></div>
+                                                <div><label className="block text-[10px] font-black text-gray-400 mb-1 uppercase">Unidade</label><input type="text" className="w-full px-3 py-2.5 bg-gray-50 dark:bg-slate-900 border dark:border-slate-700 rounded-lg outline-none font-bold text-sm" value={safeString(formData.Unidade)} onChange={e => setFormData({...formData, Unidade: e.target.value})} placeholder="Sede" /></div>
+                                                <div><label className="block text-[10px] font-black text-gray-400 mb-1 uppercase">Setor</label><input type="text" className="w-full px-3 py-2.5 bg-gray-50 dark:bg-slate-900 border dark:border-slate-700 rounded-lg outline-none font-bold text-sm" value={safeString(formData.Setor_Consultorio)} onChange={e => setFormData({...formData, Setor_Consultorio: e.target.value})} placeholder="Recepção 1" /></div>
                                             </div>
                                         </form>
                                     </div>
                                 </div>
-                                <div className="p-5 border-t flex justify-end gap-3 bg-gray-50 shrink-0"><button onClick={() => setIsModalOpen(false)} className="px-6 py-2.5 font-bold text-gray-500 text-sm">Cancelar</button><button type="submit" form="esc-form" disabled={loadingAction} className="px-8 py-2.5 bg-primary text-white font-black rounded-lg shadow-md text-sm">{loadingAction?'Gravando...':'Salvar Lote'}</button></div>
+                                <div className="p-5 border-t dark:border-slate-700 flex justify-end gap-3 bg-gray-50 dark:bg-slate-900 shrink-0"><button onClick={() => setIsModalOpen(false)} className="px-6 py-2.5 font-bold text-gray-500 text-sm">Cancelar</button><button type="submit" form="esc-form" disabled={loadingAction} className="px-8 py-2.5 bg-primary text-white font-black rounded-lg shadow-md text-sm">{loadingAction?'Gravando...':'Salvar Lote'}</button></div>
                             </div>
                         </div>
                     )}
@@ -562,14 +582,11 @@
         const DataTableGeneric = ({ title, tabName, data, user, onRefresh, showToast }) => {
             const safeData = Array.isArray(data) ? data : [];
             const [isModalOpen, setIsModalOpen] = useState(false); const [formData, setFormData] = useState({}); const [loading, setLoading] = useState(false); const [search, setSearch] = useState(''); const [currentSchema, setCurrentSchema] = useState([]);
-            
             let dynamicKeys = ['ID']; if (safeData.length > 0 && typeof safeData[0] === 'object' && safeData[0] !== null) dynamicKeys = Object.keys(safeData[0]);
             const schema = tabSchemas[tabName] || dynamicKeys || ['ID'];
-            
             const nivelKey = user && typeof user === 'object' ? Object.keys(user).find(k => safeString(k).toLowerCase().includes('acesso')) : null;
             const canEdit = nivelKey && ['admin', 'supervisor', 'supervisão'].some(role => safeString(user[nivelKey]).toLowerCase().includes(role));
             const filteredData = safeData.filter(row => row && typeof row === 'object' && Object.values(row).some(val => safeString(val).toLowerCase().includes(search.toLowerCase())));
-
             const openModal = (row = null, customSchema = null) => { let initial = {}; const s = customSchema || schema; s.forEach(col => initial[col] = row ? safeString(row[col]) : ''); setFormData(initial); setCurrentSchema(s); setIsModalOpen(true); };
             const handleSave = async (e) => { e.preventDefault(); setLoading(true); const res = await api.saveRecord(tabName, formData, !!formData.ID); setLoading(false); if (res && res.success) { setIsModalOpen(false); onRefresh(tabName); showToast('Salvo com sucesso!'); } else showToast('Erro ao salvar.', 'error'); };
             const handleDelete = async (id) => { if(confirm('Excluir permanentemente?')) { const res = await api.deleteRecord(tabName, id); if (res && res.success) { onRefresh(tabName); showToast('Excluído com sucesso!'); } } };
@@ -582,31 +599,32 @@
             if(tabName === 'SENHAS E LOGINS GERAIS') return <><SenhasView data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} schema={schema} /> {isModalOpen && <ModalForm title="Acesso" schema={schema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
 
             return (
-                <div className="bg-white rounded-2xl shadow-sm border overflow-hidden animate-fade-in">
-                    <div className="p-6 border-b bg-gray-50 flex flex-col md:flex-row justify-between items-center gap-4">
-                        <h2 className="text-xl font-black text-gray-900 flex items-center gap-3"><div className="w-2 h-6 bg-primary rounded-full"></div> {title}</h2>
+                <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border dark:border-slate-700 overflow-hidden animate-fade-in">
+                    <div className="p-6 border-b dark:border-slate-700 bg-gray-50 dark:bg-slate-900 flex flex-col md:flex-row justify-between items-center gap-4">
+                        <h2 className="text-xl font-black flex items-center gap-3"><div className="w-2 h-6 bg-primary rounded-full"></div> {title}</h2>
                         <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-                            <div className="relative flex-1 sm:w-64"><i className="ph-bold ph-magnifying-glass absolute left-4 top-3 text-gray-400"></i><input type="text" placeholder="Pesquisar..." value={search} onChange={e=>setSearch(e.target.value)} className="w-full pl-12 pr-4 py-2 bg-white border rounded-lg outline-none focus:border-primary font-bold text-sm" /></div>
-                            {canEdit && <button onClick={() => openModal(null, schema)} className="bg-gray-900 text-white font-bold px-6 py-2 rounded-lg hover:bg-black transition text-sm flex items-center justify-center gap-2"><i className="ph-bold ph-plus text-lg"></i> Novo Item</button>}
+                            <div className="relative flex-1 sm:w-64"><i className="ph-bold ph-magnifying-glass absolute left-4 top-3 text-gray-400"></i><input type="text" placeholder="Pesquisar..." value={search} onChange={e=>setSearch(e.target.value)} className="w-full pl-12 pr-4 py-2 bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-lg outline-none focus:border-primary font-bold text-sm" /></div>
+                            {canEdit && <button onClick={() => openModal(null, schema)} className="bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold px-6 py-2 rounded-lg hover:scale-105 transition text-sm flex items-center justify-center gap-2"><i className="ph-bold ph-plus text-lg"></i> Novo Item</button>}
                         </div>
                     </div>
                     <div className="overflow-x-auto p-2 custom-scrollbar">
                         <table className="w-full text-left border-collapse min-w-[800px]">
-                            <thead><tr className="text-gray-400 text-[10px] uppercase tracking-widest border-b-2">{schema.filter(c=>c!=='ID').map((col, i) => <th key={i} className="p-4 font-black">{col}</th>)}{canEdit && <th className="p-4 font-black text-right">Ações</th>}</tr></thead>
-                            <tbody className="text-sm font-bold text-gray-800">
-                                {filteredData.length === 0 ? <tr><td colSpan="100%" className="text-center p-10 text-gray-400 font-black border-2 border-dashed rounded-xl m-4 block">Nenhum dado.</td></tr> : 
+                            <thead><tr className="text-gray-400 text-[10px] uppercase tracking-widest border-b-2 dark:border-slate-700">{schema.filter(c=>c!=='ID').map((col, i) => <th key={i} className="p-4 font-black">{col}</th>)}{canEdit && <th className="p-4 font-black text-right">Ações</th>}</tr></thead>
+                            <tbody className="text-sm font-bold">
+                                {filteredData.length === 0 ? <tr><td colSpan="100%" className="text-center p-10 text-gray-400 font-black border-2 border-dashed dark:border-slate-700 rounded-xl m-4 block">Nenhum dado.</td></tr> : 
                                 filteredData.map((row, i) => (
-                                    <tr key={i} className="hover:bg-blue-50/50 border-b group transition">
+                                    <tr key={i} className="hover:bg-blue-50/50 dark:hover:bg-slate-700 border-b dark:border-slate-700 group transition">
                                         {schema.filter(c=>c!=='ID').map((col, j) => {
                                             const val = safeString(row[col]); const cl = col.toLowerCase();
-                                            return <td key={j} className="p-4 whitespace-nowrap">{cl.includes('url')||cl.includes('foto')||cl.includes('imagem')?(val?<img src={formatImageUrl(val)} className="h-10 w-10 object-cover rounded-lg border shadow-sm"/>:<div className="h-10 w-10 bg-gray-100 rounded-lg flex items-center justify-center text-gray-300"><i className="ph-fill ph-image text-xl"></i></div>):cl.includes('senha')?'••••••••':val==='Sim'||val==='Ativo'?<span className="bg-green-100 text-green-800 px-3 py-1 rounded text-[9px] font-black uppercase">{val}</span>:val==='Não'||val==='Inativo'?<span className="bg-red-100 text-red-800 px-3 py-1 rounded text-[9px] font-black uppercase">{val}</span>:val||'-'}</td>
+                                            return <td key={j} className="p-4 whitespace-nowrap">{cl.includes('url')||cl.includes('foto')||cl.includes('imagem')?(val?<img src={formatImageUrl(val)} className="h-10 w-10 object-cover rounded-lg border dark:border-slate-600 shadow-sm"/>:<div className="h-10 w-10 bg-gray-100 dark:bg-slate-700 rounded-lg flex items-center justify-center text-gray-300"><i className="ph-fill ph-image text-xl"></i></div>):cl.includes('senha')?'••••••••':val==='Sim'||val==='Ativo'?<span className="bg-green-100 text-green-800 px-2 py-1 rounded text-[9px] font-black uppercase">{val}</span>:val==='Não'||val==='Inativo'?<span className="bg-red-100 text-red-800 px-2 py-1 rounded text-[9px] font-black uppercase">{val}</span>:val||'-'}</td>
                                         })}
-                                        {canEdit && <td className="p-4 flex justify-end gap-2 opacity-50 group-hover:opacity-100 transition"><button onClick={()=>openModal(row, schema)} className="text-blue-600 bg-blue-50 p-2 rounded hover:bg-blue-600 hover:text-white shadow-sm"><i className="ph-bold ph-pencil-simple text-lg"></i></button><button onClick={()=>handleDelete(row.ID)} className="text-red-600 bg-red-50 p-2 rounded hover:bg-red-600 hover:text-white shadow-sm"><i className="ph-bold ph-trash text-lg"></i></button></td>}
+                                        {canEdit && <td className="p-4 flex justify-end gap-2 opacity-50 group-hover:opacity-100 transition"><button onClick={()=>openModal(row, schema)} className="text-blue-600 bg-blue-50 dark:bg-slate-700 p-2 rounded hover:bg-blue-600 hover:text-white shadow-sm"><i className="ph-bold ph-pencil-simple text-lg"></i></button><button onClick={()=>handleDelete(row.ID)} className="text-red-600 bg-red-50 dark:bg-slate-700 p-2 rounded hover:bg-red-600 hover:text-white shadow-sm"><i className="ph-bold ph-trash text-lg"></i></button></td>}
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
                     </div>
+                    {isModalOpen && <ModalForm title={title} schema={currentSchema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}
                 </div>
             );
         };
@@ -619,6 +637,7 @@
             // SUA SENHA GERAL DA EQUIPE
             const SENHA_ACESSO_GERAL = "Csv@123"; 
 
+            const userFoto = user?.Foto_Perfil_URL;
             const userName = user?.['Nome Completo'] || (isSharedAuth ? 'Equipe São Vicente' : 'Usuário');
             const nivelKey = user && typeof user === 'object' ? Object.keys(user).find(k => safeString(k).toLowerCase().includes('acesso')) : null;
             const isAdmin = user && nivelKey && ['admin', 'supervisor', 'supervisão'].some(role => safeString(user[nivelKey]).toLowerCase().includes(role));
@@ -641,10 +660,10 @@
             }, [isSharedAuth]);
                     
             const showToast = (msg, type = 'success') => { setToast({ show: true, message: msg, type }); setTimeout(() => setToast(p => ({ ...p, show: false })), 3500); };
+            const [darkMode, setDarkMode] = useState(false);
+            useEffect(() => { if (darkMode) { document.documentElement.classList.add('dark'); } else { document.documentElement.classList.remove('dark'); } }, [darkMode]);
 
-            useEffect(() => {
-                const init = async () => { if(!isFirebaseConfigured) return; const allData = await api.fetchAll(); if(allData && Object.keys(allData).length > 0) setSheetData(allData); }; init();
-            }, []);
+            useEffect(() => { const init = async () => { if(db){ const allData = await api.fetchAll(); if(allData && Object.keys(allData).length > 0) setSheetData(allData); } }; init(); }, []);
 
             const loadData = async (tab) => {
                 setLoading(true);
@@ -662,30 +681,28 @@
 
             if (!user) {
                 const handleFirebaseLogin = async (e) => {
-                    e.preventDefault(); setLoading(true); setLoginErrorMsg('');
-                    localStorage.setItem('shared_auth', 'false'); setIsSharedAuth(false);
+                    e.preventDefault(); setLoading(true); setLoginErrorMsg(''); localStorage.setItem('shared_auth', 'false'); setIsSharedAuth(false);
                     const res = await api.login(e.target.email.value, e.target.password.value);
-                    if (res && res.success) { setUser(res.user); loadData('Home'); } 
-                    else { setLoginErrorMsg(res?.message || 'Erro ao conectar com o servidor.'); }
+                    if (res && res.success) { setUser(res.user); loadData('Home'); } else { setLoginErrorMsg(res?.message || 'Erro ao conectar.'); }
                     setLoading(false);
                 };
 
                 const handleSharedLogin = async (e) => {
                     e.preventDefault(); setLoginErrorMsg(''); setLoading(true);
                     if (e.target.shared_password.value === SENHA_ACESSO_GERAL) {
-                        const res = await api.login('tabela@csv.com', 'csv@123'); // Bypass invisível via banco de dados
+                        const res = await api.login('tabela@csv.com', 'csv@123'); // Login Invisível que você criou!
                         if (res && res.success) {
                             localStorage.setItem('shared_auth', 'true'); setIsSharedAuth(true); setUser(res.user); loadData('Home');
                         } else {
                             localStorage.setItem('shared_auth', 'true'); setIsSharedAuth(true); setUser({ 'Nome Completo': 'Equipe São Vicente', 'Nível de Acesso': 'Colaborador' }); loadData('Home');
                         }
-                    } else { setLoginErrorMsg('Senha de acesso geral incorreta.'); }
+                    } else { setLoginErrorMsg('Senha incorreta.'); }
                     setLoading(false);
                 };
 
                 return (
-                    <div className="min-h-screen bg-blue-50 flex flex-col items-center justify-center p-4">
-                        <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col md:flex-row border border-gray-100">
+                    <div className="min-h-screen bg-blue-50 dark:bg-slate-900 flex flex-col items-center justify-center p-4">
+                        <div className="bg-white dark:bg-slate-800 rounded-[2rem] shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col md:flex-row border dark:border-slate-700 animate-fade-in">
                             <div className="md:w-5/12 bg-primary text-white p-10 flex flex-col justify-center relative">
                                 <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
                                 <div className="relative z-10 text-center">
@@ -693,37 +710,37 @@
                                     <h1 className="text-3xl font-black mb-2 tracking-tight">São Vicente</h1><p className="text-blue-200 text-sm font-bold">Portal Interno Inteligente</p>
                                 </div>
                             </div>
-                            <div className="md:w-7/12 p-8 md:p-12 bg-white flex flex-col justify-center">
+                            <div className="md:w-7/12 p-8 md:p-12 bg-white dark:bg-slate-800 flex flex-col justify-center">
                                 {loginErrorMsg && <div className="mb-6 bg-red-50 border border-red-200 p-4 rounded-xl flex gap-3 animate-pop-in"><i className="ph-fill ph-warning-circle text-red-600 text-xl"></i><p className="text-sm font-bold text-red-800">{loginErrorMsg}</p></div>}
                                 {loginView === 'selecao' && (
                                     <div className="space-y-4 animate-fade-in">
-                                        <h2 className="text-xl font-black text-gray-800 mb-6 text-center md:text-left">Selecione seu acesso:</h2>
-                                        <button onClick={()=>setLoginView('geral')} className="w-full bg-blue-50 hover:bg-primary group p-5 rounded-2xl border border-blue-100 hover:border-primary transition-all flex items-center gap-4 text-left shadow-sm hover:shadow-xl hover:-translate-y-1">
-                                            <div className="w-14 h-14 rounded-xl bg-white text-primary flex justify-center items-center shrink-0 shadow-sm group-hover:scale-110 transition"><i className="ph-fill ph-users text-3xl"></i></div>
-                                            <div><h3 className="font-black text-lg text-gray-900 group-hover:text-white transition">Equipe / Colaboradores</h3><p className="text-xs text-gray-500 group-hover:text-blue-100 mt-1 font-bold">Escalas, ramais, guias e consultas.</p></div>
+                                        <h2 className="text-xl font-black text-gray-800 dark:text-white mb-6 text-center md:text-left">Selecione seu acesso:</h2>
+                                        <button onClick={()=>setLoginView('geral')} className="w-full bg-blue-50 dark:bg-slate-700 hover:bg-primary group p-5 rounded-2xl border-2 border-blue-100 dark:border-slate-600 hover:border-primary transition-all flex items-center gap-4 text-left shadow-sm hover:shadow-xl hover:-translate-y-1">
+                                            <div className="w-14 h-14 rounded-xl bg-white dark:bg-slate-800 text-primary flex justify-center items-center shrink-0 shadow-sm group-hover:scale-110 transition"><i className="ph-fill ph-users text-3xl"></i></div>
+                                            <div><h3 className="font-black text-lg text-gray-900 dark:text-white group-hover:text-white transition">Equipe / Colaboradores</h3><p className="text-xs text-gray-500 dark:text-gray-400 group-hover:text-blue-100 mt-1 font-bold">Escalas, ramais, guias e consultas.</p></div>
                                         </button>
-                                        <button onClick={()=>setLoginView('supervisor')} className="w-full bg-orange-50 hover:bg-secondary group p-5 rounded-2xl border border-orange-100 hover:border-secondary transition-all flex items-center gap-4 text-left shadow-sm hover:shadow-xl hover:-translate-y-1">
-                                            <div className="w-14 h-14 rounded-xl bg-white text-secondary flex justify-center items-center shrink-0 shadow-sm group-hover:scale-110 transition"><i className="ph-fill ph-shield-star text-3xl"></i></div>
-                                            <div><h3 className="font-black text-lg text-gray-900 group-hover:text-white transition">Supervisão / Gestão</h3><p className="text-xs text-gray-500 group-hover:text-orange-100 mt-1 font-bold">Edição de dados e controle da clínica.</p></div>
+                                        <button onClick={()=>setLoginView('supervisor')} className="w-full bg-orange-50 dark:bg-slate-700 hover:bg-secondary group p-5 rounded-2xl border-2 border-orange-100 dark:border-slate-600 hover:border-secondary transition-all flex items-center gap-4 text-left shadow-sm hover:shadow-xl hover:-translate-y-1">
+                                            <div className="w-14 h-14 rounded-xl bg-white dark:bg-slate-800 text-secondary flex justify-center items-center shrink-0 shadow-sm group-hover:scale-110 transition"><i className="ph-fill ph-shield-star text-3xl"></i></div>
+                                            <div><h3 className="font-black text-lg text-gray-900 dark:text-white group-hover:text-white transition">Supervisão / Gestão</h3><p className="text-xs text-gray-500 dark:text-gray-400 group-hover:text-orange-100 mt-1 font-bold">Edição de dados e controle da clínica.</p></div>
                                         </button>
                                         <div className="pt-4 text-center"><button onClick={()=>setLoginView('admin')} className="text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-primary transition underline decoration-dashed">Acesso Administrativo</button></div>
                                     </div>
                                 )}
                                 {loginView === 'geral' && (
                                     <form onSubmit={handleSharedLogin} className="space-y-6 animate-fade-in">
-                                        <button type="button" onClick={()=>{setLoginView('selecao'); setLoginErrorMsg('');}} className="text-gray-400 hover:text-primary flex items-center gap-2 mb-4 font-bold text-sm bg-gray-50 px-4 py-2 rounded-full w-max transition"><i className="ph-bold ph-arrow-left"></i> Voltar</button>
-                                        <h2 className="text-2xl font-black text-gray-800 mb-1">Acesso da Equipe</h2><p className="text-sm text-gray-500 font-bold mb-8">Digite a senha geral fornecida.</p>
-                                        <div><label className="block text-[10px] font-black text-gray-400 mb-2 uppercase tracking-widest">Senha Única</label><div className="relative"><i className="ph-fill ph-lock-key absolute left-6 top-4.5 text-gray-400 text-xl"></i><input name="shared_password" type="password" className="w-full pl-16 pr-6 py-4 bg-gray-50 border border-gray-200 rounded-full outline-none focus:border-primary font-black text-gray-900 transition shadow-inner" placeholder="Sua senha..." required /></div></div>
-                                        <button type="submit" disabled={loading} className="w-full bg-primary text-white font-black py-4 rounded-full shadow-xl shadow-blue-900/30 hover:-translate-y-1 transition transform flex justify-center items-center gap-2 text-lg">{loading?<i className="ph animate-spin ph-spinner"></i>:<i className="ph-bold ph-sign-in"></i>} {loading?'Entrando...':'Entrar no Portal'}</button>
+                                        <button type="button" onClick={()=>{setLoginView('selecao'); setLoginErrorMsg('');}} className="text-gray-400 hover:text-primary flex items-center gap-2 mb-4 font-bold text-sm bg-gray-50 dark:bg-slate-700 px-4 py-2 rounded-full w-max transition"><i className="ph-bold ph-arrow-left"></i> Voltar</button>
+                                        <h2 className="text-2xl font-black text-gray-800 dark:text-white mb-1">Acesso da Equipe</h2><p className="text-sm text-gray-500 font-bold mb-8">Digite a senha geral fornecida.</p>
+                                        <div><label className="block text-[10px] font-black text-gray-400 mb-2 uppercase tracking-widest">Senha Única</label><div className="relative"><i className="ph-fill ph-lock-key absolute left-6 top-4.5 text-gray-400 text-xl"></i><input name="shared_password" type="password" className="w-full pl-16 pr-6 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-600 rounded-full outline-none focus:border-primary font-bold text-gray-900 dark:text-white transition shadow-inner" placeholder="Sua senha..." required /></div></div>
+                                        <button type="submit" disabled={loading} className="w-full bg-primary text-white font-black py-4 md:py-5 rounded-full shadow-xl hover:-translate-y-1 transition transform flex justify-center items-center gap-2 text-lg">{loading?<i className="ph animate-spin ph-spinner"></i>:<i className="ph-bold ph-sign-in"></i>} {loading?'Entrando...':'Entrar no Portal'}</button>
                                     </form>
                                 )}
                                 {(loginView === 'supervisor' || loginView === 'admin') && (
                                     <form onSubmit={handleFirebaseLogin} className="space-y-6 animate-fade-in">
-                                        <button type="button" onClick={()=>{setLoginView('selecao'); setLoginErrorMsg('');}} className="text-gray-400 hover:text-primary flex items-center gap-2 mb-4 font-bold text-sm bg-gray-50 px-4 py-2 rounded-full w-max transition"><i className="ph-bold ph-arrow-left"></i> Voltar</button>
-                                        <h2 className="text-2xl font-black text-gray-800 mb-1">Acesso {loginView === 'admin' ? 'Admin' : 'Gestão'}</h2><p className="text-sm text-gray-500 font-bold mb-8">Faça login com suas credenciais.</p>
-                                        <div><label className="block text-[10px] font-black text-gray-400 mb-2 uppercase tracking-widest">E-mail</label><div className="relative"><i className="ph-fill ph-user absolute left-6 top-4.5 text-gray-400 text-xl"></i><input name="email" type="email" className="w-full pl-16 pr-6 py-4 bg-gray-50 border border-gray-200 rounded-full outline-none focus:border-primary font-bold text-gray-900 transition shadow-inner" required /></div></div>
-                                        <div><label className="block text-[10px] font-black text-gray-400 mb-2 uppercase tracking-widest">Senha</label><div className="relative"><i className="ph-fill ph-lock-key absolute left-6 top-4.5 text-gray-400 text-xl"></i><input name="password" type="password" className="w-full pl-16 pr-6 py-4 bg-gray-50 border border-gray-200 rounded-full outline-none focus:border-primary font-bold text-gray-900 transition shadow-inner" required /></div></div>
-                                        <button type="submit" disabled={loading} className={`w-full ${loginView === 'admin' ? 'bg-gray-900' : 'bg-secondary'} text-white font-black py-4 rounded-full shadow-xl hover:-translate-y-1 transition transform flex justify-center items-center gap-2 text-lg`}>{loading?<i className="ph animate-spin ph-spinner"></i>:<i className="ph-bold ph-shield-check"></i>} {loading ? 'Conectando...' : 'Acessar Painel'}</button>
+                                        <button type="button" onClick={()=>{setLoginView('selecao'); setLoginErrorMsg('');}} className="text-gray-400 hover:text-primary flex items-center gap-2 mb-4 font-bold text-sm bg-gray-50 dark:bg-slate-700 px-4 py-2 rounded-full w-max transition"><i className="ph-bold ph-arrow-left"></i> Voltar</button>
+                                        <h2 className="text-2xl font-black text-gray-800 dark:text-white mb-1">Acesso {loginView === 'admin' ? 'Admin' : 'Gestão'}</h2><p className="text-sm text-gray-500 font-bold mb-8">Faça login com suas credenciais.</p>
+                                        <div><label className="block text-[10px] font-black text-gray-400 mb-2 uppercase tracking-widest">E-mail</label><div className="relative"><i className="ph-fill ph-user absolute left-6 top-4.5 text-gray-400 text-xl"></i><input name="email" type="email" className="w-full pl-16 pr-6 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-600 rounded-full outline-none focus:border-primary font-bold text-gray-900 dark:text-white transition shadow-inner" required /></div></div>
+                                        <div><label className="block text-[10px] font-black text-gray-400 mb-2 uppercase tracking-widest">Senha</label><div className="relative"><i className="ph-fill ph-lock-key absolute left-6 top-4.5 text-gray-400 text-xl"></i><input name="password" type="password" className="w-full pl-16 pr-6 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-600 rounded-full outline-none focus:border-primary font-bold text-gray-900 dark:text-white transition shadow-inner" required /></div></div>
+                                        <button type="submit" disabled={loading} className={`w-full ${loginView === 'admin' ? 'bg-gray-900 dark:bg-slate-700' : 'bg-secondary'} text-white font-black py-4 md:py-5 rounded-full shadow-xl hover:-translate-y-1 transition transform flex justify-center items-center gap-2 text-lg`}>{loading?<i className="ph animate-spin ph-spinner"></i>:<i className="ph-bold ph-shield-check"></i>} {loading ? 'Conectando...' : 'Acessar Painel'}</button>
                                     </form>
                                 )}
                             </div>
@@ -749,51 +766,54 @@
                 { id: 'REMOÇÕES', icon: 'ph-car', label: 'Remoções' },
                 { id: 'SENHAS E LOGINS GERAIS', icon: 'ph-lock-key', label: 'Senhas de Sistemas' }
             ];
-            const adminMenus = [ { id: 'CONTROLE_ATENDIMENTOS', icon: 'ph-chart-line-up', label: 'Metas Unimed' }, { id: 'USUARIOS', icon: 'ph-users', label: 'Equipe e Cadastros' }, { id: 'LEMBRETES_HORA', icon: 'ph-clock', label: 'Avisos do Relógio' } ];
+            const adminMenus = [ { id: 'CONTROLE_ATENDIMENTOS', icon: 'ph-chart-line-up', label: 'Metas Unimed' }, { id: 'USUARIOS', icon: 'ph-users', label: 'Equipe' }, { id: 'LEMBRETES_HORA', icon: 'ph-clock', label: 'Avisos Relógio' } ];
 
             const foundMenu = menus.concat(adminMenus).find(m => m.id === activeTab);
             const titleTab = foundMenu ? foundMenu.label : activeTab;
 
             return (
-                <div className="min-h-screen flex flex-col md:flex-row overflow-hidden relative selection:bg-primary selection:text-white bg-medical">
+                <div className={`min-h-screen flex flex-col md:flex-row overflow-hidden relative selection:bg-primary selection:text-white ${darkMode?'dark bg-slate-900':'bg-gray-50'}`}>
                     {toast.show && <div className={`fixed bottom-4 md:bottom-8 right-4 md:right-8 z-[9999] px-6 py-4 rounded-2xl shadow-2xl text-white font-black text-sm animate-slide-up flex items-center gap-2 ${toast.type==='error'?'bg-red-500':'bg-green-500'}`}><i className={`ph-bold ${toast.type==='error'?'ph-warning-circle':'ph-check-circle'} text-xl`}></i> {toast.message}</div>}
 
                     <div className="md:hidden bg-primary text-white p-4 flex justify-between items-center z-40 shadow-lg relative">
                         <div className="flex items-center gap-2 font-black text-xl"><i className="ph-fill ph-heartbeat text-2xl"></i> Portal SV</div>
-                        <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="text-3xl p-1 bg-white/10 rounded-lg"><i className={`ph-bold ${isMobileMenuOpen ? 'ph-x' : 'ph-list'}`}></i></button>
+                        <div className="flex gap-2">
+                            <button onClick={()=>setDarkMode(!darkMode)} className="text-2xl p-2 bg-white/10 rounded-xl"><i className={`ph-fill ${darkMode ? 'ph-sun' : 'ph-moon'}`}></i></button>
+                            <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="text-3xl p-2 bg-white/10 rounded-xl"><i className={`ph-bold ${isMobileMenuOpen ? 'ph-x' : 'ph-list'}`}></i></button>
+                        </div>
                     </div>
 
                     {isMobileMenuOpen && <div className="fixed inset-0 bg-black/60 z-40 md:hidden backdrop-blur-sm" onClick={() => setIsMobileMenuOpen(false)}></div>}
 
-                    <aside className={`fixed inset-y-0 left-0 w-72 md:w-80 bg-white border-r flex flex-col h-screen shrink-0 shadow-2xl z-50 transform ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 transition-transform duration-300 ease-in-out`}>
-                        <div className="p-8 flex items-center border-b bg-gray-50/50 cursor-pointer" onClick={()=>{setActiveTab('Home'); setIsMobileMenuOpen(false);}}>
-                            <div className="bg-primary text-white p-3 rounded-2xl mr-4 shadow-md"><i className="ph-fill ph-heartbeat text-3xl animate-pulse-fast"></i></div>
-                            <div><h1 className="text-2xl font-black leading-none">Portal</h1><span className="text-[10px] font-black text-primary uppercase tracking-widest">São Vicente</span></div>
+                    <aside className={`fixed inset-y-0 left-0 w-72 md:w-80 bg-white dark:bg-slate-800 border-r dark:border-slate-700 flex flex-col h-screen shrink-0 shadow-2xl z-50 transform ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 transition-transform duration-300 ease-in-out`}>
+                        <div className="p-8 flex items-center justify-between border-b dark:border-slate-700 cursor-pointer" onClick={()=>{setActiveTab('Home'); setIsMobileMenuOpen(false);}}>
+                            <div className="flex items-center"><div className="bg-primary text-white p-3 rounded-2xl mr-4 shadow-md"><i className="ph-fill ph-heartbeat text-3xl"></i></div><div><h1 className="text-2xl font-black leading-none dark:text-white">Portal</h1><span className="text-[10px] font-black text-primary uppercase tracking-widest">São Vicente</span></div></div>
+                            <button onClick={(e)=>{e.stopPropagation(); setDarkMode(!darkMode)}} className="hidden md:flex text-gray-400 hover:text-primary text-xl bg-gray-100 dark:bg-slate-700 p-3 rounded-xl transition"><i className={`ph-fill ${darkMode ? 'ph-sun' : 'ph-moon'}`}></i></button>
                         </div>
-                        <div className="p-6 border-b flex items-center gap-4 bg-white relative">
-                            <div className="w-14 h-14 rounded-[1rem] bg-gradient-to-tr from-secondary to-orange-400 flex items-center justify-center text-white font-black text-2xl shadow-lg shrink-0 relative z-10">{safeString(userName || 'U').charAt(0).toUpperCase()}</div>
-                            <div className="flex-1 overflow-hidden relative z-10">
-                                <p className="text-base font-black truncate text-gray-900">{userName}</p>
-                                <p className="text-[9px] font-black text-primary bg-primary/10 px-2.5 py-1 rounded-md inline-block mt-1 uppercase tracking-widest">{isAdmin?'Gestão/Admin':'Colaborador'}</p>
+                        <div className="p-6 border-b dark:border-slate-700 flex items-center gap-4 bg-gray-50/50 dark:bg-slate-900/50">
+                            {userFoto ? <img src={formatImageUrl(userFoto)} className="w-12 h-12 rounded-xl object-cover shadow-sm border-2 border-white dark:border-slate-600" /> : <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-secondary to-orange-400 flex items-center justify-center text-white font-black text-xl shadow-md">{safeString(userName || 'U').charAt(0).toUpperCase()}</div>}
+                            <div className="flex-1 overflow-hidden">
+                                <p className="text-sm font-black truncate dark:text-white">{userName}</p>
+                                <p className="text-[9px] font-black text-primary bg-primary/10 px-2 py-1 rounded mt-1 uppercase tracking-widest w-max">{isAdmin?'Gestão/Admin':'Equipe'}</p>
                             </div>
                         </div>
-                        <div className="flex-1 overflow-y-auto p-4 space-y-1.5 custom-scrollbar pb-8 mt-4 md:mt-0">
+                        <div className="flex-1 overflow-y-auto p-4 space-y-1.5 custom-scrollbar pb-8">
                             <div className="px-4 mb-3 mt-2 text-[9px] font-black text-gray-400 uppercase tracking-widest">Menu Principal</div>
-                            {menus.map(m => <button key={m.id} onClick={()=>{setActiveTab(m.id); loadData(m.id); setIsMobileMenuOpen(false);}} className={`w-full flex items-center gap-4 px-5 py-3.5 rounded-2xl text-sm font-black transition-all ${activeTab===m.id?'bg-primary text-white shadow-lg shadow-blue-900/20 md:scale-[1.02] translate-x-1':'text-gray-500 hover:text-gray-900 hover:bg-gray-50'}`}><i className={`ph-fill ${m.icon} text-xl`}></i> {m.label}</button>)}
+                            {menus.map(m => <button key={m.id} onClick={()=>{setActiveTab(m.id); loadData(m.id); setIsMobileMenuOpen(false);}} className={`w-full flex items-center gap-4 px-5 py-3.5 rounded-2xl text-sm font-bold transition-all ${activeTab===m.id?'bg-primary text-white shadow-lg md:scale-[1.02]':'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-slate-700'}`}><i className={`ph-fill ${m.icon} text-xl`}></i> {m.label}</button>)}
                             
                             {isAdmin && (
                                 <>
                                     <div className="px-4 mt-8 mb-3 text-[9px] font-black text-gray-400 uppercase tracking-widest">Avançado</div>
-                                    {adminMenus.map(m => <button key={m.id} onClick={()=>{setActiveTab(m.id); loadData(m.id); setIsMobileMenuOpen(false);}} className={`w-full flex items-center gap-4 px-5 py-3.5 rounded-2xl text-sm font-black transition-all ${activeTab===m.id?'bg-gray-900 text-white shadow-lg md:scale-[1.02] translate-x-1':'text-gray-500 hover:text-gray-900 hover:bg-gray-50'}`}><i className={`ph-fill ${m.icon} text-xl`}></i> {m.label}</button>)}
+                                    {adminMenus.map(m => <button key={m.id} onClick={()=>{setActiveTab(m.id); loadData(m.id); setIsMobileMenuOpen(false);}} className={`w-full flex items-center gap-4 px-5 py-3.5 rounded-2xl text-sm font-bold transition-all ${activeTab===m.id?'bg-gray-900 dark:bg-white dark:text-gray-900 text-white shadow-lg md:scale-[1.02]':'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-slate-700'}`}><i className={`ph-fill ${m.icon} text-xl`}></i> {m.label}</button>)}
                                 </>
                             )}
-                            <button onClick={()=>{auth?.signOut(); localStorage.removeItem('shared_auth'); setIsSharedAuth(false); setUser(null);}} className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-sm font-black text-red-500 hover:bg-red-50 mt-10 transition"><i className="ph-fill ph-sign-out text-xl"></i> Encerrar Sessão</button>
+                            <button onClick={()=>{auth?.signOut(); localStorage.removeItem('shared_auth'); setIsSharedAuth(false); setUser(null);}} className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-sm font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 mt-8 transition"><i className="ph-fill ph-sign-out text-xl"></i> Sair do Sistema</button>
                         </div>
                     </aside>
 
                     <main className="flex-1 h-[calc(100vh-76px)] md:h-screen overflow-y-auto relative custom-scrollbar p-4 md:p-10 pt-6 md:pt-10">
                         <ErrorBoundary>
-                            {loading && <div className="fixed inset-0 bg-white/70 backdrop-blur z-40 flex items-center justify-center"><div className="w-14 h-14 border-4 border-primary border-t-transparent rounded-full animate-spin shadow-2xl"></div></div>}
+                            {loading && <div className="fixed inset-0 bg-white/70 dark:bg-slate-900/70 backdrop-blur z-40 flex items-center justify-center"><div className="w-14 h-14 border-4 border-primary border-t-transparent rounded-full animate-spin shadow-2xl"></div></div>}
 
                             {activeTab === 'Home' && !loading && Array.isArray(sheetData['CONTROLE_ATENDIMENTOS']) && sheetData['CONTROLE_ATENDIMENTOS'].filter(a => Number(a.Limite_Max||0) > 0 && (Number(a.Qtd_Atual||0)/Number(a.Limite_Max||1)) >= 0.9).length > 0 && (
                                 <div className="max-w-[1400px] mx-auto bg-red-600 rounded-[2rem] p-6 md:p-8 text-white shadow-2xl shadow-red-900/30 mb-8 animate-pop-in relative overflow-hidden border-4 border-red-700">
@@ -820,10 +840,10 @@
                                 <div className="space-y-8 animate-fade-in max-w-[1400px] mx-auto">
                                     <ClockWidget lembretesData={sheetData['LEMBRETES_HORA']} />
                                     <div>
-                                        <h3 className="text-xl md:text-2xl font-black mb-6 text-gray-900 px-2">Acesso Rápido</h3>
+                                        <h3 className="text-xl md:text-2xl font-black mb-6 text-gray-900 dark:text-white px-2">Acesso Rápido</h3>
                                         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 md:gap-6">
-                                            {[ { l: 'Mural', i: 'ph-presentation-chart', bg:'bg-blue-50', c:'text-blue-600', t: 'MURAL_AVISOS' }, { l: 'Painel', i: 'ph-kanban', bg:'bg-orange-50', c:'text-orange-600', t: 'ESCALAS' }, { l: 'Boletins', i: 'ph-newspaper', bg:'bg-purple-50', c:'text-purple-600', t: 'BOLETINS_INFORMATIVOS' }, { l: 'Consultas', i: 'ph-stethoscope', bg:'bg-indigo-50', c:'text-indigo-600', t: 'CONSULTA E PROCEDIMENTOS' }, { l: 'Imagem', i: 'ph-bone', bg:'bg-green-50', c:'text-green-600', t: 'EXAMES DE IMAGEM' }, { l: 'Senhas', i: 'ph-lock-key', bg:'bg-red-50', c:'text-red-600', t: 'SENHAS E LOGINS GERAIS' } ].map((d, i) => (
-                                                <button key={i} onClick={()=>{setActiveTab(d.t);loadData(d.t)}} className={`${d.bg} ${d.c} p-5 md:p-8 rounded-[1.5rem] md:rounded-[2rem] flex flex-col items-center justify-center gap-4 card-hover shadow-sm border border-transparent`}>
+                                            {[ { l: 'Mural', i: 'ph-presentation-chart', bg:'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400', t: 'MURAL_AVISOS' }, { l: 'Painel', i: 'ph-kanban', bg:'bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400', t: 'ESCALAS' }, { l: 'Boletins', i: 'ph-newspaper', bg:'bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400', t: 'BOLETINS_INFORMATIVOS' }, { l: 'Consultas', i: 'ph-stethoscope', bg:'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400', t: 'CONSULTA E PROCEDIMENTOS' }, { l: 'Imagem', i: 'ph-bone', bg:'bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400', t: 'EXAMES DE IMAGEM' }, { l: 'Senhas', i: 'ph-lock-key', bg:'bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400', t: 'SENHAS E LOGINS GERAIS' } ].map((d, i) => (
+                                                <button key={i} onClick={()=>{setActiveTab(d.t);loadData(d.t)}} className={`${d.bg} p-5 md:p-8 rounded-[1.5rem] md:rounded-[2rem] flex flex-col items-center justify-center gap-4 card-hover shadow-sm border border-transparent dark:border-slate-700`}>
                                                     <i className={`ph-fill ${d.i} text-4xl md:text-5xl drop-shadow-sm`}></i><span className="font-black text-[10px] md:text-xs text-center uppercase tracking-widest">{d.l}</span>
                                                 </button>
                                             ))}
