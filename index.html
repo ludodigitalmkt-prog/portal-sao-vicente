@@ -8,7 +8,7 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <script>
-        const VERSAO_ATUAL = "6.0.0"; // Mega Atualização Escalas e Unimed
+        const VERSAO_ATUAL = "6.1.0";
         if (window.location.search.indexOf('v=' + VERSAO_ATUAL) === -1) {
             localStorage.clear(); sessionStorage.clear();
             window.location.replace(window.location.pathname + (window.location.pathname.indexOf('?') === -1 ? '?' : '&') + 'v=' + VERSAO_ATUAL);
@@ -119,14 +119,23 @@
             constructor(props) { super(props); this.state = { hasError: false }; }
             static getDerivedStateFromError(error) { return { hasError: true }; }
             render() {
-                if (this.state.hasError) return <div className="p-10 text-center"><h2 className="text-2xl font-black text-red-500">Erro na Interface</h2><button onClick={()=>window.location.reload()} className="mt-4 bg-primary text-white px-6 py-2 rounded-xl">Recarregar</button></div>;
+                if (this.state.hasError) return <div className="p-10 text-center"><h2 className="text-2xl font-black text-red-500">Erro na Interface</h2><p className="text-gray-500 mb-6">Uma informação do banco de dados causou conflito.</p><button onClick={()=>window.location.reload()} className="bg-primary text-white px-8 py-3 rounded-xl font-bold shadow-lg hover:scale-105 transition">Recarregar Painel</button></div>;
                 return this.props.children; 
             }
         }
 
         const safeString = (val) => (val === null || val === undefined) ? '' : String(val);
 
-        // ATUALIZADO: Motor de Links do Drive (Robusto)
+        // Tradutor de Datas para o Formulário (Corrige o DD/MM/AAAA para o Calendário)
+        const formatDateForInput = (val) => {
+            const s = safeString(val).trim();
+            if (s.includes('/')) {
+                const parts = s.split('/');
+                if (parts.length === 3 && parts[2].length === 4) return `${parts[2]}-${parts[1]}-${parts[0]}`;
+            }
+            return s;
+        };
+
         const formatImageUrl = (url) => {
             const str = safeString(url).trim(); if (!str) return '';
             if (str.includes('drive.google.com')) {
@@ -147,10 +156,11 @@
             return str;
         };
 
-        // Função para checar se o expediente já acabou (Auto-Ausente)
+        // Função segura para checar expediente (Auto-Ausente)
         const isPastEnd = (horaFimStr) => {
-            if(!horaFimStr) return false;
-            const match = horaFimStr.match(/(\d{2}):(\d{2})/g);
+            const str = safeString(horaFimStr);
+            if(!str) return false;
+            const match = str.match(/(\d{2}):(\d{2})/g);
             if (match && match.length > 0) {
                 const endTime = match[match.length - 1]; 
                 const [hours, mins] = endTime.split(':').map(Number);
@@ -161,7 +171,7 @@
         };
 
         const tabSchemas = {
-            'CORPO CLINICO': ['ID', 'Médico', 'Especialidade', 'Segmento', 'Código UNIMED', 'CRM', 'Hora Início', 'Hora Fim', 'Cor_Selo', 'Foto_URL'], // Adicionado Hora Início e Fim
+            'CORPO CLINICO': ['ID', 'Médico', 'Especialidade', 'Segmento', 'Código UNIMED', 'CRM', 'Hora Início', 'Hora Fim', 'Cor_Selo', 'Foto_URL'],
             'EXAMES DE IMAGEM': ['ID', 'Categoria', 'Código', 'Nome do Exame', 'Profissionais', 'Idade Permitida', 'Observações', 'Imagem_URL'],
             'EXAMES DE IMAGEM E OUTROS': ['ID', 'Código', 'Descrição', 'Valor', 'Prazo de Laudo', 'Onde Encontrar', 'Imagem_URL'],
             'CONSULTA E PROCEDIMENTOS': ['ID', 'Código', 'Consulta/Procedimento', 'Descrição', 'Preparo', 'Material Utilizado', 'Valor Particular', 'Imagem_URL'],
@@ -173,7 +183,7 @@
             'NOVIDADES_E_EVENTOS': ['ID', 'Tipo', 'Título', 'Mensagem', 'Data de Publicação', 'Imagem_URL'],
             'BOLETINS_INFORMATIVOS': ['ID', 'Título', 'Descrição', 'Tipo_Midia', 'Link_Arquivo', 'Data_Publicacao'],
             'CONTROLE_ATENDIMENTOS': ['ID', 'Profissional', 'Convênio', 'Qtd_Atual', 'Limite_Max'],
-            'USUARIOS': ['ID', 'Nome Completo', 'E-mail', 'Nível de Acesso', 'Data de Nascimento', 'Foto_Perfil_URL', 'Status', 'Competências', 'Hora Início', 'Hora Fim', 'Horários Flexíveis', 'Formato Contratação'], // Removida Senha, adc Horários
+            'USUARIOS': ['ID', 'Nome Completo', 'E-mail', 'Nível de Acesso', 'Data de Nascimento', 'Foto_Perfil_URL', 'Status', 'Competências', 'Hora Início', 'Hora Fim', 'Horários Flexíveis', 'Formato Contratação'],
             'ESCALAS': ['ID', 'Tipo_Profissional', 'Nome_Profissional', 'Data', 'Turno', 'Horario', 'Unidade', 'Setor_Consultorio', 'Status_Turno', 'Substituindo'],
             'CHAT_MENSAGENS': ['ID', 'Data_Hora', 'Nome', 'Mensagem', 'Destinatario'],
             'LEMBRETES_HORA': ['ID', 'Hora', 'Mensagem'],
@@ -292,7 +302,7 @@
                                             ) : isLong && !cLower.includes('url') && !cLower.includes('site') && !cLower.includes('link') ? (
                                                 <textarea className="w-full px-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-custom outline-none focus:ring-2 focus:ring-primary min-h-[120px] font-medium text-gray-800 dark:text-white" value={safeString(formData[colName])} onChange={(e) => setFormData({...formData, [colName]: e.target.value})} placeholder={cLower.includes('competências') ? 'Ex: Recepção, Triagem, Coleta' : `Detalhes...`}></textarea>
                                             ) : cLower.includes('data') ? (
-                                                <input type="date" className="w-full px-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-custom outline-none focus:ring-2 focus:ring-primary font-bold text-gray-800 dark:text-white" value={safeString(formData[colName])} onChange={(e) => setFormData({...formData, [colName]: e.target.value})} />
+                                                <input type="date" className="w-full px-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-custom outline-none focus:ring-2 focus:ring-primary font-bold text-gray-800 dark:text-white" value={formatDateForInput(formData[colName])} onChange={(e) => setFormData({...formData, [colName]: e.target.value})} />
                                             ) : cLower.includes('hora') || cLower.includes('início') || cLower.includes('fim') || cLower.includes('flexíveis') ? (
                                                 <input type="time" className="w-full px-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-custom outline-none focus:ring-2 focus:ring-primary font-bold text-gray-800 dark:text-white" value={safeString(formData[colName])} onChange={(e) => setFormData({...formData, [colName]: e.target.value})} />
                                             ) : (
@@ -316,7 +326,7 @@
 
         const SenhasView = ({ data, canEdit, openModal, handleDelete, schema }) => {
             const [search, setSearch] = useState('');
-            const filtered = data.filter(c => safeString(c['Nome do Sistema']).toLowerCase().includes(search.toLowerCase()) || safeString(c.Login).toLowerCase().includes(search.toLowerCase()));
+            const filtered = data.filter(c => c && (safeString(c['Nome do Sistema']).toLowerCase().includes(search.toLowerCase()) || safeString(c.Login).toLowerCase().includes(search.toLowerCase())));
             const [visiblePwd, setVisiblePwd] = useState({});
 
             const togglePwd = (id) => setVisiblePwd(p => ({...p, [id]: !p[id]}));
@@ -333,7 +343,7 @@
                             <div key={i} className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-[2rem] p-6 shadow-sm card-hover relative group flex flex-col">
                                 <div className="flex justify-between items-start mb-4">
                                     <h3 className="font-black text-xl text-gray-900 dark:text-white flex items-center gap-2"><i className="ph-fill ph-lock-key text-primary"></i> {safeString(item['Nome do Sistema'])}</h3>
-                                    {item['Link do Sistema'] && <a href={safeString(item['Link do Sistema'])} target="_blank" className="bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg text-xs font-black hover:bg-blue-600 hover:text-white transition">Acessar Link <i className="ph-bold ph-arrow-square-out"></i></a>}
+                                    {item['Link do Sistema'] && <a href={safeString(item['Link do Sistema'])} target="_blank" className="bg-blue-50 dark:bg-blue-900/30 text-blue-600 px-3 py-1.5 rounded-lg text-xs font-black hover:bg-blue-600 hover:text-white transition">Acessar Link <i className="ph-bold ph-arrow-square-out"></i></a>}
                                 </div>
                                 
                                 <div className="bg-gray-50 dark:bg-slate-900 rounded-xl p-4 space-y-3 mb-4">
@@ -350,8 +360,8 @@
 
                                 {canEdit && (
                                     <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition">
-                                        <button onClick={()=>openModal(item, schema)} className="p-2 text-blue-600 bg-white shadow rounded-lg hover:bg-blue-600 hover:text-white"><i className="ph-bold ph-pencil-simple"></i></button>
-                                        <button onClick={()=>{if(confirm('Excluir?')) handleDelete(item.ID)}} className="p-2 text-red-600 bg-white shadow rounded-lg hover:bg-red-600 hover:text-white"><i className="ph-bold ph-trash"></i></button>
+                                        <button onClick={()=>openModal(item, schema)} className="p-2 text-blue-600 bg-white dark:bg-slate-700 shadow rounded-lg hover:bg-blue-600 hover:text-white"><i className="ph-bold ph-pencil-simple"></i></button>
+                                        <button onClick={()=>{if(confirm('Excluir?')) handleDelete(item.ID)}} className="p-2 text-red-600 bg-white dark:bg-slate-700 shadow rounded-lg hover:bg-red-600 hover:text-white"><i className="ph-bold ph-trash"></i></button>
                                     </div>
                                 )}
                             </div>
@@ -363,7 +373,7 @@
 
         const BoletinsView = ({ data, canEdit, openModal, handleDelete }) => {
             const [selectedMedia, setSelectedMedia] = useState(null);
-            const ativos = Array.isArray(data) ? data : [];
+            const ativos = Array.isArray(data) ? data.filter(d => d) : [];
 
             return (
                 <div className="space-y-6 animate-fade-in">
@@ -417,6 +427,48 @@
             )
         };
 
+        const MapaSalasView = ({ escalas }) => {
+            const safeEscalas = Array.isArray(escalas) ? escalas : [];
+            const todayStr = new Date().toLocaleDateString('pt-BR');
+            const todayEscalas = safeEscalas.filter(e => {
+                if(!e || typeof e !== 'object') return false;
+                const escDate = safeString(e.Data); const escTipo = safeString(e.Tipo_Profissional).toLowerCase(); const escStatus = safeString(e.Status_Turno).toLowerCase();
+                return (escDate.includes(todayStr) || escDate.includes(todayStr.substring(0,5))) && escTipo.includes('médico') && escStatus.includes('trabalhando');
+            });
+            const board = {};
+            todayEscalas.forEach(e => {
+                if(!e) return;
+                const u = safeString(e.Unidade) || 'Geral'; const s = safeString(e.Setor_Consultorio) || 'Sem Sala';
+                if(!board[u]) board[u] = {}; if(!board[u][s]) board[u][s] = []; board[u][s].push(e);
+            });
+            return (
+                <div className="flex gap-6 overflow-x-auto pb-8 custom-scrollbar items-start min-h-[60vh] pt-4">
+                    {Object.keys(board).length === 0 && <div className="w-full flex flex-col items-center justify-center p-20 text-gray-400 font-black text-2xl border-2 border-dashed dark:border-slate-700 rounded-[3rem] mt-10"><i className="ph-fill ph-coffee text-6xl mb-4 opacity-50"></i> Nenhum médico escalado hoje.</div>}
+                    {Object.keys(board).sort().map(unidade => (
+                        <div key={unidade} className="w-[400px] shrink-0 flex flex-col">
+                            <h3 className="text-2xl font-black text-gray-800 dark:text-white mb-6 flex items-center gap-3 px-2"><div className="w-10 h-10 bg-primary text-white rounded-xl flex items-center justify-center shadow-md"><i className="ph-fill ph-buildings text-xl"></i></div> {unidade}</h3>
+                            <div className="bg-gray-100/80 dark:bg-slate-800/80 p-5 rounded-[2.5rem] border border-gray-200 dark:border-slate-700 space-y-6">
+                                {Object.keys(board[unidade]).sort().map(setor => (
+                                    <div key={setor} className="bg-white dark:bg-slate-900 rounded-3xl p-5 shadow-sm border border-gray-100 dark:border-slate-700 relative overflow-hidden">
+                                        <div className="absolute top-0 inset-x-0 h-1 bg-primary/20"></div>
+                                        <h4 className="text-sm font-black text-primary uppercase tracking-widest mb-4 flex items-center gap-2"><i className="ph-fill ph-door"></i> {setor}</h4>
+                                        <div className="space-y-3">
+                                            {board[unidade][setor].map((med, i) => (
+                                                <div key={i} className="flex items-center gap-4 bg-gray-50 dark:bg-slate-800 p-4 rounded-2xl border border-transparent group shadow-sm">
+                                                    <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-primary to-blue-500 text-white flex items-center justify-center text-xl font-black shadow-md shrink-0">{safeString(med.Nome_Profissional || 'M').charAt(0)}</div>
+                                                    <div className="flex-1 overflow-hidden"><p className="font-black text-base truncate text-gray-900 dark:text-white">{safeString(med.Nome_Profissional)}</p><p className="text-xs font-bold text-gray-500 truncate mt-0.5"><i className="ph-fill ph-clock"></i> {safeString(med.Horario)}</p></div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )
+        };
+
         const EscalasContainer = ({ sheetData, user, onRefresh, showToast }) => {
             const [activeSubTab, setActiveSubTab] = useState('Painel Hoje');
             const [isModalOpen, setIsModalOpen] = useState(false);
@@ -428,11 +480,9 @@
             const [datesToSave, setDatesToSave] = useState([]); 
             const [showSwapSugg, setShowSwapSugg] = useState(false);
 
-            // Permissão de Edição Completa
+            // Permissões
             const nivelKey = user && typeof user === 'object' ? Object.keys(user).find(k => safeString(k).toLowerCase().includes('acesso')) : null;
             const canEdit = nivelKey && ['admin', 'supervisor'].some(role => safeString(user[nivelKey]).toLowerCase().includes(role));
-            
-            // Permissão de Acesso Colaborador Comum (apenas troca de próprio status)
             const isColab = user && typeof user === 'object' && safeString(user[nivelKey]).toLowerCase().includes('colaborador');
 
             const escalas = Array.isArray(sheetData['ESCALAS']) ? sheetData['ESCALAS'] : [];
@@ -441,7 +491,7 @@
             const controleUnimed = Array.isArray(sheetData['CONTROLE_ATENDIMENTOS']) ? sheetData['CONTROLE_ATENDIMENTOS'] : [];
             
             const todayStr = new Date().toLocaleDateString('pt-BR');
-            const todayEscalas = escalas.filter(e => safeString(e.Data).includes(todayStr) || safeString(e.Data).includes(todayStr.substring(0,5)));
+            const todayEscalas = escalas.filter(e => e && (safeString(e.Data).includes(todayStr) || safeString(e.Data).includes(todayStr.substring(0,5))));
 
             const filteredEscalas = escalas.filter(esc => {
                 if(!esc || typeof esc !== 'object') return false;
@@ -465,14 +515,14 @@
             };
 
             const findSubstitutes = (missingPersonName) => {
-                const missingUser = usuarios.find(u => safeString(u['Nome Completo']) === missingPersonName);
+                const missingUser = usuarios.find(u => u && safeString(u['Nome Completo']) === missingPersonName);
                 if(!missingUser || !missingUser['Competências']) return [];
                 const requiredSkills = safeString(missingUser['Competências']).toLowerCase().split(',').map(s=>s.trim()).filter(s=>s);
                 return usuarios.filter(u => {
-                    if (safeString(u['Nome Completo']) === missingPersonName) return false;
+                    if (!u || safeString(u['Nome Completo']) === missingPersonName) return false;
                     const uSkills = safeString(u['Competências']).toLowerCase();
                     const hasSkill = requiredSkills.some(rs => uSkills.includes(rs));
-                    const isWorkingToday = todayEscalas.some(e => safeString(e.Nome_Profissional) === safeString(u['Nome Completo']));
+                    const isWorkingToday = todayEscalas.some(e => e && safeString(e.Nome_Profissional) === safeString(u['Nome Completo']));
                     return hasSkill && !isWorkingToday;
                 });
             };
@@ -482,7 +532,6 @@
                 onRefresh('ESCALAS');
             };
 
-            // Atualizar contagem da UNIMED direto pelo Kanban
             const handleUnimedUpdate = async (controleItem, num) => {
                 const newValue = Number(controleItem.Qtd_Atual || 0) + num;
                 if(newValue < 0) return;
@@ -490,21 +539,10 @@
                 onRefresh('CONTROLE_ATENDIMENTOS');
             };
 
-            // ABRIR MODAL COM LANÇAMENTO RÁPIDO DO USUÁRIO (Integração)
-            const openQuickLancar = (nome, isMed = false) => {
-                const refObj = isMed ? corpoClinico.find(c => c.Médico === nome) : usuarios.find(u => u['Nome Completo'] === nome);
-                const hInicio = refObj ? safeString(refObj['Hora Início']) : '';
-                const hFim = refObj ? safeString(refObj['Hora Fim']) : '';
-                const horarioFormatado = hInicio && hFim ? `${hInicio} às ${hFim}` : '';
-
-                setFormData({ ID: '', Tipo_Profissional: isMed ? 'Médico' : 'Colaborador', Nome_Profissional: nome, Turno: 'Manhã', Horario: horarioFormatado, Unidade: '', Setor_Consultorio: '', Status_Turno: 'Trabalhando', Substituindo: '' }); 
-                setDatesToSave([]); 
-                setIsModalOpen(true);
-            };
-
             const PainelDoDia = () => {
                 const setores = {};
                 todayEscalas.forEach(e => {
+                    if(!e) return;
                     const s = safeString(e.Setor_Consultorio) || 'Sem Setor Informado';
                     if(!setores[s]) setores[s] = []; setores[s].push(e);
                 });
@@ -526,13 +564,11 @@
                                     <h4 className="font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest text-sm mb-4 px-2">{setor}</h4>
                                     <div className="space-y-4">
                                         {setores[setor].map((esc, i) => {
-                                            // AUTO-AUSENTE: Se passou do horário de fim
                                             let isFimExpediente = false;
-                                            // Buscamos o Hora Fim cadastrado no usuário, ou tentamos extrair do string "08:00 às 18:00"
                                             let userHoraFim = '';
-                                            const profData = usuarios.find(u => u['Nome Completo'] === esc.Nome_Profissional) || corpoClinico.find(c => c.Médico === esc.Nome_Profissional);
+                                            const profData = usuarios.find(u => u && u['Nome Completo'] === esc.Nome_Profissional) || corpoClinico.find(c => c && c.Médico === esc.Nome_Profissional);
                                             if (profData && profData['Hora Fim']) userHoraFim = profData['Hora Fim'];
-                                            else userHoraFim = esc.Horario; // Fallback to extract from string
+                                            else userHoraFim = esc.Horario;
 
                                             if (isPastEnd(userHoraFim)) isFimExpediente = true;
 
@@ -542,13 +578,13 @@
                                             
                                             let bgCard = isIntervalo ? 'bg-orange-50 dark:bg-orange-900/30 border-orange-200' : isAusente ? 'bg-red-50 dark:bg-red-900/30 border-red-200 opacity-60' : 'bg-white dark:bg-slate-800 border-gray-100 dark:border-slate-600';
                                             
-                                            // CONTROLE UNIMED (Para os Médicos)
-                                            const cUnimed = controleUnimed.find(a => safeString(a.Profissional) === safeString(esc.Nome_Profissional));
+                                            // CONTROLE UNIMED
+                                            const cUnimed = controleUnimed.find(a => a && safeString(a.Profissional) === safeString(esc.Nome_Profissional));
                                             let uPulseClass = '';
                                             if (cUnimed) {
                                                 const q = Number(cUnimed.Qtd_Atual||0); const m = Number(cUnimed.Limite_Max||1);
-                                                if (m - q <= 5) uPulseClass = 'animate-pulse bg-red-500 text-white';
-                                                else if (q/m >= 0.8) uPulseClass = 'animate-pulse bg-green-500 text-white';
+                                                if (m > 0 && m - q <= 5) uPulseClass = 'animate-pulse bg-red-500 text-white';
+                                                else if (m > 0 && q/m >= 0.8) uPulseClass = 'animate-pulse bg-green-500 text-white';
                                                 else uPulseClass = 'bg-blue-100 text-blue-800';
                                             }
 
@@ -558,13 +594,13 @@
                                                     
                                                     <div className="flex justify-between items-start">
                                                         <div>
-                                                            <span className={`font-black text-lg ${isAusente ? 'text-red-900' : 'text-gray-900'} dark:text-white truncate`}>{safeString(esc.Nome_Profissional)}</span>
+                                                            <span className={`font-black text-lg ${isAusente ? 'text-red-900 dark:text-red-400' : 'text-gray-900 dark:text-white'} truncate`}>{safeString(esc.Nome_Profissional)}</span>
                                                             <p className="text-xs font-bold text-gray-500 dark:text-slate-400 mt-1"><i className="ph-fill ph-clock"></i> {safeString(esc.Horario)}</p>
                                                         </div>
                                                         {isAusente && <span className="text-[10px] uppercase font-black tracking-widest text-red-600 bg-red-100 px-2 py-1 rounded">Ausente</span>}
                                                     </div>
 
-                                                    {esc.Substituindo && <p className="text-[10px] font-black text-primary bg-blue-50 dark:bg-blue-900/50 px-2 py-1 rounded mt-1 uppercase w-max">Cobrindo: {esc.Substituindo}</p>}
+                                                    {esc.Substituindo && <p className="text-[10px] font-black text-primary bg-blue-50 dark:bg-blue-900/50 px-2 py-1 rounded mt-1 uppercase w-max">Cobrindo: {safeString(esc.Substituindo)}</p>}
                                                     
                                                     {cUnimed && (
                                                         <div className={`mt-2 flex justify-between items-center p-2 rounded-xl border ${uPulseClass || 'border-blue-200 bg-blue-50/50'}`} onClick={(e)=>e.stopPropagation()}>
@@ -611,7 +647,7 @@
                                 {Array(firstDayOfMonth).fill(null).map((_, i) => <div key={`e-${i}`} className="aspect-square opacity-20 bg-gray-50 dark:bg-slate-900 rounded-3xl" />)}
                                 {Array(daysInMonth).fill(null).map((_, i) => {
                                     const day = i + 1; const dateStrCompleto = `${String(day).padStart(2, '0')}/${String(currentMonth.getMonth() + 1).padStart(2, '0')}/${currentMonth.getFullYear()}`;
-                                    const pessoasNoDia = filteredEscalas.filter(e => safeString(e.Data).includes(dateStrCompleto) || safeString(e.Data).includes(`${String(day).padStart(2, '0')}/${String(currentMonth.getMonth() + 1).padStart(2, '0')}/${String(currentMonth.getFullYear()).slice(2)}`));
+                                    const pessoasNoDia = filteredEscalas.filter(e => e && (safeString(e.Data).includes(dateStrCompleto) || safeString(e.Data).includes(`${String(day).padStart(2, '0')}/${String(currentMonth.getMonth() + 1).padStart(2, '0')}/${String(currentMonth.getFullYear()).slice(2)}`)));
                                     const isToday = dateStrCompleto === todayStr;
                                     return (
                                         <div key={day} onClick={() => setSelectedDate(dateStrCompleto)} className={`aspect-square rounded-[2rem] border-2 p-4 flex flex-col cursor-pointer transition-all ${isToday ? 'border-primary bg-blue-50/50 dark:bg-blue-900/20 shadow-md' : 'border-gray-100 dark:border-slate-700 hover:border-primary/50 bg-white dark:bg-slate-800'}`}>
@@ -630,20 +666,19 @@
                                 <button onClick={()=>setSelectedDate(null)} className="absolute top-8 right-8 w-12 h-12 bg-gray-100 dark:bg-slate-700 hover:bg-red-500 hover:text-white rounded-full"><i className="ph-bold ph-x"></i></button>
                                 <h3 className="text-4xl font-black mb-10 flex items-center gap-4 text-gray-900 dark:text-white">Plantão dia {selectedDate}</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-h-[60vh] overflow-y-auto hide-scroll pb-4">
-                                    {filteredEscalas.filter(e => safeString(e.Data).includes(selectedDate) || safeString(e.Data).includes(selectedDate.substring(0,6) + selectedDate.substring(8,10))).map((esc, i) => (
+                                    {filteredEscalas.filter(e => e && (safeString(e.Data).includes(selectedDate) || safeString(e.Data).includes(selectedDate.substring(0,6) + selectedDate.substring(8,10)))).map((esc, i) => (
                                         <div key={i} onClick={() => (canEdit || isColab) && setSelectedPerson(esc)} className="bg-white dark:bg-slate-900 border-2 border-gray-100 dark:border-slate-700 rounded-3xl p-6 cursor-pointer card-hover hover:border-primary flex flex-col">
                                             <h4 className="font-black text-xl mb-3 text-gray-900 dark:text-white">{safeString(esc.Nome_Profissional)}</h4>
                                             <p className="text-sm font-black bg-gray-50 dark:bg-slate-800 px-3 py-1.5 rounded-xl mb-4 text-gray-600 dark:text-slate-300">{safeString(esc.Turno)} • {safeString(esc.Horario)}</p>
                                             <div className="mt-auto flex justify-between"><span className="text-[10px] font-black uppercase px-4 py-1.5 rounded-full bg-green-100 text-green-800">{safeString(esc.Status_Turno)||'Ativo'}</span><span className="text-primary text-xs font-black">Abrir</span></div>
                                         </div>
                                     ))}
-                                    {filteredEscalas.filter(e => safeString(e.Data).includes(selectedDate)).length === 0 && <div className="col-span-full text-center text-gray-400 font-black text-2xl p-12">Ninguém escalado.</div>}
+                                    {filteredEscalas.filter(e => e && safeString(e.Data).includes(selectedDate)).length === 0 && <div className="col-span-full text-center text-gray-400 font-black text-2xl p-12">Ninguém escalado.</div>}
                                 </div>
                             </div>
                         </div>
                     )}
                     
-                    {/* Ação de Clique no Card (Status e Substituição) */}
                     {selectedPerson && (
                         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 backdrop-blur-xl bg-gray-900/60 animate-fade-in" onClick={() => {setSelectedPerson(null); setShowSwapSugg(false)}}>
                             <div className="bg-white dark:bg-slate-800 rounded-[3rem] w-full max-w-lg p-8 shadow-2xl relative border border-white dark:border-slate-700" onClick={e => e.stopPropagation()}>
@@ -686,7 +721,7 @@
                                                     }} className="bg-primary text-white text-xs font-black px-3 py-2 rounded-lg hover:bg-blue-700 transition">Acionar</button>
                                                 </div>
                                             ))}
-                                            {findSubstitutes(selectedPerson.Nome_Profissional).length === 0 && <p className="text-sm font-bold text-gray-400 text-center py-4">Nenhum colaborador compatível livre hoje.</p>}
+                                            {findSubstitutes(selectedPerson.Nome_Profissional).length === 0 && <p className="text-sm font-bold text-gray-400 text-center py-4">Nenhum compatível livre.</p>}
                                         </div>
                                     </div>
                                 )}
@@ -712,7 +747,13 @@
                                     <div className="lg:w-1/2">
                                         <h4 className="font-black mb-6 text-xl text-gray-900 dark:text-white">2. Dados do Plantão</h4>
                                         <form id="esc-form" onSubmit={handleSaveBatch} className="space-y-6">
-                                            <div><label className="block text-xs font-black text-gray-400 mb-2 uppercase">Profissional</label><select className="w-full px-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-custom outline-none focus:ring-2 focus:ring-primary font-black text-gray-900 dark:text-white" value={safeString(formData.Nome_Profissional)} onChange={e => setFormData({...formData, Nome_Profissional: e.target.value})} required><option value="">Selecione...</option>{activeSubTab.includes('Médicos') ? corpoClinico.map((m,i) => <option key={i} value={safeString(m?.Médico)}>{safeString(m?.Médico)}</option>) : usuarios.map((u,i) => <option key={i} value={safeString(u?.['Nome Completo'])}>{safeString(u?.['Nome Completo'])}</option>)}</select></div>
+                                            <div><label className="block text-xs font-black text-gray-400 mb-2 uppercase">Profissional</label><select className="w-full px-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-custom outline-none focus:ring-2 focus:ring-primary font-black text-gray-900 dark:text-white" value={safeString(formData.Nome_Profissional)} onChange={e => {
+                                                const nome = e.target.value;
+                                                const refObj = activeSubTab.includes('Médicos') ? corpoClinico.find(c => c && c.Médico === nome) : usuarios.find(u => u && u['Nome Completo'] === nome);
+                                                const hInicio = refObj ? safeString(refObj['Hora Início']) : ''; const hFim = refObj ? safeString(refObj['Hora Fim']) : '';
+                                                const autoHorario = hInicio && hFim ? `${hInicio} às ${hFim}` : formData.Horario;
+                                                setFormData({...formData, Nome_Profissional: nome, Horario: autoHorario});
+                                            }} required><option value="">Selecione...</option>{activeSubTab.includes('Médicos') ? corpoClinico.map((m,i) => <option key={i} value={safeString(m?.Médico)}>{safeString(m?.Médico)}</option>) : usuarios.map((u,i) => <option key={i} value={safeString(u?.['Nome Completo'])}>{safeString(u?.['Nome Completo'])}</option>)}</select></div>
                                             <div className="grid grid-cols-2 gap-6">
                                                 <div><label className="block text-xs font-black text-gray-400 mb-2 uppercase">Turno</label><select className="w-full px-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-custom outline-none font-bold text-gray-900 dark:text-white" value={safeString(formData.Turno)} onChange={e => setFormData({...formData, Turno: e.target.value})}><option value="Manhã">Manhã</option><option value="Tarde">Tarde</option><option value="Noite">Noite</option></select></div>
                                                 <div><label className="block text-xs font-black text-gray-400 mb-2 uppercase">Horário</label><input type="text" className="w-full px-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-custom outline-none font-bold text-gray-900 dark:text-white" value={safeString(formData.Horario)} onChange={e => setFormData({...formData, Horario: e.target.value})} placeholder="Ex: 08:00 às 18:00" /></div>
@@ -728,6 +769,101 @@
                             </div>
                         </div>
                     )}
+                </div>
+            );
+        };
+
+        const DesignInterfacePanel = ({ sheetData, onRefresh, showToast }) => {
+            const configs = Array.isArray(sheetData['CONFIGURACOES']) ? sheetData['CONFIGURACOES'] : [];
+            const getConfig = (chave, def) => { const item = configs.find(c => c && c.Chave === chave); return item ? item.Valor : def; };
+
+            const [primary, setPrimary] = useState(getConfig('cor_primaria', '#1E40AF'));
+            const [secondary, setSecondary] = useState(getConfig('cor_secundaria', '#F97316'));
+            const [bg, setBg] = useState(getConfig('cor_fundo', '#F8FAFC'));
+            const [logo, setLogo] = useState(getConfig('logo_url', ''));
+            const [fontFamily, setFontFamily] = useState(getConfig('font_family', 'Inter'));
+            const [borderRadius, setBorderRadius] = useState(getConfig('border_radius', '1.5rem'));
+            const [saving, setSaving] = useState(false);
+
+            const handleSaveDesign = async (e) => {
+                e.preventDefault(); setSaving(true);
+                const settingsToSave = [ { key: 'cor_primaria', val: primary }, { key: 'cor_secundaria', val: secondary }, { key: 'cor_fundo', val: bg }, { key: 'logo_url', val: logo }, { key: 'font_family', val: fontFamily }, { key: 'border_radius', val: borderRadius } ];
+                for (let setting of settingsToSave) {
+                    const existing = configs.find(c => c && c.Chave === setting.key);
+                    await api.saveRecord('CONFIGURACOES', { 'ID': existing ? existing.ID : '', 'Chave': setting.key, 'Valor': setting.val }, !!existing);
+                }
+                await onRefresh('CONFIGURACOES'); setSaving(false); showToast("Design atualizado!", "success");
+            };
+
+            return (
+                <div className="bg-white dark:bg-slate-800 rounded-custom shadow-sm border border-gray-100 dark:border-slate-700 p-8 max-w-5xl mx-auto animate-fade-in">
+                    <h2 className="text-3xl font-black mb-8"><i className="ph-fill ph-magic-wand text-primary"></i> Estilo do Portal</h2>
+                    <form onSubmit={handleSaveDesign} className="space-y-8">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                            <div className="bg-gray-50 dark:bg-slate-900 p-6 rounded-custom border border-gray-100 dark:border-slate-700 space-y-4">
+                                <h3 className="font-black text-gray-800 dark:text-white">Cores</h3>
+                                <div><label className="block text-xs font-bold text-gray-500 mb-1">Primária</label><input type="color" value={primary} onChange={(e) => setPrimary(e.target.value)} className="w-full h-10 rounded-lg cursor-pointer" /></div>
+                                <div><label className="block text-xs font-bold text-gray-500 mb-1">Secundária</label><input type="color" value={secondary} onChange={(e) => setSecondary(e.target.value)} className="w-full h-10 rounded-lg cursor-pointer" /></div>
+                                <div><label className="block text-xs font-bold text-gray-500 mb-1">Fundo Claro</label><input type="color" value={bg} onChange={(e) => setBg(e.target.value)} className="w-full h-10 rounded-lg cursor-pointer" /></div>
+                            </div>
+                            <div className="bg-gray-50 dark:bg-slate-900 p-6 rounded-custom border border-gray-100 dark:border-slate-700 space-y-4">
+                                <h3 className="font-black text-gray-800 dark:text-white">Formatos</h3>
+                                <div><label className="block text-xs font-bold text-gray-500 mb-1">Bordas</label><select className="w-full p-3 rounded-xl border border-gray-200 dark:bg-slate-800" value={borderRadius} onChange={e=>setBorderRadius(e.target.value)}><option value="0px">Reto</option><option value="0.5rem">Suave</option><option value="1.5rem">Moderno</option></select></div>
+                                <div><label className="block text-xs font-bold text-gray-500 mb-1">Fonte</label><select className="w-full p-3 rounded-xl border border-gray-200 dark:bg-slate-800" value={fontFamily} onChange={e=>setFontFamily(e.target.value)}><option value="Inter">Inter</option><option value="Roboto">Roboto</option></select></div>
+                            </div>
+                            <div className="bg-gray-50 dark:bg-slate-900 p-6 rounded-custom border border-gray-100 dark:border-slate-700 space-y-4">
+                                <h3 className="font-black text-gray-800 dark:text-white">Logo do Portal</h3>
+                                <div><label className="block text-xs font-bold text-gray-500 mb-1">URL (Drive ou Site)</label><input type="url" value={logo} onChange={e=>setLogo(e.target.value)} className="w-full p-3 rounded-xl border border-gray-200 dark:bg-slate-800 text-xs font-medium" placeholder="https://..." /></div>
+                            </div>
+                        </div>
+                        <div className="flex justify-end"><button type="submit" disabled={saving} className="bg-primary text-white font-black py-4 px-10 rounded-custom shadow-xl">{saving?'Salvando...':'Salvar Design'}</button></div>
+                    </form>
+                </div>
+            )
+        };
+
+        const DefaultTableView = ({ title, schema, filteredData, canEdit, openModal, handleDelete, search, setSearch }) => {
+            return (
+                <div className="bg-white dark:bg-slate-800 rounded-custom shadow-sm border border-gray-100 dark:border-slate-700 overflow-hidden animate-fade-in">
+                    <div className="p-8 border-b border-gray-50 dark:border-slate-700 flex flex-col md:flex-row justify-between items-center gap-6 bg-gray-50/50 dark:bg-slate-900/50">
+                        <h2 className="text-3xl font-black tracking-tight flex items-center gap-3 text-gray-900 dark:text-white"><div className="w-3 h-8 bg-primary rounded-full"></div> {title}</h2>
+                        <div className="flex gap-4 w-full md:w-auto">
+                            <div className="relative flex-1 md:w-96"><i className="ph-bold ph-magnifying-glass absolute left-5 top-4 text-gray-400 text-xl"></i><input type="text" placeholder="Pesquisar em tudo..." value={search} onChange={e=>setSearch(e.target.value)} className="w-full pl-14 pr-6 py-4 bg-white dark:bg-slate-900 shadow-sm border border-gray-200 dark:border-slate-700 rounded-full outline-none focus:ring-2 focus:ring-primary font-bold transition text-gray-800 dark:text-white" /></div>
+                            {canEdit && <button onClick={() => openModal(null, schema)} className="bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-black px-10 py-4 rounded-full shadow-xl hover:-translate-y-1 transition flex items-center gap-2 shrink-0"><i className="ph-bold ph-plus text-xl"></i> Novo</button>}
+                        </div>
+                    </div>
+                    <div className="overflow-x-auto p-4 custom-scrollbar">
+                        <table className="w-full text-left border-collapse min-w-[800px]">
+                            <thead>
+                                <tr className="text-gray-400 text-[10px] uppercase tracking-widest border-b-2 border-gray-100 dark:border-slate-700">
+                                    {schema.filter(c=>safeString(c)!=='ID').map((col, i) => <th key={`th-${i}`} className="p-6 font-black">{safeString(col)}</th>)}
+                                    {canEdit && <th className="p-6 font-black text-right">Ações</th>}
+                                </tr>
+                            </thead>
+                            <tbody className="text-sm font-bold text-gray-800 dark:text-slate-200">
+                                {filteredData.length === 0 ? <tr><td colSpan="100%" className="text-center p-20 text-gray-400 font-black text-xl border-2 border-dashed border-gray-200 dark:border-slate-700 rounded-custom m-4">Nenhum dado cadastrado.</td></tr> : 
+                                filteredData.map((row, i) => (
+                                    <tr key={`tr-${i}`} className="hover:bg-blue-50/30 dark:hover:bg-slate-700/30 border-b border-gray-50 dark:border-slate-700 transition group">
+                                        {schema.filter(c=>safeString(c)!=='ID').map((col, j) => (
+                                            <td key={`td-${i}-${j}`} className="p-6 whitespace-nowrap">
+                                                {safeString(col).toLowerCase().includes('url') || safeString(col).toLowerCase().includes('foto') || safeString(col).toLowerCase().includes('imagem') ? (row[col] ? <img src={formatImageUrl(row[col])} className="h-14 w-14 object-cover rounded-2xl shadow-sm border border-gray-200 dark:border-slate-600" /> : <div className="h-14 w-14 bg-gray-100 dark:bg-slate-700 rounded-2xl flex items-center justify-center text-gray-300"><i className="ph-fill ph-image text-xl"></i></div>) :
+                                                 safeString(col).toLowerCase().includes('senha') ? '••••••••' :
+                                                 safeString(row[col]) === 'Sim' || safeString(row[col]) === 'Ativo' ? <span className="bg-green-100 dark:bg-green-900/30 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-300 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider">{safeString(row[col])}</span> :
+                                                 safeString(row[col]) === 'Não' || safeString(row[col]) === 'Inativo' ? <span className="bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-300 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider">{safeString(row[col])}</span> :
+                                                 safeString(row[col]) || '-'}
+                                            </td>
+                                        ))}
+                                        {canEdit && (
+                                            <td className="p-6 flex justify-end gap-2 opacity-50 group-hover:opacity-100 transition">
+                                                <button onClick={()=>openModal(row, schema)} className="text-blue-600 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-600 hover:text-white p-3 rounded-xl transition shadow-sm"><i className="ph-bold ph-pencil-simple text-xl"></i></button>
+                                                <button onClick={()=>handleDelete(row.ID)} className="text-red-600 bg-red-50 dark:bg-red-900/30 hover:bg-red-600 hover:text-white p-3 rounded-xl transition shadow-sm"><i className="ph-bold ph-trash text-xl"></i></button>
+                                            </td>
+                                        )}
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             );
         };
@@ -826,11 +962,8 @@
                             setUser({ 'E-mail': u.email, 'Nome Completo': u.email.split('@')[0], 'Nível de Acesso': 'Admin' });
                         }
                     } else {
-                        if(isSharedAuth) {
-                            setUser({ 'Nome Completo': 'Equipe São Vicente', 'Nível de Acesso': 'Colaborador' });
-                        } else {
-                            setUser(null);
-                        }
+                        if(isSharedAuth) setUser({ 'Nome Completo': 'Equipe São Vicente', 'Nível de Acesso': 'Colaborador' });
+                        else setUser(null);
                     }
                     setLoading(false);
                 });
