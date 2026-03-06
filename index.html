@@ -8,13 +8,13 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <script>
-        const VERSAO_ATUAL = "4.0.1"; // Versão atualizada
+        const VERSAO_ATUAL = "5.0.0"; // Atualizado
         if (window.location.search.indexOf('v=' + VERSAO_ATUAL) === -1) {
-            localStorage.clear();
-            sessionStorage.clear();
+            localStorage.clear(); sessionStorage.clear();
             window.location.replace(window.location.pathname + (window.location.pathname.indexOf('?') === -1 ? '?' : '&') + 'v=' + VERSAO_ATUAL);
         }
     </script>
+
     <title>Portal São Vicente</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
@@ -32,13 +32,15 @@
                         'pop-in': 'popIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards',
                         'slide-up': 'slideUp 0.4s ease-out forwards',
                         'ticker': 'ticker 25s linear infinite',
-                        'spin-slow': 'spin 8s linear infinite'
+                        'spin-slow': 'spin 8s linear infinite',
+                        'bounce-slight': 'bounceSlight 2s infinite ease-in-out'
                     },
                     keyframes: { 
                         fadeIn: { '0%': { opacity: '0', transform: 'translateY(10px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
                         popIn: { '0%': { opacity: '0', transform: 'scale(0.95)' }, '100%': { opacity: '1', transform: 'scale(1)' } },
                         slideUp: { '0%': { opacity: '0', transform: 'translateY(100%)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
-                        ticker: { '0%': { transform: 'translateX(100%)' }, '100%': { transform: 'translateX(-100%)' } }
+                        ticker: { '0%': { transform: 'translateX(100%)' }, '100%': { transform: 'translateX(-100%)' } },
+                        bounceSlight: { '0%, 100%': { transform: 'translateY(-5%)' }, '50%': { transform: 'translateY(0)' } }
                     }
                 }
             }
@@ -71,7 +73,6 @@
         .ticker-container { display: flex; overflow: hidden; white-space: nowrap; width: 100%; align-items: center; }
         .rounded-custom { border-radius: var(--border-radius) !important; }
 
-        /* Tabela de Matriz Premium */
         .matrix-table { width: 100%; border-collapse: separate; border-spacing: 0 12px; }
         .matrix-table th { padding: 1.5rem 1rem; color: white; font-weight: 800; text-transform: uppercase; font-size: 0.85rem; text-align: center; border: none; }
         .matrix-table th:first-child { border-radius: 1rem 0 0 1rem; background-color: #1e293b; text-align: left; position: sticky; left: 0; z-index: 30; }
@@ -89,7 +90,6 @@
 
     <script type="text/babel" data-presets="react">
         const { useState, useEffect, useMemo, useRef, Component } = React;
-        const generateId = () => Math.random().toString(36).substr(2, 9);
 
         // ==========================================
         // 🛑 SUAS CHAVES DO FIREBASE AQUI 🛑
@@ -111,14 +111,10 @@
 
         if (isFirebaseConfigured) {
             try {
-                if (!firebase.apps.length) {
-                    firebase.initializeApp(firebaseConfig);
-                }
+                if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
                 db = firebase.firestore();
                 auth = firebase.auth();
-            } catch (error) {
-                console.error("Erro crítico ao inicializar Firebase:", error);
-            }
+            } catch (error) { console.error("Erro crítico ao inicializar Firebase:", error); }
         }
 
         class ErrorBoundary extends Component {
@@ -129,10 +125,10 @@
                 if (this.state.hasError) {
                     return (
                         <div className="min-h-screen flex items-center justify-center p-6 w-full">
-                            <div className="bg-white dark:bg-slate-800 p-10 rounded-[2rem] shadow-2xl text-center max-w-xl border border-red-200">
+                            <div className="bg-white p-10 rounded-[2rem] shadow-2xl text-center max-w-xl border border-red-200">
                                 <div className="w-24 h-24 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-6"><i className="ph-fill ph-warning-circle text-6xl"></i></div>
                                 <h2 className="text-2xl font-black mb-4">Módulo Indisponível</h2>
-                                <p className="text-gray-500 mb-8">Ocorreu um erro ao renderizar este bloco. Tente limpar o cache do navegador (Ctrl+F5).</p>
+                                <p className="text-gray-500 mb-8">Ocorreu um erro ao renderizar este bloco.</p>
                                 <button onClick={() => { this.setState({ hasError: false }); window.location.reload(); }} className="w-full bg-red-600 text-white py-4 rounded-xl font-black shadow-lg">Tentar Novamente</button>
                             </div>
                         </div>
@@ -145,15 +141,22 @@
         const safeString = (val) => (val === null || val === undefined) ? '' : String(val);
 
         const formatImageUrl = (url) => {
-            const strUrl = safeString(url).trim();
-            if (!strUrl) return '';
-            // Se for link do Google Drive, converte para um formato que o navegador entenda como imagem
+            const strUrl = safeString(url).trim(); if (!strUrl) return '';
             if (strUrl.includes('drive.google.com')) {
                 const match = strUrl.match(/\/d\/([a-zA-Z0-9_-]+)/) || strUrl.match(/[?&]id=([a-zA-Z0-9_-]+)/);
                 if (match && match[1]) return `https://drive.google.com/uc?id=${match[1]}`;
             }
             return strUrl;
         };
+
+        const getEmbedUrl = (url) => {
+            const str = safeString(url).trim();
+            if (str.includes('youtube.com/watch')) return str.replace('watch?v=', 'embed/');
+            if (str.includes('youtu.be/')) return str.replace('youtu.be/', 'youtube.com/embed/');
+            if (str.includes('drive.google.com/file/d/')) return str.replace('/view', '/preview');
+            return str;
+        };
+
         const tabSchemas = {
             'CORPO CLINICO': ['ID', 'Médico', 'Especialidade', 'Segmento', 'Código UNIMED', 'CRM', 'Cor_Selo', 'Foto_URL'],
             'EXAMES DE IMAGEM': ['ID', 'Categoria', 'Código', 'Nome do Exame', 'Profissionais', 'Idade Permitida', 'Observações', 'Imagem_URL'],
@@ -165,9 +168,10 @@
             'REMOÇÕES': ['ID', 'Nome do Hospital/Clínica', 'Contato', 'Local', 'Informações Importantes', 'Convênios Atendidos', 'Imagem_URL'],
             'INSTITUTOS': ['ID', 'Tabela_Instituto', 'Profissional', 'Especialidade', 'CRM_URA', 'Valores'],
             'NOVIDADES_E_EVENTOS': ['ID', 'Tipo', 'Título', 'Mensagem', 'Data de Publicação', 'Imagem_URL'],
+            'BOLETINS_INFORMATIVOS': ['ID', 'Título', 'Descrição', 'Tipo_Midia', 'Link_Arquivo', 'Data_Publicacao'],
             'CONTROLE_ATENDIMENTOS': ['ID', 'Profissional', 'Convênio', 'Qtd_Atual', 'Limite_Max'],
-            'USUARIOS': ['ID', 'Nome Completo', 'E-mail', 'Senha', 'Nível de Acesso', 'Data de Nascimento', 'Foto_Perfil_URL', 'Status'],
-            'ESCALAS': ['ID', 'Tipo_Profissional', 'Nome_Profissional', 'Data', 'Turno', 'Horario', 'Unidade', 'Setor_Consultorio', 'Status', 'Tipo_Atendimento'],
+            'USUARIOS': ['ID', 'Nome Completo', 'E-mail', 'Senha', 'Nível de Acesso', 'Data de Nascimento', 'Foto_Perfil_URL', 'Status', 'Competências', 'Horários Flexíveis', 'Dias de Trabalho', 'Formato Contratação'],
+            'ESCALAS': ['ID', 'Tipo_Profissional', 'Nome_Profissional', 'Data', 'Turno', 'Horario', 'Unidade', 'Setor_Consultorio', 'Status_Turno', 'Substituindo'],
             'CHAT_MENSAGENS': ['ID', 'Data_Hora', 'Nome', 'Mensagem', 'Destinatario'],
             'LEMBRETES_HORA': ['ID', 'Hora', 'Mensagem'],
             'CONFIGURACOES': ['ID', 'Chave', 'Valor'],
@@ -177,81 +181,51 @@
         const api = {
             fetch: async (colName) => {
                 if(!db) return [];
-                try {
-                    const snap = await db.collection(colName).get();
-                    return snap.docs.map(doc => ({ ID: doc.id, ...doc.data() }));
-                } catch (e) { return []; }
+                try { const snap = await db.collection(colName).get(); return snap.docs.map(doc => ({ ID: doc.id, ...doc.data() })); } catch (e) { return []; }
             },
             fetchAll: async () => {
-                if(!db) return {};
-                let allData = {};
-                for (let c of Object.keys(tabSchemas)) {
-                    try {
-                        const snap = await db.collection(c).get();
-                        allData[c] = snap.docs.map(doc => ({ ID: doc.id, ...doc.data() }));
-                    } catch(e) {}
-                }
+                if(!db) return {}; let allData = {};
+                for (let c of Object.keys(tabSchemas)) { try { const snap = await db.collection(c).get(); allData[c] = snap.docs.map(doc => ({ ID: doc.id, ...doc.data() })); } catch(e) {} }
                 return allData;
             },
             login: async (rawEmail, password) => {
-                if(!isFirebaseConfigured || !auth) return { success: false, message: 'As chaves do Firebase não estão configuradas corretamente na Linha 80 do arquivo.' };
+                if(!isFirebaseConfigured || !auth) return { success: false, message: 'As chaves não estão configuradas.' };
                 try {
                     const email = rawEmail.trim(); 
-                    
                     await auth.signInWithEmailAndPassword(email, password);
                     const userDoc = await db.collection('USUARIOS').where('E-mail', '==', email).get();
                     let userData = { 'E-mail': email, 'Nome Completo': email.split('@')[0], 'Nível de Acesso': 'Admin' };
                     if (!userDoc.empty) {
                         userData = { ID: userDoc.docs[0].id, ...userDoc.docs[0].data() };
-                        if (userData.Status && String(userData.Status).toLowerCase() !== 'ativo') {
-                            await auth.signOut(); return { success: false, message: 'Sua conta de funcionário está inativa no painel.' };
-                        }
+                        if (userData.Status && String(userData.Status).toLowerCase() !== 'ativo') { await auth.signOut(); return { success: false, message: 'Conta inativa.' }; }
                     }
                     return { success: true, user: userData };
-                } catch (error) { 
-                    console.error("Erro de Autenticação:", error);
-                    let msg = "E-mail ou senha incorretos.";
-                    
-                    if (error.code === 'auth/user-not-found') msg = "Este e-mail não existe no Firebase. Lembre-se de criar o usuário na aba 'Authentication' -> 'Users'.";
-                    if (error.code === 'auth/wrong-password') msg = "A senha digitada está incorreta. Verifique se o Caps Lock está ativado.";
-                    if (error.code === 'auth/invalid-email') msg = "O formato do e-mail é inválido. Verifique erros de digitação.";
-                    if (error.code === 'auth/invalid-credential') msg = "E-mail ou Senha incorretos. A senha deve ser exatamente a cadastrada na aba 'Authentication' do Firebase.";
-                    if (error.code === 'auth/operation-not-allowed') msg = "Você não ativou a opção de 'E-mail/Senha' no Firebase (na aba Sign-in method)!";
-                    
-                    return { success: false, message: msg }; 
-                }
+                } catch (error) { return { success: false, message: "E-mail ou senha incorretos." }; }
             },
             saveRecord: async (colName, data, isEdit) => {
                 if(!db) return { success: false };
                 try {
                     let docData = { ...data };
-                    // Limpa espaços vazios apenas nas extremidades (trim), permitindo espaços normais no meio das palavras
                     Object.keys(docData).forEach(k => { if(typeof docData[k] === 'string') docData[k] = docData[k].trim(); });
                     let id = docData.ID; delete docData.ID;
                     Object.keys(docData).forEach(key => docData[key] === undefined && delete docData[key]);
-
-                    if (isEdit && id) await db.collection(colName).doc(id).update(docData);
-                    else await db.collection(colName).add(docData);
+                    if (isEdit && id) await db.collection(colName).doc(id).update(docData); else await db.collection(colName).add(docData);
                     return { success: true };
                 } catch (e) { return { success: false }; }
             },
             deleteRecord: async (colName, id) => {
                 if(!db) return { success: false };
-                try { await db.collection(colName).doc(id).delete(); return { success: true }; } 
-                catch (e) { return { success: false }; }
+                try { await db.collection(colName).doc(id).delete(); return { success: true }; } catch (e) { return { success: false }; }
             }
         };
 
         const ClockWidget = ({ lembretesData }) => {
             const [time, setTime] = useState(new Date());
             useEffect(() => { const timer = setInterval(() => setTime(new Date()), 1000); return () => clearInterval(timer); }, []);
-            
             const hour = time.getHours();
             let periodStr = 'Bom dia'; let icon = 'ph-sun'; let bgClass = 'bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-200';
-            
             if (hour >= 12 && hour < 18) { periodStr = 'Boa tarde'; icon = 'ph-cloud-sun'; bgClass = 'bg-orange-50 border-orange-200 text-orange-800 dark:bg-orange-900/30 dark:border-orange-800 dark:text-orange-200'; }
             else if (hour >= 18 || hour < 6) { periodStr = 'Boa noite'; icon = 'ph-moon-stars'; bgClass = 'bg-indigo-900 border-indigo-700 text-indigo-100 dark:bg-slate-800 dark:border-slate-700 dark:text-indigo-200'; }
-
             const lembretes = Array.isArray(lembretesData) ? lembretesData : [];
             const lembreteAtual = lembretes.find(l => l && typeof l === 'object' && parseInt(safeString(l.Hora) || -1) === hour);
             const msg = lembreteAtual ? safeString(lembreteAtual.Mensagem) : 'Tenha um excelente turno de trabalho!';
@@ -259,13 +233,8 @@
             return (
                 <div className={`p-6 rounded-custom border-2 shadow-sm flex items-center justify-between transition-colors duration-1000 ${bgClass}`}>
                     <div className="flex items-center gap-5">
-                        <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center shadow-inner">
-                            <i className={`ph-fill ${icon} text-4xl animate-spin-slow`}></i>
-                        </div>
-                        <div>
-                            <h2 className="text-4xl font-black tracking-tighter">{time.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit', second:'2-digit'})}</h2>
-                            <p className="text-sm font-bold uppercase tracking-widest opacity-80 mt-1">{periodStr}</p>
-                        </div>
+                        <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center shadow-inner"><i className={`ph-fill ${icon} text-4xl animate-spin-slow`}></i></div>
+                        <div><h2 className="text-4xl font-black tracking-tighter">{time.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit', second:'2-digit'})}</h2><p className="text-sm font-bold uppercase tracking-widest opacity-80 mt-1">{periodStr}</p></div>
                     </div>
                     <div className="hidden md:flex flex-col items-end max-w-xs text-right border-l-2 border-white/20 pl-6">
                         <span className="text-[10px] font-black uppercase tracking-widest opacity-60 mb-1 flex items-center gap-1"><i className="ph-fill ph-bell-ringing animate-pulse"></i> Lembrete da Hora</span>
@@ -286,9 +255,8 @@
                         <div className="p-8 overflow-y-auto flex-1 custom-scrollbar">
                             <form id="gen-form" onSubmit={onSave} className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 {(schema || []).filter(col => safeString(col) !== 'ID').map((col, idx) => {
-                                    const colName = safeString(col);
-                                    const cLower = colName.toLowerCase();
-                                    const isLong = cLower.includes('descrição') || cLower.includes('anotações') || cLower.includes('mensagem') || cLower.includes('preparo') || cLower.includes('url') || cLower.includes('site') || cLower.includes('motivo');
+                                    const colName = safeString(col); const cLower = colName.toLowerCase();
+                                    const isLong = cLower.includes('descrição') || cLower.includes('anotações') || cLower.includes('mensagem') || cLower.includes('preparo') || cLower.includes('url') || cLower.includes('site') || cLower.includes('motivo') || cLower.includes('competências') || cLower.includes('flexíveis');
                                     
                                     return (
                                         <div key={idx} className={isLong ? 'md:col-span-2' : ''}>
@@ -297,6 +265,10 @@
                                             {colName === 'Layout' && title.includes('Aviso') ? (
                                                 <select className="w-full px-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-custom outline-none focus:ring-2 focus:ring-primary font-bold text-gray-800 dark:text-white" value={safeString(formData[colName])} onChange={(e) => setFormData({...formData, [colName]: e.target.value})}>
                                                     <option value="Padrão">Padrão</option><option value="Imagem Grande">Imagem Grande (Banner)</option><option value="Só Texto">Só Texto</option>
+                                                </select>
+                                            ) : colName === 'Tipo_Midia' ? (
+                                                <select className="w-full px-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-custom font-bold text-gray-800 dark:text-white" value={safeString(formData[colName])} onChange={e => setFormData({...formData, [colName]: e.target.value})}>
+                                                    <option value="Documento PDF">Documento (Drive PDF)</option><option value="Vídeo">Vídeo (YouTube/Drive)</option>
                                                 </select>
                                             ) : colName === 'Tipo' && title.includes('Contato') ? (
                                                 <select className="w-full px-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-custom outline-none focus:ring-2 focus:ring-primary font-bold text-gray-800 dark:text-white" value={safeString(formData[colName])} onChange={(e) => setFormData({...formData, [colName]: e.target.value})}>
@@ -315,7 +287,7 @@
                                                     <input type="color" className="w-10 h-10 rounded-xl cursor-pointer border-0 bg-transparent" value={safeString(formData[colName]) || '#1E40AF'} onChange={(e) => setFormData({...formData, [colName]: e.target.value})} />
                                                     <span className="font-mono text-sm font-bold text-gray-500">{safeString(formData[colName]) || 'Cor Padrão'}</span>
                                                 </div>
-                                            ) : isLong && !cLower.includes('url') && !cLower.includes('site') ? (
+                                            ) : isLong && !cLower.includes('url') && !cLower.includes('site') && !cLower.includes('link') ? (
                                                 <textarea className="w-full px-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-custom outline-none focus:ring-2 focus:ring-primary min-h-[120px] font-medium text-gray-800 dark:text-white" value={safeString(formData[colName])} onChange={(e) => setFormData({...formData, [colName]: e.target.value})} placeholder={`Detalhes...`}></textarea>
                                             ) : cLower.includes('data') ? (
                                                 <input type="date" className="w-full px-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-custom outline-none focus:ring-2 focus:ring-primary font-bold text-gray-800 dark:text-white" value={safeString(formData[colName])} onChange={(e) => setFormData({...formData, [colName]: e.target.value})} />
@@ -367,11 +339,7 @@
                             }
                             return (
                                 <div key={i} className={`bg-white dark:bg-slate-800 rounded-custom shadow-lg overflow-hidden relative group border border-gray-100 dark:border-slate-700 card-hover flex flex-col ${layout==='Imagem Grande'?'h-[500px]':'h-[350px]'}`}>
-                                    {item.Imagem_URL ? (
-                                        <div className="absolute inset-0 w-full h-full bg-cover bg-center transition-transform duration-1000 group-hover:scale-105" style={{backgroundImage: `url('${formatImageUrl(item.Imagem_URL)}')`}}></div>
-                                    ) : (
-                                        <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-primary to-blue-800 opacity-90"></div>
-                                    )}
+                                    {item.Imagem_URL ? <div className="absolute inset-0 w-full h-full bg-cover bg-center transition-transform duration-1000 group-hover:scale-105" style={{backgroundImage: `url('${formatImageUrl(item.Imagem_URL)}')`}}></div> : <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-primary to-blue-800 opacity-90"></div>}
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent"></div>
                                     <div className="relative z-10 p-8 mt-auto">
                                         <h3 className="text-4xl font-black text-white leading-tight mb-2 drop-shadow-md">{safeString(item.Título)}</h3>
@@ -391,78 +359,41 @@
         const ConveniosMatrixView = ({ data, canEdit, openModal, handleDelete, schema }) => {
             const safeData = Array.isArray(data) ? data : [];
             const [search, setSearch] = useState('');
-            
             let allKeys = schema && schema.length > 0 ? schema : ['ID', 'Procedimento'];
-            if (safeData.length > 0 && typeof safeData[0] === 'object' && safeData[0] !== null) {
-                const dataKeys = Object.keys(safeData[0]);
-                allKeys = [...new Set([...allKeys, ...dataKeys])];
-            }
-
+            if (safeData.length > 0 && typeof safeData[0] === 'object' && safeData[0] !== null) { const dataKeys = Object.keys(safeData[0]); allKeys = [...new Set([...allKeys, ...dataKeys])]; }
             let procColName = 'Procedimento';
             const specificCol = allKeys.find(k => k !== 'ID' && (safeString(k).toLowerCase().includes('procedimento') || safeString(k).toLowerCase().includes('convênio') || safeString(k).toLowerCase().includes('serviço')));
-            if (specificCol) procColName = specificCol;
-            else procColName = allKeys.find(k => k !== 'ID') || 'Procedimento';
+            if (specificCol) procColName = specificCol; else procColName = allKeys.find(k => k !== 'ID') || 'Procedimento';
 
             const insurances = allKeys.filter(k => k !== 'ID' && k !== procColName);
             const filteredData = safeData.filter(row => row && typeof row === 'object' && safeString(row[procColName]).toLowerCase().includes(search.toLowerCase()));
-
             const headerColors = ['#2563eb', '#0ea5e9', '#0d9488', '#10b981', '#8b5cf6', '#d946ef', '#f43f5e', '#f97316'];
 
             return (
                 <div className="space-y-6 animate-fade-in">
                     <div className="flex justify-between items-center bg-white dark:bg-slate-800 p-5 rounded-custom shadow-sm border border-gray-100 dark:border-slate-700">
-                        <div className="relative w-full sm:w-[400px]">
-                            <i className="ph-bold ph-magnifying-glass absolute left-5 top-4 text-gray-400 text-xl"></i>
-                            <input type="text" placeholder="Buscar Serviço..." value={search} onChange={e=>setSearch(e.target.value)} className="w-full pl-14 pr-6 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-full outline-none focus:ring-2 focus:ring-primary font-bold text-gray-800 dark:text-white" />
-                        </div>
-                        {canEdit && (
-                            <button onClick={() => { let init = {}; init[procColName] = ''; insurances.forEach(ins => init[ins] = ''); openModal(init, allKeys); }} className="bg-primary hover:opacity-90 text-white px-8 py-4 rounded-full font-black shadow-lg transition flex items-center gap-2"><i className="ph-bold ph-plus text-xl"></i> Adicionar Regra</button>
-                        )}
+                        <div className="relative w-full sm:w-[400px]"><i className="ph-bold ph-magnifying-glass absolute left-5 top-4 text-gray-400 text-xl"></i><input type="text" placeholder="Buscar Serviço..." value={search} onChange={e=>setSearch(e.target.value)} className="w-full pl-14 pr-6 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-full outline-none focus:ring-2 focus:ring-primary font-bold text-gray-800 dark:text-white" /></div>
+                        {canEdit && <button onClick={() => { let init = {}; init[procColName] = ''; insurances.forEach(ins => init[ins] = ''); openModal(init, allKeys); }} className="bg-primary hover:opacity-90 text-white px-8 py-4 rounded-full font-black shadow-lg transition flex items-center gap-2"><i className="ph-bold ph-plus text-xl"></i> Adicionar Regra</button>}
                     </div>
-
                     <div className="bg-transparent relative overflow-hidden">
                         <div className="overflow-x-auto custom-scrollbar pb-20 pt-4 px-2">
                             <table className="matrix-table min-w-[1000px]">
-                                <thead>
-                                    <tr>
-                                        <th>{safeString(procColName)}</th>
-                                        {insurances.map((ins, i) => <th key={`head-${i}`} style={{ backgroundColor: headerColors[i % headerColors.length] }}>{safeString(ins)}</th>)}
-                                        {canEdit && <th style={{ backgroundColor: '#334155' }}>Ações</th>}
-                                    </tr>
-                                </thead>
+                                <thead><tr><th>{safeString(procColName)}</th>{insurances.map((ins, i) => <th key={`head-${i}`} style={{ backgroundColor: headerColors[i % headerColors.length] }}>{safeString(ins)}</th>)}{canEdit && <th style={{ backgroundColor: '#334155' }}>Ações</th>}</tr></thead>
                                 <tbody>
-                                    {filteredData.length === 0 ? (
-                                        <tr><td colSpan="100%" className="p-16 text-center text-gray-400 font-black text-xl bg-white dark:bg-slate-800 rounded-2xl shadow-sm">Matriz Vazia.</td></tr>
-                                    ) : (
+                                    {filteredData.length === 0 ? <tr><td colSpan="100%" className="p-16 text-center text-gray-400 font-black text-xl bg-white dark:bg-slate-800 rounded-2xl shadow-sm">Matriz Vazia.</td></tr> : (
                                         filteredData.map((row, rowIndex) => (
                                             <tr key={`row-${rowIndex}`} className="matrix-row group">
                                                 <td>{safeString(row[procColName]) || '-'}</td>
                                                 {insurances.map((ins, i) => {
                                                     const val = safeString(row[ins]); const valLower = val.toLowerCase();
-                                                    const isNo = valLower === 'x' || valLower === 'não' || valLower === 'nao' || valLower === 'n';
-                                                    const isEmpty = val === '' || val === '-';
+                                                    const isNo = valLower === 'x' || valLower === 'não' || valLower === 'nao' || valLower === 'n'; const isEmpty = val === '' || val === '-';
                                                     return (
                                                         <td key={`cell-${rowIndex}-${i}`}>
-                                                            {isNo ? <div className="mx-auto w-8 h-8 flex items-center justify-center rounded-full bg-red-100 text-red-600 shadow-inner" title="Não Cobre"><i className="ph-bold ph-x text-lg"></i></div>
-                                                            : isEmpty ? <span className="text-gray-300 dark:text-slate-600 font-bold">-</span>
-                                                            : <div className="flex flex-col items-center justify-center gap-1 group/tooltip relative cursor-help">
-                                                                <div className="w-8 h-8 flex items-center justify-center rounded-full bg-green-100 text-green-600 shadow-inner"><i className="ph-bold ph-check text-lg"></i></div>
-                                                                <span className="text-[9px] font-bold text-gray-500 bg-gray-100 dark:bg-slate-700 px-2 py-0.5 rounded uppercase max-w-[100px] truncate">{val}</span>
-                                                                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-max max-w-[200px] bg-slate-900 text-white text-xs font-bold p-3 rounded-lg shadow-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible z-50 whitespace-normal text-left transition-all border border-slate-700">
-                                                                    <span className="block text-[10px] text-gray-400 mb-1 uppercase tracking-widest">{safeString(ins)}</span>{val}
-                                                                </div>
-                                                            </div>}
+                                                            {isNo ? <div className="mx-auto w-8 h-8 flex items-center justify-center rounded-full bg-red-100 text-red-600 shadow-inner" title="Não Cobre"><i className="ph-bold ph-x text-lg"></i></div> : isEmpty ? <span className="text-gray-300 dark:text-slate-600 font-bold">-</span> : <div className="flex flex-col items-center justify-center gap-1 group/tooltip relative cursor-help"><div className="w-8 h-8 flex items-center justify-center rounded-full bg-green-100 text-green-600 shadow-inner"><i className="ph-bold ph-check text-lg"></i></div><span className="text-[9px] font-bold text-gray-500 bg-gray-100 dark:bg-slate-700 px-2 py-0.5 rounded uppercase max-w-[100px] truncate">{val}</span><div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-max max-w-[200px] bg-slate-900 text-white text-xs font-bold p-3 rounded-lg shadow-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible z-50 whitespace-normal text-left transition-all border border-slate-700"><span className="block text-[10px] text-gray-400 mb-1 uppercase tracking-widest">{safeString(ins)}</span>{val}</div></div>}
                                                         </td>
                                                     );
                                                 })}
-                                                {canEdit && (
-                                                    <td className="border-l border-gray-100 dark:border-slate-700">
-                                                        <div className="flex justify-center gap-2 opacity-30 group-hover:opacity-100 transition-opacity">
-                                                            <button onClick={()=>openModal(row, allKeys)} className="w-8 h-8 flex items-center justify-center bg-blue-50 dark:bg-blue-900/30 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition shadow-sm"><i className="ph-bold ph-pencil-simple"></i></button>
-                                                            <button onClick={()=>{if(confirm('Excluir?')) handleDelete(row.ID)}} className="w-8 h-8 flex items-center justify-center bg-red-50 dark:bg-red-900/30 text-red-600 rounded-lg hover:bg-red-600 hover:text-white transition shadow-sm"><i className="ph-bold ph-trash"></i></button>
-                                                        </div>
-                                                    </td>
-                                                )}
+                                                {canEdit && <td className="border-l border-gray-100 dark:border-slate-700"><div className="flex justify-center gap-2 opacity-30 group-hover:opacity-100 transition-opacity"><button onClick={()=>openModal(row, allKeys)} className="w-8 h-8 flex items-center justify-center bg-blue-50 dark:bg-blue-900/30 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition shadow-sm"><i className="ph-bold ph-pencil-simple"></i></button><button onClick={()=>{if(confirm('Excluir?')) handleDelete(row.ID)}} className="w-8 h-8 flex items-center justify-center bg-red-50 dark:bg-red-900/30 text-red-600 rounded-lg hover:bg-red-600 hover:text-white transition shadow-sm"><i className="ph-bold ph-trash"></i></button></div></td>}
                                             </tr>
                                         ))
                                     )}
@@ -536,7 +467,6 @@
                                 <h3 className="font-black text-xl text-gray-900 dark:text-white mb-1">{safeString(item.Nome_Contato) || 'Sem Nome'}</h3>
                                 <p className={`text-xl font-black mt-3 p-3 rounded-xl ${activeTab==='Ramal'?'bg-blue-50 text-blue-700':activeTab==='Email'?'bg-orange-50 text-orange-700':'bg-green-50 text-green-700'}`}>{safeString(item.Valor_Contato)}</p>
                                 {item.Anotacoes && <p className="text-xs font-medium text-gray-500 mt-4 leading-tight">{safeString(item.Anotacoes)}</p>}
-                                
                                 {canEdit && (
                                     <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition">
                                         <button onClick={()=>openModal(item, schema)} className="p-2 text-blue-600 bg-white shadow rounded-lg hover:bg-blue-600 hover:text-white"><i className="ph-bold ph-pencil-simple"></i></button>
@@ -554,11 +484,9 @@
         const ChatModerno = ({ chatData, user, onSaveChat, onRefresh }) => {
             const [msg, setMsg] = useState('');
             const [activeRoom, setActiveRoom] = useState('Geral'); 
-            
             const isAdmin = user && ['admin', 'supervisor'].some(r => safeString(user['Nível de Acesso']).toLowerCase().includes(r));
             const myName = safeString(user['Nome Completo']);
             const chatLog = Array.isArray(chatData) ? chatData : [];
-            
             const isGeral = activeRoom === 'Geral';
             const mensagensRoom = chatLog.filter(m => {
                 if(isGeral) return m.Destinatario === 'Geral';
@@ -576,16 +504,10 @@
             return (
                 <div className="bg-white dark:bg-slate-800 rounded-[3rem] shadow-xl border border-gray-100 dark:border-slate-700 h-[80vh] flex overflow-hidden animate-fade-in">
                     <div className="w-1/3 border-r border-gray-100 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-900/50 flex flex-col">
-                        <div className="p-6 border-b border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800">
-                            <h2 className="text-2xl font-black flex items-center gap-3"><i className="ph-fill ph-chats-circle text-primary"></i> Comunicação</h2>
-                        </div>
+                        <div className="p-6 border-b border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800"><h2 className="text-2xl font-black flex items-center gap-3"><i className="ph-fill ph-chats-circle text-primary"></i> Comunicação</h2></div>
                         <div className="p-4 space-y-2 overflow-y-auto">
-                            <div onClick={()=>setActiveRoom('Geral')} className={`p-4 rounded-2xl cursor-pointer font-bold flex items-center gap-3 transition ${activeRoom==='Geral'?'bg-primary text-white shadow-md':'hover:bg-gray-100 dark:hover:bg-slate-800'}`}>
-                                <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center"><i className="ph-fill ph-users text-xl"></i></div> Fórum da Equipe
-                            </div>
-                            <div onClick={()=>setActiveRoom(isAdmin?'Caixa de Entrada':'Supervisão')} className={`p-4 rounded-2xl cursor-pointer font-bold flex items-center justify-between transition ${activeRoom!=='Geral'?'bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-md':'hover:bg-gray-100 dark:hover:bg-slate-800'}`}>
-                                <div className="flex items-center gap-3"><div className="w-10 h-10 rounded-full bg-white/20 dark:bg-black/10 flex items-center justify-center"><i className="ph-fill ph-shield-star text-xl"></i></div> {isAdmin?'Caixa de Entrada':'Falar c/ Supervisão'}</div>
-                            </div>
+                            <div onClick={()=>setActiveRoom('Geral')} className={`p-4 rounded-2xl cursor-pointer font-bold flex items-center gap-3 transition ${activeRoom==='Geral'?'bg-primary text-white shadow-md':'hover:bg-gray-100 dark:hover:bg-slate-800'}`}><div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center"><i className="ph-fill ph-users text-xl"></i></div> Fórum da Equipe</div>
+                            <div onClick={()=>setActiveRoom(isAdmin?'Caixa de Entrada':'Supervisão')} className={`p-4 rounded-2xl cursor-pointer font-bold flex items-center justify-between transition ${activeRoom!=='Geral'?'bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-md':'hover:bg-gray-100 dark:hover:bg-slate-800'}`}><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-full bg-white/20 dark:bg-black/10 flex items-center justify-center"><i className="ph-fill ph-shield-star text-xl"></i></div> {isAdmin?'Caixa de Entrada':'Falar c/ Supervisão'}</div></div>
                         </div>
                     </div>
                     <div className="w-2/3 flex flex-col bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-gray-50 dark:bg-slate-900">
@@ -600,9 +522,7 @@
                                 return (
                                     <div key={i} className={`flex flex-col gap-1 max-w-[80%] ${isMe ? 'self-end items-end' : 'self-start items-start'} animate-fade-in`}>
                                         <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mx-2">{safeString(m.Nome)}</span>
-                                        <div className={`p-5 rounded-2xl shadow-md text-sm font-medium ${isMe ? 'bg-primary text-white rounded-br-none' : 'bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-bl-none'}`}>
-                                            {safeString(m.Mensagem)}
-                                        </div>
+                                        <div className={`p-5 rounded-2xl shadow-md text-sm font-medium ${isMe ? 'bg-primary text-white rounded-br-none' : 'bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-bl-none'}`}>{safeString(m.Mensagem)}</div>
                                     </div>
                                 )
                             })}
@@ -616,12 +536,68 @@
             )
         };
 
+        const BoletinsView = ({ data, canEdit, openModal, handleDelete }) => {
+            const [selectedMedia, setSelectedMedia] = useState(null);
+            const ativos = Array.isArray(data) ? data : [];
+
+            return (
+                <div className="space-y-6 animate-fade-in">
+                    <div className="flex justify-between items-center bg-white dark:bg-slate-800 p-5 rounded-custom shadow-sm border border-gray-100 dark:border-slate-700">
+                        <div>
+                            <h2 className="text-2xl font-black text-gray-800 dark:text-white flex items-center gap-3"><i className="ph-fill ph-newspaper text-primary"></i> Boletins e Treinamentos</h2>
+                            <p className="text-sm text-gray-500 font-medium ml-9 mt-1">Materiais educativos e comunicados em mídia para a equipe.</p>
+                        </div>
+                        {canEdit && <button onClick={()=>openModal({Tipo_Midia: 'Documento PDF'})} className="bg-primary text-white px-8 py-4 rounded-full font-black shadow-lg hover:-translate-y-1 transition flex items-center gap-2"><i className="ph-bold ph-plus text-xl"></i> Nova Mídia</button>}
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {ativos.map((item, i) => (
+                            <div key={i} className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-[2rem] p-6 shadow-sm card-hover flex flex-col relative group">
+                                <div className="flex items-start justify-between mb-4">
+                                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-3xl shadow-sm ${safeString(item.Tipo_Midia).includes('Vídeo') ? 'bg-red-50 text-red-600 dark:bg-red-900/30' : 'bg-blue-50 text-blue-600 dark:bg-blue-900/30'}`}>
+                                        <i className={`ph-fill ${safeString(item.Tipo_Midia).includes('Vídeo') ? 'ph-play-circle' : 'ph-file-pdf'}`}></i>
+                                    </div>
+                                    <span className="text-xs font-black text-gray-400 bg-gray-50 dark:bg-slate-900 px-3 py-1 rounded-full border dark:border-slate-700">{safeString(item.Data_Publicacao).split('-').reverse().join('/')}</span>
+                                </div>
+                                <h3 className="font-black text-xl text-gray-900 dark:text-white leading-tight mb-2">{safeString(item.Título)}</h3>
+                                <p className="text-sm text-gray-500 font-medium line-clamp-2 mb-6">{safeString(item.Descrição)}</p>
+                                
+                                <button onClick={()=>setSelectedMedia(item)} className="mt-auto w-full py-3 bg-gray-50 dark:bg-slate-900 hover:bg-primary dark:hover:bg-primary hover:text-white rounded-xl font-black transition flex items-center justify-center gap-2 text-gray-700 dark:text-white border dark:border-slate-700">
+                                    Visualizar <i className="ph-bold ph-arrow-right"></i>
+                                </button>
+
+                                {canEdit && (
+                                    <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition">
+                                        <button onClick={()=>openModal(item)} className="p-2 bg-white dark:bg-slate-700 shadow rounded-lg hover:text-blue-600"><i className="ph-bold ph-pencil-simple"></i></button>
+                                        <button onClick={()=>{if(confirm('Excluir?')) handleDelete(item.ID)}} className="p-2 bg-white dark:bg-slate-700 shadow rounded-lg hover:text-red-600"><i className="ph-bold ph-trash"></i></button>
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+
+                    {selectedMedia && (
+                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 glass-modal" onClick={()=>setSelectedMedia(null)}>
+                            <div className="bg-white dark:bg-slate-800 rounded-[2rem] w-full max-w-5xl shadow-2xl relative overflow-hidden border dark:border-slate-700" onClick={e=>e.stopPropagation()}>
+                                <div className="p-6 bg-gray-900 text-white flex justify-between items-center"><h3 className="text-xl font-black">{safeString(selectedMedia.Título)}</h3><button onClick={()=>setSelectedMedia(null)} className="w-10 h-10 bg-white/20 hover:bg-red-500 rounded-full flex justify-center items-center transition"><i className="ph-bold ph-x"></i></button></div>
+                                <div className="bg-gray-100 dark:bg-slate-900 h-[70vh] w-full relative">
+                                    {selectedMedia.Link_Arquivo ? (
+                                        <iframe src={getEmbedUrl(selectedMedia.Link_Arquivo)} className="w-full h-full border-0" allow="autoplay; encrypted-media" allowFullScreen></iframe>
+                                    ) : <div className="flex items-center justify-center h-full text-gray-400 font-black">Link indisponível ou não suportado.</div>}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )
+        };
+
         const MapaSalasView = ({ escalas }) => {
             const safeEscalas = Array.isArray(escalas) ? escalas : [];
             const todayStr = new Date().toLocaleDateString('pt-BR');
             const todayEscalas = safeEscalas.filter(e => {
                 if(!e || typeof e !== 'object') return false;
-                const escDate = safeString(e.Data); const escTipo = safeString(e.Tipo_Profissional).toLowerCase(); const escStatus = safeString(e.Status).toLowerCase();
+                const escDate = safeString(e.Data); const escTipo = safeString(e.Tipo_Profissional).toLowerCase(); const escStatus = safeString(e.Status_Turno).toLowerCase();
                 return (escDate.includes(todayStr) || escDate.includes(todayStr.substring(0,5))) && escTipo.includes('médico') && escStatus.includes('trabalhando');
             });
             const board = {};
@@ -658,7 +634,7 @@
         };
 
         const EscalasContainer = ({ sheetData, user, onRefresh, showToast }) => {
-            const [activeSubTab, setActiveSubTab] = useState('Médicos');
+            const [activeSubTab, setActiveSubTab] = useState('Painel Hoje');
             const [isModalOpen, setIsModalOpen] = useState(false);
             const [formData, setFormData] = useState({});
             const [loadingAction, setLoadingAction] = useState(false);
@@ -666,24 +642,29 @@
             const [selectedDate, setSelectedDate] = useState(null); 
             const [selectedPerson, setSelectedPerson] = useState(null); 
             const [datesToSave, setDatesToSave] = useState([]); 
+            const [showSwapSugg, setShowSwapSugg] = useState(false);
 
             const nivelKey = user && typeof user === 'object' ? Object.keys(user).find(k => safeString(k).toLowerCase().includes('acesso')) : null;
             const canEdit = nivelKey && ['admin', 'supervisor'].some(role => safeString(user[nivelKey]).toLowerCase().includes(role));
+            
             const escalas = Array.isArray(sheetData['ESCALAS']) ? sheetData['ESCALAS'] : [];
             const corpoClinico = Array.isArray(sheetData['CORPO CLINICO']) ? sheetData['CORPO CLINICO'] : [];
             const usuarios = Array.isArray(sheetData['USUARIOS']) ? sheetData['USUARIOS'] : [];
             
+            const todayStr = new Date().toLocaleDateString('pt-BR');
+            const todayEscalas = escalas.filter(e => safeString(e.Data).includes(todayStr) || safeString(e.Data).includes(todayStr.substring(0,5)));
+
             const filteredEscalas = escalas.filter(esc => {
                 if(!esc || typeof esc !== 'object') return false;
                 const tipo = safeString(esc.Tipo_Profissional).toLowerCase();
-                if (activeSubTab === 'Médicos') return tipo.includes('médico') || tipo.includes('medico') || tipo === '';
+                if (activeSubTab === 'Lista Médicos' || activeSubTab === 'Mapa') return tipo.includes('médico') || tipo.includes('medico') || tipo === '';
                 else return tipo.includes('colaborador') || tipo.includes('equipe') || tipo.includes('enfermagem');
             });
 
             const daysInMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate();
             const firstDayOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1).getDay();
 
-            const handleSave = async (e) => {
+            const handleSaveBatch = async (e) => {
                 e.preventDefault(); if(datesToSave.length === 0) return showToast('Selecione uma data.', 'error');
                 setLoadingAction(true); let err = false;
                 for (let d of datesToSave) {
@@ -694,18 +675,83 @@
                 setLoadingAction(false); if(!err) { setIsModalOpen(false); onRefresh('ESCALAS'); showToast('Salvo!'); }
             };
 
+            const findSubstitutes = (missingPersonName) => {
+                const missingUser = usuarios.find(u => safeString(u['Nome Completo']) === missingPersonName);
+                if(!missingUser || !missingUser['Competências']) return [];
+                const requiredSkills = safeString(missingUser['Competências']).toLowerCase().split(',').map(s=>s.trim()).filter(s=>s);
+                return usuarios.filter(u => {
+                    if (safeString(u['Nome Completo']) === missingPersonName) return false;
+                    const uSkills = safeString(u['Competências']).toLowerCase();
+                    const hasSkill = requiredSkills.some(rs => uSkills.includes(rs));
+                    const isWorkingToday = todayEscalas.some(e => safeString(e.Nome_Profissional) === safeString(u['Nome Completo']));
+                    return hasSkill && !isWorkingToday;
+                });
+            };
+
+            const handleStatusChange = async (esc, novoStatus) => {
+                await api.saveRecord('ESCALAS', { ...esc, Status_Turno: novoStatus }, true);
+                onRefresh('ESCALAS');
+            };
+
+            const PainelDoDia = () => {
+                const setores = {};
+                todayEscalas.forEach(e => {
+                    const s = safeString(e.Setor_Consultorio) || 'Sem Setor Informado';
+                    if(!setores[s]) setores[s] = []; setores[s].push(e);
+                });
+
+                return (
+                    <div className="bg-white dark:bg-slate-800 rounded-[3rem] p-8 border border-gray-100 dark:border-slate-700 min-h-[60vh]">
+                        <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+                            <h3 className="text-3xl font-black text-gray-800 dark:text-white flex items-center gap-3"><i className="ph-fill ph-kanban text-primary"></i> Operação de Hoje</h3>
+                            <div className="flex gap-4 text-xs font-bold uppercase tracking-widest bg-gray-50 dark:bg-slate-900 p-3 rounded-full border dark:border-slate-700">
+                                <span className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-green-500"></div> Trabalhando</span>
+                                <span className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-orange-500"></div> Intervalo</span>
+                                <span className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-red-500"></div> Ausente</span>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                            {Object.keys(setores).map(setor => (
+                                <div key={setor} className="bg-gray-50 dark:bg-slate-900 rounded-[2rem] p-5 shadow-inner border border-gray-100 dark:border-slate-700 flex flex-col">
+                                    <h4 className="font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest text-xs mb-4 px-2">{setor}</h4>
+                                    <div className="space-y-3">
+                                        {setores[setor].map((esc, i) => {
+                                            const status = safeString(esc.Status_Turno) || 'Trabalhando';
+                                            const isIntervalo = status === 'Intervalo';
+                                            const isAusente = status === 'Folga' || status === 'Falta';
+                                            let bgCard = isIntervalo ? 'bg-orange-50 dark:bg-orange-900/30 border-orange-200' : isAusente ? 'bg-red-50 dark:bg-red-900/30 border-red-200 opacity-60' : 'bg-white dark:bg-slate-800 border-gray-100 dark:border-slate-600';
+                                            
+                                            return (
+                                                <div key={i} onClick={()=>canEdit && setSelectedPerson(esc)} className={`p-4 rounded-2xl border-2 shadow-sm cursor-pointer hover:shadow-md hover:border-primary transition relative ${bgCard}`}>
+                                                    {isIntervalo && <div className="absolute -top-3 -right-3 w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center text-lg animate-bounce-slight shadow-lg border-2 border-white dark:border-slate-800">🥪</div>}
+                                                    <div className="flex justify-between items-start mb-2"><span className="font-black text-gray-900 dark:text-white truncate pr-2">{safeString(esc.Nome_Profissional)}</span></div>
+                                                    <p className="text-xs font-bold text-gray-500 dark:text-slate-400">{safeString(esc.Horario)}</p>
+                                                    {esc.Substituindo && <p className="text-[10px] font-black text-primary bg-blue-50 dark:bg-blue-900/50 px-2 py-1 rounded mt-2 uppercase inline-block">Cobrindo: {esc.Substituindo}</p>}
+                                                </div>
+                                            )
+                                        })}
+                                    </div>
+                                </div>
+                            ))}
+                            {Object.keys(setores).length === 0 && <div className="col-span-full text-center p-20 text-gray-400 font-black text-2xl border-2 border-dashed border-gray-200 dark:border-slate-700 rounded-3xl">Ninguém escalado hoje.</div>}
+                        </div>
+                    </div>
+                )
+            };
+
             return (
                 <div className="space-y-8 animate-fade-in">
                     <div className="bg-white dark:bg-slate-800 rounded-custom p-4 shadow-sm border border-gray-100 dark:border-slate-700 flex justify-between items-center gap-4">
                         <div className="flex bg-gray-50 dark:bg-slate-900 p-2 rounded-2xl gap-2 w-full md:w-auto overflow-x-auto hide-scroll">
-                            <button onClick={() => setActiveSubTab('Médicos')} className={`px-6 py-3.5 rounded-xl font-black transition-all ${activeSubTab === 'Médicos' ? 'bg-white dark:bg-slate-800 text-primary shadow-md' : 'text-gray-500 hover:bg-gray-200 dark:hover:bg-slate-800'}`}>Lista Médicos</button>
-                            <button onClick={() => setActiveSubTab('Colaboradores')} className={`px-6 py-3.5 rounded-xl font-black transition-all ${activeSubTab === 'Colaboradores' ? 'bg-white dark:bg-slate-800 text-secondary shadow-md' : 'text-gray-500 hover:bg-gray-200 dark:hover:bg-slate-800'}`}>Lista Equipe</button>
-                            <button onClick={() => setActiveSubTab('Mapa')} className={`px-6 py-3.5 rounded-xl font-black transition-all ${activeSubTab === 'Mapa' ? 'bg-gray-900 text-white shadow-md' : 'text-gray-500 hover:bg-gray-200 dark:hover:bg-slate-800'}`}>Mapa de Salas</button>
+                            {['Painel Hoje', 'Lista Médicos', 'Lista Equipe', 'Mapa'].map(tab => (
+                                <button key={tab} onClick={() => setActiveSubTab(tab)} className={`px-6 py-3.5 rounded-xl font-black transition-all whitespace-nowrap ${activeSubTab === tab ? 'bg-white dark:bg-slate-800 text-primary shadow-md' : 'text-gray-500 hover:bg-gray-200 dark:hover:bg-slate-800'}`}>{tab}</button>
+                            ))}
                         </div>
-                        {canEdit && activeSubTab !== 'Mapa' && <button onClick={() => { setFormData({ ID: '', Tipo_Profissional: activeSubTab === 'Médicos' ? 'Médico' : 'Colaborador', Nome_Profissional: '', Turno: 'Manhã', Horario: '', Unidade: '', Setor_Consultorio: '', Status: 'Trabalhando', Tipo_Atendimento: '-' }); setDatesToSave([]); setIsModalOpen(true); }} className="bg-primary text-white font-black px-8 py-4 rounded-custom shadow-lg hover:-translate-y-1 transition"><i className="ph-bold ph-calendar-plus"></i> Lançar</button>}
+                        {canEdit && activeSubTab !== 'Mapa' && <button onClick={() => { setFormData({ ID: '', Tipo_Profissional: activeSubTab === 'Lista Médicos' ? 'Médico' : 'Colaborador', Nome_Profissional: '', Turno: 'Manhã', Horario: '', Unidade: '', Setor_Consultorio: '', Status_Turno: 'Trabalhando', Substituindo: '' }); setDatesToSave([]); setIsModalOpen(true); }} className="bg-primary text-white font-black px-8 py-4 rounded-custom shadow-lg hover:-translate-y-1 transition shrink-0"><i className="ph-bold ph-calendar-plus"></i> Lançar</button>}
                     </div>
 
-                    {activeSubTab === 'Mapa' ? <MapaSalasView escalas={escalas} /> : (
+                    {activeSubTab === 'Painel Hoje' ? <PainelDoDia /> : activeSubTab === 'Mapa' ? <MapaSalasView escalas={escalas} /> : (
                         <div className="bg-white dark:bg-slate-800 rounded-[3rem] shadow-sm border border-gray-100 dark:border-slate-700 p-8 relative overflow-hidden">
                             <div className="flex justify-between items-center mb-10">
                                 <button onClick={()=>setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth()-1, 1))} className="w-14 h-14 bg-gray-50 dark:bg-slate-900 rounded-2xl"><i className="ph-bold ph-caret-left"></i></button>
@@ -716,14 +762,13 @@
                             <div className="grid grid-cols-7 gap-4 relative z-10">
                                 {Array(firstDayOfMonth).fill(null).map((_, i) => <div key={`e-${i}`} className="aspect-square opacity-20 bg-gray-50 dark:bg-slate-900 rounded-3xl" />)}
                                 {Array(daysInMonth).fill(null).map((_, i) => {
-                                    const day = i + 1;
-                                    const dateStrCompleto = `${String(day).padStart(2, '0')}/${String(currentMonth.getMonth() + 1).padStart(2, '0')}/${currentMonth.getFullYear()}`;
+                                    const day = i + 1; const dateStrCompleto = `${String(day).padStart(2, '0')}/${String(currentMonth.getMonth() + 1).padStart(2, '0')}/${currentMonth.getFullYear()}`;
                                     const pessoasNoDia = filteredEscalas.filter(e => safeString(e.Data).includes(dateStrCompleto) || safeString(e.Data).includes(`${String(day).padStart(2, '0')}/${String(currentMonth.getMonth() + 1).padStart(2, '0')}/${String(currentMonth.getFullYear()).slice(2)}`));
-                                    const isToday = dateStrCompleto === new Date().toLocaleDateString('pt-BR');
+                                    const isToday = dateStrCompleto === todayStr;
                                     return (
                                         <div key={day} onClick={() => setSelectedDate(dateStrCompleto)} className={`aspect-square rounded-[2rem] border-2 p-4 flex flex-col cursor-pointer transition-all ${isToday ? 'border-primary bg-blue-50/50 dark:bg-blue-900/20 shadow-md' : 'border-gray-100 dark:border-slate-700 hover:border-primary/50 bg-white dark:bg-slate-800'}`}>
                                             <span className={`text-2xl font-black ${isToday ? 'text-primary' : 'text-gray-900 dark:text-white'}`}>{day}</span>
-                                            <div className="mt-auto w-full space-y-1.5">{pessoasNoDia.length > 0 && <div className={`w-full text-center text-xs font-black py-2 rounded-xl shadow-sm ${activeSubTab==='Médicos' ? 'bg-primary text-white' : 'bg-secondary text-white'}`}>{pessoasNoDia.length} Plantão</div>}</div>
+                                            <div className="mt-auto w-full space-y-1.5">{pessoasNoDia.length > 0 && <div className={`w-full text-center text-xs font-black py-2 rounded-xl shadow-sm ${activeSubTab==='Lista Médicos' ? 'bg-primary text-white' : 'bg-secondary text-white'}`}>{pessoasNoDia.length} Plantão</div>}</div>
                                         </div>
                                     )
                                 })}
@@ -731,6 +776,7 @@
                         </div>
                     )}
                     
+                    {/* Popups de Edição/Visualização do Calendário (Mês) */}
                     {selectedDate && !selectedPerson && (
                         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 glass-modal" onClick={() => setSelectedDate(null)}>
                             <div className="bg-white dark:bg-slate-800 rounded-[3rem] w-full max-w-5xl p-10 shadow-2xl animate-pop-in relative border border-gray-100 dark:border-slate-700" onClick={e => e.stopPropagation()}>
@@ -738,10 +784,10 @@
                                 <h3 className="text-4xl font-black mb-10 flex items-center gap-4 text-gray-900 dark:text-white">Plantão dia {selectedDate}</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-h-[60vh] overflow-y-auto hide-scroll pb-4">
                                     {filteredEscalas.filter(e => safeString(e.Data).includes(selectedDate) || safeString(e.Data).includes(selectedDate.substring(0,6) + selectedDate.substring(8,10))).map((esc, i) => (
-                                        <div key={i} onClick={() => setSelectedPerson(safeString(esc.Nome_Profissional))} className="bg-white dark:bg-slate-900 border-2 border-gray-100 dark:border-slate-700 rounded-3xl p-6 cursor-pointer card-hover hover:border-primary flex flex-col">
+                                        <div key={i} onClick={() => setSelectedPerson(esc)} className="bg-white dark:bg-slate-900 border-2 border-gray-100 dark:border-slate-700 rounded-3xl p-6 cursor-pointer card-hover hover:border-primary flex flex-col">
                                             <h4 className="font-black text-xl mb-3 text-gray-900 dark:text-white">{safeString(esc.Nome_Profissional)}</h4>
                                             <p className="text-sm font-black bg-gray-50 dark:bg-slate-800 px-3 py-1.5 rounded-xl mb-4 text-gray-600 dark:text-slate-300">{safeString(esc.Turno)} • {safeString(esc.Horario)}</p>
-                                            <div className="mt-auto flex justify-between"><span className="text-[10px] font-black uppercase px-4 py-1.5 rounded-full bg-green-100 text-green-800">{safeString(esc.Status)}</span><span className="text-primary text-xs font-black">Ver Mês</span></div>
+                                            <div className="mt-auto flex justify-between"><span className="text-[10px] font-black uppercase px-4 py-1.5 rounded-full bg-green-100 text-green-800">{safeString(esc.Status_Turno)||'Ativo'}</span><span className="text-primary text-xs font-black">Ações</span></div>
                                         </div>
                                     ))}
                                     {filteredEscalas.filter(e => safeString(e.Data).includes(selectedDate)).length === 0 && <div className="col-span-full text-center text-gray-400 font-black text-2xl p-12">Ninguém escalado.</div>}
@@ -750,23 +796,51 @@
                         </div>
                     )}
                     
-                    {selectedPerson && (
-                        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 backdrop-blur-xl bg-gray-900/60 animate-fade-in" onClick={() => setSelectedPerson(null)}>
-                            <div className="bg-white dark:bg-slate-800 rounded-[3rem] w-full max-w-5xl p-10 shadow-2xl animate-pop-in relative border border-white dark:border-slate-700" onClick={e => e.stopPropagation()}>
-                                <button onClick={()=>setSelectedPerson(null)} className="absolute top-8 right-8 w-12 h-12 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 rounded-full"><i className="ph-bold ph-x"></i></button>
-                                <div className="flex items-center gap-6 mb-10 border-b border-gray-100 dark:border-slate-700 pb-8">
-                                    <div className="w-20 h-20 rounded-[2rem] bg-gradient-to-br from-primary to-blue-500 text-white flex items-center justify-center text-4xl font-black">{safeString(selectedPerson || 'U').charAt(0)}</div>
-                                    <div><h2 className="text-4xl font-black text-gray-900 dark:text-white">{selectedPerson}</h2><p className="text-primary font-black uppercase text-sm mt-2">Agenda Mensal</p></div>
+                    {/* Popup de Edição Específica / Kanban / Substituição */}
+                    {selectedPerson && canEdit && (
+                        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 backdrop-blur-xl bg-gray-900/60 animate-fade-in" onClick={() => {setSelectedPerson(null); setShowSwapSugg(false)}}>
+                            <div className="bg-white dark:bg-slate-800 rounded-[3rem] w-full max-w-lg p-8 shadow-2xl relative border border-white dark:border-slate-700" onClick={e => e.stopPropagation()}>
+                                <button onClick={()=>{setSelectedPerson(null); setShowSwapSugg(false)}} className="absolute top-6 right-6 w-10 h-10 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 rounded-full flex justify-center items-center"><i className="ph-bold ph-x"></i></button>
+                                
+                                <h2 className="text-2xl font-black mb-1 text-gray-900 dark:text-white">{safeString(selectedPerson.Nome_Profissional)}</h2>
+                                <p className="text-sm font-bold text-gray-400 mb-8">{safeString(selectedPerson.Setor_Consultorio)} • {safeString(selectedPerson.Horario)}</p>
+
+                                <div className="space-y-4 mb-8">
+                                    <h4 className="text-xs font-black uppercase text-gray-400 tracking-widest">Alterar Status</h4>
+                                    <div className="grid grid-cols-3 gap-3">
+                                        <button onClick={()=>{handleStatusChange(selectedPerson, 'Trabalhando'); setSelectedPerson(null);}} className="p-4 rounded-xl border-2 hover:border-green-500 bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 font-black flex flex-col items-center gap-2 transition"><i className="ph-fill ph-check-circle text-2xl"></i> Ativo</button>
+                                        <button onClick={()=>{handleStatusChange(selectedPerson, 'Intervalo'); setSelectedPerson(null);}} className="p-4 rounded-xl border-2 hover:border-orange-500 bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800 text-orange-700 dark:text-orange-400 font-black flex flex-col items-center gap-2 transition"><i className="ph-fill ph-coffee text-2xl"></i> Lanche</button>
+                                        <button onClick={()=>{handleStatusChange(selectedPerson, 'Folga'); setSelectedPerson(null);}} className="p-4 rounded-xl border-2 hover:border-red-500 bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 font-black flex flex-col items-center gap-2 transition"><i className="ph-fill ph-x-circle text-2xl"></i> Ausente</button>
+                                    </div>
                                 </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 max-h-[55vh] overflow-y-auto hide-scroll pb-4">
-                                    {filteredEscalas.filter(e => e && safeString(e.Nome_Profissional) === selectedPerson).map((esc, i) => (
-                                        <div key={i} className="border-2 border-gray-100 dark:border-slate-700 rounded-3xl p-6 relative group bg-white dark:bg-slate-900 shadow-sm">
-                                            <div className="flex justify-between items-center mb-4"><span className="font-black text-2xl text-gray-900 dark:text-white">{safeString(esc.Data).substring(0,5)}</span><span className="bg-gray-100 dark:bg-slate-800 px-3 py-1 rounded-xl text-xs font-black text-gray-600 dark:text-slate-300">{safeString(esc.Turno)}</span></div>
-                                            <div className="space-y-2 mb-2"><p className="text-sm font-bold opacity-80">{safeString(esc.Horario)}</p><p className="text-sm font-bold opacity-80">{safeString(esc.Unidade)}</p></div>
-                                            {canEdit && <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition"><button onClick={async()=>{if(confirm('Excluir?')){ await api.deleteRecord('ESCALAS', esc.ID); onRefresh('ESCALAS'); setSelectedPerson(null); setSelectedDate(null); }}} className="w-8 h-8 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/50 rounded-lg"><i className="ph-bold ph-trash"></i></button></div>}
+
+                                <div className="border-t dark:border-slate-700 pt-6 space-y-3">
+                                    <button onClick={()=>setShowSwapSugg(!showSwapSugg)} className="w-full py-4 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl font-black shadow flex justify-center items-center gap-2 hover:scale-[1.02] transition"><i className="ph-bold ph-arrows-left-right"></i> Sugerir Substituto (Troca)</button>
+                                    <button onClick={async()=>{if(confirm('Excluir plantão?')){ await api.deleteRecord('ESCALAS', selectedPerson.ID); onRefresh('ESCALAS'); setSelectedPerson(null); setSelectedDate(null); }}} className="w-full py-4 bg-red-50 dark:bg-red-900/20 text-red-600 rounded-xl font-black transition flex justify-center items-center gap-2"><i className="ph-bold ph-trash"></i> Excluir Plantão</button>
+                                </div>
+
+                                {showSwapSugg && (
+                                    <div className="mt-4 bg-gray-50 dark:bg-slate-900 rounded-2xl p-4 border dark:border-slate-700 animate-fade-in">
+                                        <h4 className="text-xs font-black uppercase text-gray-500 mb-3">Opções Inteligentes (Mesmas Competências):</h4>
+                                        <div className="space-y-2 max-h-40 overflow-y-auto custom-scrollbar pr-2">
+                                            {findSubstitutes(selectedPerson.Nome_Profissional).map((sub, idx) => (
+                                                <div key={idx} className="bg-white dark:bg-slate-800 p-3 rounded-xl border dark:border-slate-600 flex justify-between items-center">
+                                                    <div>
+                                                        <p className="font-black text-sm text-gray-900 dark:text-white">{safeString(sub['Nome Completo'])}</p>
+                                                        <p className="text-[10px] font-bold text-gray-400 mt-0.5" title={safeString(sub['Horários Flexíveis'])}>Disponível • {safeString(sub['Horários Flexíveis']).substring(0,25)}...</p>
+                                                    </div>
+                                                    <button onClick={async()=>{ 
+                                                        await api.saveRecord('ESCALAS', { ...selectedPerson, ID: '', Nome_Profissional: safeString(sub['Nome Completo']), Substituindo: safeString(selectedPerson.Nome_Profissional) }, false);
+                                                        alert(`Plantão de cobertura criado para ${sub['Nome Completo']}.`); 
+                                                        setSelectedPerson(null); setShowSwapSugg(false); 
+                                                        onRefresh('ESCALAS');
+                                                    }} className="bg-primary text-white text-xs font-black px-3 py-2 rounded-lg hover:bg-blue-700 transition">Acionar</button>
+                                                </div>
+                                            ))}
+                                            {findSubstitutes(selectedPerson.Nome_Profissional).length === 0 && <p className="text-sm font-bold text-gray-400 text-center py-4">Nenhum colaborador compatível livre hoje.</p>}
                                         </div>
-                                    ))}
-                                </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}
@@ -774,27 +848,34 @@
                     {isModalOpen && (
                         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 glass-modal" onMouseDown={()=>setIsModalOpen(false)}>
                             <div className="bg-white dark:bg-slate-800 rounded-[3rem] w-full max-w-6xl max-h-[90vh] flex flex-col shadow-2xl animate-pop-in border border-gray-100 dark:border-slate-700" onMouseDown={e=>e.stopPropagation()}>
-                                <div className="p-8 border-b border-gray-100 dark:border-slate-700 flex justify-between items-center bg-gray-50/50 dark:bg-slate-900"><h3 className="text-3xl font-black text-gray-900 dark:text-white">Lançamento em Lote</h3><button onClick={() => setIsModalOpen(false)} className="w-12 h-12 bg-white dark:bg-slate-700 rounded-full hover:bg-red-500 hover:text-white shadow-sm text-xl"><i className="ph-bold ph-x"></i></button></div>
-                                <div className="p-8 flex flex-col lg:flex-row gap-12"><div className="lg:w-1/2">
-                                    <h4 className="font-black mb-6 text-xl">1. Selecione as Datas</h4>
-                                    <div className="grid grid-cols-7 gap-2">
-                                        {Array(firstDayOfMonth).fill(null).map((_, i) => <div key={`empty-${i}`} />)}
-                                        {Array(daysInMonth).fill(null).map((_, i) => {
-                                            const day = i + 1; const dStr = `${String(day).padStart(2, '0')}/${String(currentMonth.getMonth() + 1).padStart(2, '0')}/${currentMonth.getFullYear()}`; const sel = datesToSave.includes(dStr);
-                                            return <button type="button" key={day} onClick={() => { if(sel) setDatesToSave(datesToSave.filter(x => x !== dStr)); else setDatesToSave([...datesToSave, dStr]); }} className={`w-full aspect-square rounded-2xl font-black text-lg transition-all ${sel ? 'bg-primary text-white shadow-xl scale-110' : 'bg-white dark:bg-slate-800 border-2 border-gray-100 dark:border-slate-700 hover:border-primary shadow-sm'}`}>{day}</button>
-                                        })}
+                                <div className="p-8 border-b border-gray-100 dark:border-slate-700 flex justify-between items-center bg-gray-50/50 dark:bg-slate-900"><h3 className="text-3xl font-black text-gray-900 dark:text-white">Lançamento em Lote</h3><button onClick={() => setIsModalOpen(false)} className="w-12 h-12 bg-white dark:bg-slate-700 rounded-full hover:bg-red-500 hover:text-white shadow-sm text-xl transition"><i className="ph-bold ph-x"></i></button></div>
+                                <div className="p-8 flex flex-col lg:flex-row gap-12 overflow-y-auto custom-scrollbar">
+                                    <div className="lg:w-1/2">
+                                        <h4 className="font-black mb-6 text-xl text-gray-900 dark:text-white">1. Selecione as Datas</h4>
+                                        <div className="grid grid-cols-7 gap-2">
+                                            {Array(firstDayOfMonth).fill(null).map((_, i) => <div key={`empty-${i}`} />)}
+                                            {Array(daysInMonth).fill(null).map((_, i) => {
+                                                const day = i + 1; const dStr = `${String(day).padStart(2, '0')}/${String(currentMonth.getMonth() + 1).padStart(2, '0')}/${currentMonth.getFullYear()}`; const sel = datesToSave.includes(dStr);
+                                                return <button type="button" key={day} onClick={() => { if(sel) setDatesToSave(datesToSave.filter(x => x !== dStr)); else setDatesToSave([...datesToSave, dStr]); }} className={`w-full aspect-square rounded-2xl font-black text-lg transition-all ${sel ? 'bg-primary text-white shadow-xl scale-110' : 'bg-white dark:bg-slate-800 border-2 border-gray-100 dark:border-slate-700 hover:border-primary shadow-sm text-gray-800 dark:text-white'}`}>{day}</button>
+                                            })}
+                                        </div>
+                                    </div>
+                                    <div className="lg:w-1/2">
+                                        <h4 className="font-black mb-6 text-xl text-gray-900 dark:text-white">2. Dados do Plantão</h4>
+                                        <form id="esc-form" onSubmit={handleSaveBatch} className="space-y-6">
+                                            <div><label className="block text-xs font-black text-gray-400 mb-2 uppercase">Profissional</label><select className="w-full px-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-custom outline-none focus:ring-2 focus:ring-primary font-black text-gray-900 dark:text-white" value={safeString(formData.Nome_Profissional)} onChange={e => setFormData({...formData, Nome_Profissional: e.target.value})} required><option value="">Selecione...</option>{activeSubTab === 'Lista Médicos' ? corpoClinico.map((m,i) => <option key={i} value={safeString(m?.Médico)}>{safeString(m?.Médico)}</option>) : usuarios.map((u,i) => <option key={i} value={safeString(u?.['Nome Completo'])}>{safeString(u?.['Nome Completo'])}</option>)}</select></div>
+                                            <div className="grid grid-cols-2 gap-6">
+                                                <div><label className="block text-xs font-black text-gray-400 mb-2 uppercase">Turno</label><select className="w-full px-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-custom outline-none font-bold text-gray-900 dark:text-white" value={safeString(formData.Turno)} onChange={e => setFormData({...formData, Turno: e.target.value})}><option value="Manhã">Manhã</option><option value="Tarde">Tarde</option><option value="Noite">Noite</option></select></div>
+                                                <div><label className="block text-xs font-black text-gray-400 mb-2 uppercase">Horário</label><input type="text" className="w-full px-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-custom outline-none font-bold text-gray-900 dark:text-white" value={safeString(formData.Horario)} onChange={e => setFormData({...formData, Horario: e.target.value})} placeholder="Ex: 08:00 às 18:00" /></div>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-6">
+                                                <div><label className="block text-xs font-black text-gray-400 mb-2 uppercase">Unidade</label><input type="text" className="w-full px-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-custom outline-none font-bold text-gray-900 dark:text-white" value={safeString(formData.Unidade)} onChange={e => setFormData({...formData, Unidade: e.target.value})} placeholder="Sede" /></div>
+                                                <div><label className="block text-xs font-black text-gray-400 mb-2 uppercase">Setor / Consultório</label><input type="text" className="w-full px-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-custom outline-none font-bold text-gray-900 dark:text-white" value={safeString(formData.Setor_Consultorio)} onChange={e => setFormData({...formData, Setor_Consultorio: e.target.value})} placeholder="Recepção 1" /></div>
+                                            </div>
+                                        </form>
                                     </div>
                                 </div>
-                                <div className="lg:w-1/2"><h4 className="font-black mb-6 text-xl">2. Dados</h4>
-                                    <form id="esc-form" onSubmit={handleSave} className="space-y-6">
-                                        <div><label className="block text-xs font-black text-gray-400 mb-2 uppercase">Profissional</label><select className="w-full px-5 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-custom outline-none focus:ring-2 focus:ring-primary font-black" value={safeString(formData.Nome_Profissional)} onChange={e => setFormData({...formData, Nome_Profissional: e.target.value})} required><option value="">Selecione...</option>{activeSubTab === 'Médicos' ? corpoClinico.map((m,i) => <option key={i} value={safeString(m?.Médico)}>{safeString(m?.Médico)}</option>) : usuarios.map((u,i) => <option key={i} value={safeString(u?.['Nome Completo'])}>{safeString(u?.['Nome Completo'])}</option>)}</select></div>
-                                        <div className="grid grid-cols-2 gap-6">
-                                            <div><label className="block text-xs font-black text-gray-400 mb-2 uppercase">Turno</label><select className="w-full px-5 py-4 bg-gray-50 border rounded-custom outline-none font-bold" value={safeString(formData.Turno)} onChange={e => setFormData({...formData, Turno: e.target.value})}><option value="Manhã">Manhã</option><option value="Tarde">Tarde</option><option value="Noite">Noite</option></select></div>
-                                            <div><label className="block text-xs font-black text-gray-400 mb-2 uppercase">Horário</label><input type="text" className="w-full px-5 py-4 bg-gray-50 border rounded-custom outline-none font-bold" value={safeString(formData.Horario)} onChange={e => setFormData({...formData, Horario: e.target.value})} /></div>
-                                        </div>
-                                    </form>
-                                </div></div>
-                                <div className="p-6 border-t flex justify-end gap-4"><button onClick={() => setIsModalOpen(false)} className="px-10 py-4 font-black">Cancelar</button><button type="submit" form="esc-form" disabled={loadingAction} className="px-12 py-4 bg-primary text-white font-black rounded-custom shadow-xl">Gravar</button></div>
+                                <div className="p-6 border-t border-gray-100 dark:border-slate-700 flex justify-end gap-4 bg-gray-50/50 dark:bg-slate-900"><button onClick={() => setIsModalOpen(false)} className="px-10 py-4 font-black text-gray-500 hover:text-gray-800 dark:hover:text-white transition">Cancelar</button><button type="submit" form="esc-form" disabled={loadingAction} className="px-12 py-4 bg-primary text-white font-black rounded-custom shadow-xl hover:-translate-y-1 transition">{loadingAction?'Gravando...':'Gravar Múltiplos'}</button></div>
                             </div>
                         </div>
                     )}
@@ -816,11 +897,7 @@
 
             const handleSaveDesign = async (e) => {
                 e.preventDefault(); setSaving(true);
-                const settingsToSave = [
-                    { key: 'cor_primaria', val: primary }, { key: 'cor_secundaria', val: secondary },
-                    { key: 'cor_fundo', val: bg }, { key: 'logo_url', val: logo },
-                    { key: 'font_family', val: fontFamily }, { key: 'border_radius', val: borderRadius }
-                ];
+                const settingsToSave = [ { key: 'cor_primaria', val: primary }, { key: 'cor_secundaria', val: secondary }, { key: 'cor_fundo', val: bg }, { key: 'logo_url', val: logo }, { key: 'font_family', val: fontFamily }, { key: 'border_radius', val: borderRadius } ];
                 for (let setting of settingsToSave) {
                     const existing = configs.find(c => c && c.Chave === setting.key);
                     await api.saveRecord('CONFIGURACOES', { 'ID': existing ? existing.ID : '', 'Chave': setting.key, 'Valor': setting.val }, !!existing);
@@ -861,14 +938,11 @@
                     <div className="p-8 border-b border-gray-50 dark:border-slate-700 flex flex-col md:flex-row justify-between items-center gap-6 bg-gray-50/50 dark:bg-slate-900/50">
                         <h2 className="text-3xl font-black tracking-tight flex items-center gap-3 text-gray-900 dark:text-white"><div className="w-3 h-8 bg-primary rounded-full"></div> {title}</h2>
                         <div className="flex gap-4 w-full md:w-auto">
-                            <div className="relative flex-1 md:w-96">
-                                <i className="ph-bold ph-magnifying-glass absolute left-5 top-4 text-gray-400 text-xl"></i>
-                                <input type="text" placeholder="Pesquisar em tudo..." value={search} onChange={e=>setSearch(e.target.value)} className="w-full pl-14 pr-6 py-4 bg-white dark:bg-slate-900 shadow-sm border border-gray-200 dark:border-slate-700 rounded-full outline-none focus:ring-2 focus:ring-primary font-bold transition text-gray-800 dark:text-white" />
-                            </div>
+                            <div className="relative flex-1 md:w-96"><i className="ph-bold ph-magnifying-glass absolute left-5 top-4 text-gray-400 text-xl"></i><input type="text" placeholder="Pesquisar em tudo..." value={search} onChange={e=>setSearch(e.target.value)} className="w-full pl-14 pr-6 py-4 bg-white dark:bg-slate-900 shadow-sm border border-gray-200 dark:border-slate-700 rounded-full outline-none focus:ring-2 focus:ring-primary font-bold transition text-gray-800 dark:text-white" /></div>
                             {canEdit && <button onClick={() => openModal(null, schema)} className="bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-black px-10 py-4 rounded-full shadow-xl hover:-translate-y-1 transition flex items-center gap-2 shrink-0"><i className="ph-bold ph-plus text-xl"></i> Novo</button>}
                         </div>
                     </div>
-                    <div className="overflow-x-auto p-4">
+                    <div className="overflow-x-auto p-4 custom-scrollbar">
                         <table className="w-full text-left border-collapse min-w-[800px]">
                             <thead>
                                 <tr className="text-gray-400 text-[10px] uppercase tracking-widest border-b-2 border-gray-100 dark:border-slate-700">
@@ -877,7 +951,7 @@
                                 </tr>
                             </thead>
                             <tbody className="text-sm font-bold text-gray-800 dark:text-slate-200">
-                                {filteredData.length === 0 ? <tr><td colSpan="100%" className="text-center p-20 text-gray-400 font-black text-xl border-2 border-dashed border-gray-200 dark:border-slate-700 rounded-custom m-4">Nenhum dado cadastrado ou encontrado.</td></tr> : 
+                                {filteredData.length === 0 ? <tr><td colSpan="100%" className="text-center p-20 text-gray-400 font-black text-xl border-2 border-dashed border-gray-200 dark:border-slate-700 rounded-custom m-4">Nenhum dado cadastrado.</td></tr> : 
                                 filteredData.map((row, i) => (
                                     <tr key={`tr-${i}`} className="hover:bg-blue-50/30 dark:hover:bg-slate-700/30 border-b border-gray-50 dark:border-slate-700 transition group">
                                         {schema.filter(c=>safeString(c)!=='ID').map((col, j) => (
@@ -913,35 +987,29 @@
             const [currentSchema, setCurrentSchema] = useState([]);
             
             let dynamicKeys = ['ID'];
-            if (safeData.length > 0 && typeof safeData[0] === 'object' && safeData[0] !== null) {
-                dynamicKeys = Object.keys(safeData[0]);
-            }
+            if (safeData.length > 0 && typeof safeData[0] === 'object' && safeData[0] !== null) dynamicKeys = Object.keys(safeData[0]);
             
             const schema = tabSchemas[tabName] || dynamicKeys || ['ID'];
-            
             const nivelKey = user && typeof user === 'object' ? Object.keys(user).find(k => safeString(k).toLowerCase().includes('acesso')) : null;
             const canEdit = nivelKey && ['admin', 'supervisor', 'supervisão'].some(role => safeString(user[nivelKey]).toLowerCase().includes(role));
 
             const filteredData = safeData.filter(row => row && typeof row === 'object' && Object.values(row).some(val => safeString(val).toLowerCase().includes(search.toLowerCase())));
 
             const openModal = (row = null, customSchema = null) => {
-                let initial = {};
-                const s = customSchema || schema;
+                let initial = {}; const s = customSchema || schema;
                 s.forEach(col => initial[col] = row ? safeString(row[col]) : '');
-                setFormData(initial);
-                setCurrentSchema(s);
-                setIsModalOpen(true);
+                setFormData(initial); setCurrentSchema(s); setIsModalOpen(true);
             };
 
             const handleSave = async (e) => {
                 e.preventDefault(); setLoading(true);
                 const res = await api.saveRecord(tabName, formData, !!formData.ID);
                 setLoading(false);
-                if (res && res.success) { setIsModalOpen(false); onRefresh(tabName); showToast('Salvo com sucesso!'); } else { showToast('Erro ao salvar.', 'error') }
+                if (res && res.success) { setIsModalOpen(false); onRefresh(tabName); showToast('Salvo com sucesso!'); } else showToast('Erro ao salvar.', 'error');
             };
 
             const handleDelete = async (id) => {
-                if(confirm('Tem certeza que deseja excluir?')) {
+                if(confirm('Excluir este item permanentemente?')) {
                     const res = await api.deleteRecord(tabName, id);
                     if (res && res.success) { onRefresh(tabName); showToast('Excluído com sucesso!'); }
                 }
@@ -950,9 +1018,9 @@
             if(tabName === 'CONVÊNIOS') return <><ConveniosMatrixView data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} schema={schema} /> {isModalOpen && <ModalForm title="Regra de Convênio" schema={currentSchema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
             if(tabName === 'CORPO CLINICO') return <><CorpoClinicoCards data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} /> {isModalOpen && <ModalForm title="Médico" schema={schema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
             if(tabName === 'CONTATOS') return <><ContatosViewTabs data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} schema={schema} /> {isModalOpen && <ModalForm title="Contato" schema={schema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
-            if(tabName === 'MURAL_AVISOS') return <><MuralAvisosView data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} /> {isModalOpen && <ModalForm title="Anúncio / Aviso" schema={schema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
+            if(tabName === 'MURAL_AVISOS') return <><MuralAvisosView data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} /> {isModalOpen && <ModalForm title="Aviso" schema={schema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
+            if(tabName === 'BOLETINS_INFORMATIVOS') return <><BoletinsView data={safeData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} /> {isModalOpen && <ModalForm title="Mídia/Informativo" schema={schema} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={()=>setIsModalOpen(false)} loading={loading}/>}</>;
 
-            // Telas genéricas (inclusive as que não possuíam o componente desenhado no código original) caem aqui, o que evita o sistema quebrar
             return (
                 <>
                     <DefaultTableView title={title} schema={schema} filteredData={filteredData} canEdit={canEdit} openModal={openModal} handleDelete={handleDelete} search={search} setSearch={setSearch} />
@@ -967,30 +1035,22 @@
             const [activeTab, setActiveTab] = useState('Home');
             const [sheetData, setSheetData] = useState({});
             const [darkMode, setDarkMode] = useState(false);
-            const [chatFilter, setChatFilter] = useState('Geral');
             const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
             const [loginErrorMsg, setLoginErrorMsg] = useState('');
 
             const userFoto = user?.Foto_Perfil_URL || 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
             const userName = user?.['Nome Completo'] || user?.['E-mail']?.split('@')[0] || 'Usuário';
 
-            // 🛑 LÓGICA DE ACESSO ADMIN AQUI 🛑
             const nivelKey = user && typeof user === 'object' ? Object.keys(user).find(k => safeString(k).toLowerCase().includes('acesso')) : null;
             const isAdmin = user && nivelKey && ['admin', 'supervisor', 'supervisão'].some(role => safeString(user[nivelKey]).toLowerCase().includes(role));
 
             useEffect(() => {
-                const unsub = auth.onAuthStateChanged(async (u) => {
+                const unsub = auth?.onAuthStateChanged(async (u) => {
                     if (u) {
                         const userDoc = await db.collection('USUARIOS').where('E-mail', '==', u.email).get();
-                        if (!userDoc.empty) {
-                            setUser({ ID: userDoc.docs[0].id, ...userDoc.docs[0].data() });
-                        } else {
-                            // Se o usuário logou, mas não tem cadastro na tabela, ele entra como Colaborador por segurança.
-                            setUser({ 'E-mail': u.email, 'Nome Completo': u.email.split('@')[0], 'Nível de Acesso': 'Colaborador' });
-                        }
-                    } else {
-                        setUser(null);
-                    }
+                        if (!userDoc.empty) setUser({ ID: userDoc.docs[0].id, ...userDoc.docs[0].data() });
+                        else setUser({ 'E-mail': u.email, 'Nome Completo': u.email.split('@')[0], 'Nível de Acesso': 'Colaborador' });
+                    } else setUser(null);
                     setLoading(false);
                 });
                 return () => unsub && unsub();
@@ -1070,6 +1130,7 @@
             const menus = [
                 { id: 'Home', icon: 'ph-house', label: 'Dashboard Inicial' },
                 { id: 'MURAL_AVISOS', icon: 'ph-presentation-chart', label: 'Mural de Avisos' },
+                { id: 'BOLETINS_INFORMATIVOS', icon: 'ph-newspaper', label: 'Boletins e Mídia' },
                 { id: 'ESCALAS', icon: 'ph-calendar-check', label: 'Escalas e Plantões' },
                 { id: 'CONVÊNIOS', icon: 'ph-file-text', label: 'Matriz de Convênios' },
                 { id: 'CORPO CLINICO', icon: 'ph-stethoscope', label: 'Corpo Clínico' },
@@ -1085,17 +1146,6 @@
             ];
             const adminMenus = [ { id: 'CONTROLE_ATENDIMENTOS', icon: 'ph-chart-line-up', label: 'Limites Unimed' }, { id: 'USUARIOS', icon: 'ph-users', label: 'Colaboradores' }, { id: 'DESIGN_INTERFACE', icon: 'ph-magic-wand', label: 'Design de Interface' }, { id: 'LEMBRETES_HORA', icon: 'ph-clock', label: 'Avisos do Relógio' } ];
 
-            const chatMessages = Array.isArray(sheetData['CHAT_MENSAGENS']) ? sheetData['CHAT_MENSAGENS'] : [];
-            const filteredChat = chatMessages.filter(m => {
-                if(!m) return false;
-                if(chatFilter === 'Geral') return safeString(m.Destinatario) !== 'Supervisão';
-                if(isAdmin) return safeString(m.Destinatario) === 'Supervisão' || safeString(m.Destinatario) === 'Colaborador';
-                return (safeString(m.Destinatario) === 'Supervisão' && safeString(m.Nome) === userName) || (safeString(m.Destinatario) === 'Colaborador' && safeString(m.Mensagem).includes(`Para ${userName}`));
-            });
-
-            const letreiros = Array.isArray(sheetData['NOVIDADES_E_EVENTOS']) ? sheetData['NOVIDADES_E_EVENTOS'].filter(n => n && (safeString(n.Tipo) === 'Urgente' || safeString(n.Tipo) === 'Letreiro')) : [];
-            const banners = Array.isArray(sheetData['NOVIDADES_E_EVENTOS']) ? sheetData['NOVIDADES_E_EVENTOS'].filter(n => n && safeString(n.Tipo) !== 'Urgente' && safeString(n.Tipo) !== 'Letreiro' && (n.Título || n.Mensagem)) : [];
-
             const foundMenu = menus.concat(adminMenus).find(m => m.id === activeTab);
             const titleTab = foundMenu ? foundMenu.label : activeTab;
 
@@ -1103,21 +1153,13 @@
                 <div className="min-h-screen flex flex-col md:flex-row overflow-hidden relative selection:bg-primary selection:text-white">
                     {toast.show && <div className={`fixed bottom-8 right-8 z-[9999] px-8 py-5 rounded-custom shadow-2xl text-white font-black text-lg animate-slide-up bg-green-500`}><i className="ph-bold ph-check-circle text-2xl"></i> {toast.message}</div>}
 
-                    {activeTab === 'Home' && Array.isArray(sheetData['ANIVERSARIOS']) && sheetData['ANIVERSARIOS'].filter(u=>u && safeString(u['Data de Nascimento']).substring(0,5) === new Date().toLocaleDateString('pt-BR').substring(0,5)).map((a,i) => (
-                        <div key={i} className={`balloon flex flex-col items-center ${i%2===0?'left-[10%] animate-[rise_10s_infinite]':'right-[15%] animate-[rise_13s_infinite_2s]'}`}><span className="text-7xl drop-shadow-xl filter">🎈</span><span className="bg-white/90 dark:bg-slate-800/90 backdrop-blur border dark:border-slate-700 px-4 py-1.5 rounded-full text-xs font-black text-purple-600 dark:text-purple-400 shadow-xl mt-2 uppercase tracking-widest">Parabéns {safeString(a['Nome Completo']).split(' ')[0]}!</span></div>
-                    ))}
-
                     <aside className="w-80 bg-white dark:bg-slate-800 border-r border-gray-100 dark:border-slate-700 flex flex-col h-screen shrink-0 shadow-2xl z-30 transition-colors">
                         <div className="p-8 flex items-center border-b bg-gray-50/50 cursor-pointer" onClick={()=>{setActiveTab('Home'); loadData('Home');}}>
                             <div className="bg-primary text-white p-3 rounded-2xl mr-3"><i className="ph-fill ph-heartbeat text-3xl"></i></div>
                             <div><h1 className="text-2xl font-black leading-none">Portal</h1><span className="text-[10px] font-black text-primary uppercase">São Vicente</span></div>
                         </div>
                         <div className="p-6 border-b border-gray-50 dark:border-slate-700 flex items-center gap-4">
-                            {userFoto ? (
-                                <img src={formatImageUrl(userFoto)} className="w-14 h-14 rounded-custom object-cover shadow-md shrink-0 border-2 border-white dark:border-slate-700" alt="Avatar" />
-                            ) : (
-                                <div className="w-14 h-14 rounded-custom bg-gradient-to-tr from-secondary to-orange-400 flex items-center justify-center text-white font-black text-2xl shadow-md shrink-0">{safeString(userName || 'U').charAt(0).toUpperCase()}</div>
-                            )}
+                            {userFoto ? <img src={formatImageUrl(userFoto)} className="w-14 h-14 rounded-custom object-cover shadow-md shrink-0 border-2 border-white dark:border-slate-700" alt="Avatar" /> : <div className="w-14 h-14 rounded-custom bg-gradient-to-tr from-secondary to-orange-400 flex items-center justify-center text-white font-black text-2xl shadow-md shrink-0">{safeString(userName || 'U').charAt(0).toUpperCase()}</div>}
                             <div className="flex-1 overflow-hidden">
                                 <p className="text-base font-black truncate text-gray-900 dark:text-white">{userName}</p>
                                 <p className="text-[10px] font-black text-primary bg-primary/10 px-2 py-1 rounded-md inline-block mt-1 uppercase tracking-widest">{safeString(user[nivelKey] || 'Acesso')}</p>
@@ -1133,7 +1175,7 @@
                                     {adminMenus.map(m => <button key={m.id} onClick={()=>{setActiveTab(m.id); loadData(m.id);}} className={`w-full flex items-center gap-4 px-5 py-3 rounded-custom text-sm font-bold transition-all ${activeTab===m.id?'bg-gray-900 text-white shadow-xl scale-[1.02]':'text-gray-500 hover:bg-gray-100'}`}><i className={`ph-fill ${m.icon} text-xl`}></i> {m.label}</button>)}
                                 </>
                             )}
-                            <button onClick={()=>setUser(null)} className="w-full flex items-center gap-4 px-5 py-3 rounded-custom text-sm font-bold text-red-600 hover:bg-red-50 mt-8"><i className="ph-fill ph-sign-out text-xl"></i> Sair</button>
+                            <button onClick={()=>auth.signOut()} className="w-full flex items-center gap-4 px-5 py-3 rounded-custom text-sm font-bold text-red-600 hover:bg-red-50 mt-8"><i className="ph-fill ph-sign-out text-xl"></i> Sair</button>
                         </div>
                     </aside>
 
@@ -1167,7 +1209,7 @@
                                     <div>
                                         <h3 className="text-3xl font-black mb-8">Acesso Rápido</h3>
                                         <div className="grid grid-cols-2 md:grid-cols-6 gap-6">
-                                            {[ { l: 'Mural', i: 'ph-presentation-chart', bg:'bg-blue-50', c:'text-blue-600', t: 'MURAL_AVISOS' }, { l: 'Imagem', i: 'ph-bone', bg:'bg-green-50', c:'text-green-600', t: 'EXAMES DE IMAGEM' }, { l: 'Consultas', i: 'ph-stethoscope', bg:'bg-blue-50', c:'text-blue-600', t: 'CONSULTA E PROCEDIMENTOS' }, { l: 'Lab', i: 'ph-flask', bg:'bg-purple-50', c:'text-purple-600', t: 'EXAMES LABORATORIAIS' }, { l: 'Institutos', i: 'ph-buildings', bg:'bg-orange-50', c:'text-orange-600', t: 'INSTITUTOS' }, { l: 'Remoções', i: 'ph-car', bg:'bg-yellow-50', c:'text-yellow-600', t: 'REMOÇÕES' } ].map((d, i) => (
+                                            {[ { l: 'Mural', i: 'ph-presentation-chart', bg:'bg-blue-50', c:'text-blue-600', t: 'MURAL_AVISOS' }, { l: 'Imagem', i: 'ph-bone', bg:'bg-green-50', c:'text-green-600', t: 'EXAMES DE IMAGEM' }, { l: 'Boletins', i: 'ph-newspaper', bg:'bg-purple-50', c:'text-purple-600', t: 'BOLETINS_INFORMATIVOS' }, { l: 'Painel', i: 'ph-kanban', bg:'bg-orange-50', c:'text-orange-600', t: 'ESCALAS' }, { l: 'Institutos', i: 'ph-buildings', bg:'bg-red-50', c:'text-red-600', t: 'INSTITUTOS' }, { l: 'Remoções', i: 'ph-car', bg:'bg-yellow-50', c:'text-yellow-600', t: 'REMOÇÕES' } ].map((d, i) => (
                                                 <button key={i} onClick={()=>{setActiveTab(d.t);loadData(d.t)}} className={`${d.bg} ${d.c} p-6 rounded-[2rem] flex flex-col items-center gap-4 card-hover shadow-sm`}>
                                                     <i className={`ph-fill ${d.i} text-4xl`}></i><span className="font-black text-sm uppercase tracking-widest">{d.l}</span>
                                                 </button>
